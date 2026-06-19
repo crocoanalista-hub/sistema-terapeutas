@@ -1,0 +1,163 @@
+.form-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.form-box {
+  background: white;
+  border-radius: 8px;
+  padding: 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-box h2 {
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #555;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.obrigatorio {
+  color: #e74c3c;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 15px;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 30px;
+}
+
+.btn-salvar,
+.btn-cancelar,
+.btn-novo,
+.btn-detalhes,
+.btn-editar,
+.btn-deletar {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-weight: 600;
+}
+
+.btn-salvar {
+  background-color: #27ae60;
+  color: white;
+}
+
+.btn-salvar:hover:not(:disabled) {
+  background-color: #229954;
+}
+
+.btn-salvar:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.btn-cancelar {
+  background-color: #95a5a6;
+  color: white;
+}
+
+.btn-cancelar:hover {
+  background-color: #7f8c8d;
+}
+
+.btn-novo {
+  background-color: #3498db;
+  color: white;
+}
+
+.btn-novo:hover {
+  background-color: #2980b9;
+}
+
+.btn-detalhes {
+  background-color: #3498db;
+  color: white;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-detalhes:hover {
+  background-color: #2980b9;
+}
+
+.btn-editar {
+  background-color: #f39c12;
+  color: white;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-editar:hover {
+  background-color: #d68910;
+}
+
+.btn-deletar {
+  background-color: #e74c3c;
+  color: white;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-deletar:hover {
+  background-color: #c0392b;
+}
+
+.erro-message {
+  background-color: #fdeaea;
+  border: 1px solid #f5b7b1;
+  color: #c0392b;
+  padding: 12px 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}

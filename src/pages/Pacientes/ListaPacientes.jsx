@@ -1,0 +1,124 @@
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { listarPacientes, deletarPaciente } from "../../services/pacientesService";
+import { useAuth } from "../../hooks/useAuth";
+import "../../styles/pacientes.css";
+
+const ListaPacientes = () => {
+  const { user } = useAuth();
+  const [pacientes, setPacientes] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      carregarPacientes();
+    }
+  }, [user]);
+
+  const carregarPacientes = async () => {
+    try {
+      setCarregando(true);
+      const dados = await listarPacientes(user.uid);
+      setPacientes(dados);
+    } catch (err) {
+      setErro("Erro ao carregar pacientes: " + err.message);
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  const handleEditar = (pacienteId) => {
+    navigate(`/pacientes/${pacienteId}/editar`);
+  };
+
+  const handleDetalhes = (pacienteId) => {
+    navigate(`/pacientes/${pacienteId}`);
+  };
+
+  const handleDeletar = async (pacienteId) => {
+    if (window.confirm("Tem certeza que deseja deletar este paciente?")) {
+      try {
+        await deletarPaciente(pacienteId);
+        setPacientes(pacientes.filter((p) => p.id !== pacienteId));
+      } catch (err) {
+        alert("Erro ao deletar paciente: " + err.message);
+      }
+    }
+  };
+
+  return (
+    <div className="pacientes-container">
+      <div className="pacientes-header">
+        <h2>Meus Pacientes</h2>
+        <button
+          className="btn-novo"
+          onClick={() => navigate("/pacientes/novo")}
+        >
+          + Novo Paciente
+        </button>
+      </div>
+
+      {erro && <div className="erro-message">{erro}</div>}
+
+      {carregando ? (
+        <p>Carregando...</p>
+      ) : pacientes.length === 0 ? (
+        <p className="vazio">Nenhum paciente cadastrado ainda.</p>
+      ) : (
+        <div className="pacientes-lista">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Telefone</th>
+                <th>Data de Nascimento</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pacientes.map((paciente) => (
+                <tr key={paciente.id}>
+                  <td>
+                    <strong>{paciente.nome}</strong>
+                  </td>
+                  <td>{paciente.email}</td>
+                  <td>{paciente.telefone}</td>
+                  <td>
+                    {new Date(paciente.dataNascimento).toLocaleDateString(
+                      "pt-BR"
+                    )}
+                  </td>
+                  <td className="acoes">
+                    <button
+                      className="btn-detalhes"
+                      onClick={() => handleDetalhes(paciente.id)}
+                    >
+                      Detalhes
+                    </button>
+                    <button
+                      className="btn-editar"
+                      onClick={() => handleEditar(paciente.id)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      className="btn-deletar"
+                      onClick={() => handleDeletar(paciente.id)}
+                    >
+                      Deletar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ListaPacientes;

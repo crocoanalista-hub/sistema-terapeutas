@@ -1,0 +1,39 @@
+🎉 SRC COMPLETA - SISTEMA DE TERAPEUTAS
+
+Esta é a PASTA SRC COMPLETA e PRONTA PARA USAR!
+
+Contém:
+✅ Serviços (Firebase, Auth, Pacientes, Agendamentos)
+✅ Hooks (useAuth)
+✅ Componentes (Login, Dashboard, Pacientes, Agenda)
+✅ Estilos CSS
+✅ App.jsx e index files
+
+═══════════════════════════════════════════════════════════════════
+
+COMO USAR:
+
+1. EXTRAIA O ZIP
+
+2. APAGUE a pasta "src" que você tem em:
+   ~/Desktop/sistema-terapeutas/src
+
+3. COPIE a pasta "src" do ZIP para:
+   ~/Desktop/sistema-terapeutas/
+
+   Resultado final:
+   ~/Desktop/sistema-terapeutas/src/  (a do ZIP)
+
+4. NO TERMINAL:
+   cd ~/Desktop/sistema-terapeutas
+   npm start
+
+5. RECARREGA (Cmd + R)
+
+6. CLIQUE EM "Registre-se"
+
+═══════════════════════════════════════════════════════════════════
+
+✨ SISTEMA 100% FUNCIONAL!
+
+═══════════════════════════════════════════════════════════════════
