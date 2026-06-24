@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { useAuth } from "./hooks/useAuth";
 
 import Login from "./pages/Login";
+import Registro from "./pages/Registro";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import ListaPacientes from "./pages/Pacientes/ListaPacientes";
@@ -29,6 +30,10 @@ function App() {
         <Route
           path="/login"
           element={user ? <Navigate to="/dashboard" /> : <Login />}
+        />
+        <Route
+          path="/registro"
+          element={user ? <Navigate to="/dashboard" /> : <Registro />}
         />
 
         <Route
