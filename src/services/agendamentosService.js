@@ -123,11 +123,52 @@ export const marcarComoConcluido = async (agendamentoId, observacoes = "") => {
     const docRef = doc(db, "agendamentos", agendamentoId);
     await updateDoc(docRef, {
       status: "concluído",
+      pago: false,
       observacoesConclusao: observacoes,
       dataConclusao: new Date(),
     });
   } catch (erro) {
     throw new Error("Erro ao marcar como concluído: " + erro.message);
+  }
+};
+
+// Marcar falta
+export const marcarFalta = async (agendamentoId) => {
+  try {
+    await updateDoc(doc(db, "agendamentos", agendamentoId), {
+      status: "falta",
+      dataFalta: new Date(),
+    });
+  } catch (erro) {
+    throw new Error("Erro ao marcar falta: " + erro.message);
+  }
+};
+
+// Marcar sessão como paga
+export const marcarComoPago = async (agendamentoId) => {
+  try {
+    await updateDoc(doc(db, "agendamentos", agendamentoId), {
+      pago: true,
+      dataPagamento: new Date(),
+    });
+  } catch (erro) {
+    throw new Error("Erro ao marcar como pago: " + erro.message);
+  }
+};
+
+// Listar sessões concluídas (para financeiro)
+export const listarSessoesConcluidas = async (terapeutaId) => {
+  try {
+    const q = query(
+      collection(db, "agendamentos"),
+      where("terapeutaId", "==", terapeutaId),
+      where("status", "==", "concluído"),
+      orderBy("data", "desc")
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (erro) {
+    throw new Error("Erro ao listar sessões concluídas: " + erro.message);
   }
 };
 

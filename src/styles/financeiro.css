@@ -1,0 +1,254 @@
+.fin-container {
+  max-width: 1000px;
+}
+
+.fin-titulo {
+  margin: 0 0 24px 0;
+  color: #1a2535;
+  font-size: 26px;
+}
+
+.fin-abas {
+  display: flex;
+  gap: 0;
+  background: white;
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+  width: fit-content;
+}
+
+.fin-aba {
+  padding: 9px 20px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.fin-aba.ativa {
+  background: #1a2535;
+  color: white;
+}
+
+.fin-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.fin-card {
+  padding: 20px 24px;
+  border-radius: 10px;
+  color: white;
+}
+
+.fin-card.azul { background: #3498db; }
+.fin-card.verde { background: #27ae60; }
+.fin-card.laranja { background: #f39c12; }
+.fin-card.roxo { background: #9b59b6; }
+
+.fin-card-label {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.fin-card-valor {
+  margin: 0 0 4px 0;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.fin-card-sub {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.fin-subtitulo {
+  margin: 0 0 16px 0;
+  color: #1a2535;
+  font-size: 16px;
+}
+
+.fin-vazio {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.fin-tabela-wrap {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.fin-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.fin-tabela thead tr {
+  background: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.fin-tabela th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #555;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.fin-tabela td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #444;
+}
+
+.fin-tabela tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.fin-tabela tbody tr:hover {
+  background: #fafafa;
+}
+
+.fin-badge {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fin-badge.pago {
+  background: #d4edda;
+  color: #155724;
+}
+
+.fin-badge.pendente {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.fin-sem-valor {
+  color: #bbb;
+  font-style: italic;
+}
+
+.btn-pagar {
+  padding: 5px 10px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-pagar:hover { background: #219a52; }
+
+.btn-recibo {
+  padding: 5px 10px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-recibo:hover { background: #2980b9; }
+
+/* ===== RECIBO (visível só no print) ===== */
+.recibo-print {
+  display: none;
+}
+
+@media print {
+  body * { visibility: hidden; }
+  .recibo-print, .recibo-print * { visibility: visible; }
+  .recibo-print { display: block !important; position: fixed; inset: 0; }
+
+  .recibo-box {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 40px;
+    font-family: serif;
+  }
+
+  .recibo-box h2 {
+    text-align: center;
+    margin-bottom: 32px;
+    font-size: 22px;
+    letter-spacing: 2px;
+  }
+
+  .recibo-linha {
+    margin-bottom: 12px;
+    font-size: 15px;
+    border-bottom: 1px dotted #ccc;
+    padding-bottom: 8px;
+  }
+
+  .recibo-valor {
+    margin: 24px 0;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    border: 2px solid #333;
+    padding: 16px;
+  }
+
+  .recibo-valor span { font-size: 22px; }
+
+  .recibo-texto {
+    margin: 24px 0;
+    font-size: 14px;
+    line-height: 1.8;
+    text-align: justify;
+  }
+
+  .recibo-assinatura {
+    margin-top: 60px;
+    text-align: center;
+  }
+
+  .recibo-linha-assinatura {
+    width: 300px;
+    border-top: 1px solid #333;
+    margin: 0 auto 8px;
+  }
+
+  .recibo-assinatura p {
+    margin: 4px 0;
+    font-size: 13px;
+  }
+
+  .recibo-data-emissao {
+    margin-top: 32px;
+    text-align: right;
+    font-size: 12px;
+    color: #666;
+  }
+}

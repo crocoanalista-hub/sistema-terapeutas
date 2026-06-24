@@ -4,6 +4,15 @@ import { useAuth } from "../hooks/useAuth";
 import { logout } from "../services/authService";
 import "../styles/layout.css";
 
+const NAV = [
+  { label: "Dashboard", icon: "🏠", rota: "/dashboard" },
+  { label: "Pacientes", icon: "👥", rota: "/pacientes" },
+  { label: "Agenda", icon: "📅", rota: "/agenda" },
+  { label: "Financeiro", icon: "💰", rota: "/financeiro" },
+  { label: "Documentos", icon: "📄", rota: "/documentos" },
+  { label: "Histórico", icon: "📊", rota: "/historico" },
+];
+
 const Layout = ({ children }) => {
   const { terapeuta } = useAuth();
   const navigate = useNavigate();
@@ -14,10 +23,10 @@ const Layout = ({ children }) => {
     navigate("/login");
   };
 
-  const isAtivo = (path) =>
-    path === "/dashboard"
+  const isAtivo = (rota) =>
+    rota === "/dashboard"
       ? location.pathname === "/dashboard"
-      : location.pathname.startsWith(path);
+      : location.pathname.startsWith(rota);
 
   return (
     <div className="layout">
@@ -29,34 +38,16 @@ const Layout = ({ children }) => {
         </div>
 
         <nav className="sidebar-nav">
-          <button
-            className={`nav-item ${isAtivo("/dashboard") ? "ativo" : ""}`}
-            onClick={() => navigate("/dashboard")}
-          >
-            <span className="nav-icon">🏠</span>
-            Dashboard
-          </button>
-          <button
-            className={`nav-item ${isAtivo("/pacientes") ? "ativo" : ""}`}
-            onClick={() => navigate("/pacientes")}
-          >
-            <span className="nav-icon">👥</span>
-            Pacientes
-          </button>
-          <button
-            className={`nav-item ${isAtivo("/agenda") ? "ativo" : ""}`}
-            onClick={() => navigate("/agenda")}
-          >
-            <span className="nav-icon">📅</span>
-            Agenda
-          </button>
-          <button
-            className={`nav-item ${isAtivo("/historico") ? "ativo" : ""}`}
-            onClick={() => navigate("/historico")}
-          >
-            <span className="nav-icon">📊</span>
-            Histórico
-          </button>
+          {NAV.map((item) => (
+            <button
+              key={item.rota}
+              className={`nav-item ${isAtivo(item.rota) ? "ativo" : ""}`}
+              onClick={() => navigate(item.rota)}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
         </nav>
 
         <button className="sidebar-logout" onClick={handleLogout}>
