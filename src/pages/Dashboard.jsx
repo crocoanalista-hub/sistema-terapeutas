@@ -5,7 +5,7 @@ import { listarPacientes } from "../services/pacientesService";
 import { listarAgendamentos } from "../services/agendamentosService";
 
 const Dashboard = () => {
-  const { terapeuta, user } = useAuth();
+  const { terapeuta, user, workspaceId } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ pacientes: 0, hoje: 0, semana: 0 });
 
@@ -16,8 +16,8 @@ const Dashboard = () => {
   const carregarStats = async () => {
     try {
       const [pacs, agends] = await Promise.all([
-        listarPacientes(user.uid),
-        listarAgendamentos(user.uid),
+        listarPacientes(workspaceId),
+        listarAgendamentos(workspaceId),
       ]);
 
       const hoje = new Date();

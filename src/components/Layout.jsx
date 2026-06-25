@@ -11,6 +11,7 @@ const NAV = [
   { label: "Financeiro", icon: "💰", rota: "/financeiro" },
   { label: "Documentos", icon: "📄", rota: "/documentos" },
   { label: "Histórico", icon: "📊", rota: "/historico" },
+  { label: "Configurações", icon: "⚙️", rota: "/configuracoes" },
 ];
 
 const Layout = ({ children }) => {

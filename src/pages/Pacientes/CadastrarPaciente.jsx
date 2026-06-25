@@ -5,7 +5,7 @@ import { useAuth } from "../../hooks/useAuth";
 import "../../styles/forms.css";
 
 const CadastrarPaciente = () => {
-  const { user } = useAuth();
+  const { user, workspaceId } = useAuth();
   const navigate = useNavigate();
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
@@ -38,7 +38,7 @@ const CadastrarPaciente = () => {
 
     setCarregando(true);
     try {
-      await adicionarPaciente(user.uid, dados);
+      await adicionarPaciente(workspaceId, dados);
       alert("Paciente cadastrado com sucesso!");
       navigate("/pacientes");
     } catch (err) {

@@ -1,0 +1,326 @@
+/* ============================================================
+   CONFIGURAÇÕES — Salas e Profissionais
+   ============================================================ */
+
+.cfg-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.cfg-titulo {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a2535;
+  margin: 0 0 28px;
+}
+
+.cfg-sem-acesso {
+  color: #5f6368;
+  font-size: 15px;
+  margin-top: 16px;
+}
+
+/* ─── Abas ───────────────────────────────────────────────── */
+.cfg-abas {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid #e8eaed;
+  margin-bottom: 28px;
+}
+
+.cfg-aba {
+  padding: 10px 22px;
+  border: none;
+  background: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: #5f6368;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 6px 6px 0 0;
+  transition: all .15s;
+  font-family: inherit;
+}
+.cfg-aba:hover { background: #f1f3f4; color: #1a2535; }
+.cfg-aba.ativa { color: #1a73e8; border-bottom-color: #1a73e8; }
+
+/* ─── Conteúdo ───────────────────────────────────────────── */
+.cfg-conteudo { display: flex; flex-direction: column; gap: 20px; }
+
+.cfg-descricao {
+  font-size: 14px;
+  color: #5f6368;
+  margin: 0;
+  line-height: 1.6;
+}
+.cfg-descricao-sm { font-size: 13px; margin-bottom: 4px; }
+
+/* ─── Card ───────────────────────────────────────────────── */
+.cfg-card {
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  padding: 20px 24px;
+  background: white;
+}
+.cfg-card-titulo {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a2535;
+  margin: 0 0 16px;
+}
+
+/* ─── Inputs ─────────────────────────────────────────────── */
+.cfg-input {
+  padding: 10px 14px;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #333;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color .15s, box-shadow .15s;
+}
+.cfg-input:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26,115,232,.12);
+}
+.cfg-input-inline { width: auto; flex: 1; }
+
+.cfg-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5f6368;
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* ─── Seletor de cores ───────────────────────────────────── */
+.cfg-cor-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cfg-cor-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5f6368;
+  white-space: nowrap;
+}
+.cfg-cores-grid {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cfg-cores-inline { gap: 5px; }
+.cfg-cor-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform .12s, box-shadow .12s;
+  flex-shrink: 0;
+}
+.cfg-cor-btn:hover { transform: scale(1.15); }
+.cfg-cor-btn.ativa {
+  border-color: #333;
+  box-shadow: 0 0 0 2px white, 0 0 0 4px #333;
+}
+.cfg-cor-custom {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  background: none;
+}
+
+/* ─── Form sala ──────────────────────────────────────────── */
+.cfg-sala-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ─── Form profissional ──────────────────────────────────── */
+.cfg-prof-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cfg-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 600px) {
+  .cfg-form-row { grid-template-columns: 1fr; }
+}
+.cfg-form-group { display: flex; flex-direction: column; }
+.cfg-form-acoes {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding-top: 4px;
+}
+
+/* ─── Botões ─────────────────────────────────────────────── */
+.cfg-btn-primary {
+  padding: 10px 20px;
+  background: #1a73e8;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .15s;
+  white-space: nowrap;
+}
+.cfg-btn-primary:hover:not(:disabled) { background: #1558b0; }
+.cfg-btn-primary:disabled { opacity: 0.5; cursor: default; }
+
+.cfg-btn-sm {
+  padding: 6px 14px;
+  background: #f1f3f4;
+  color: #333;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .12s;
+  white-space: nowrap;
+}
+.cfg-btn-sm:hover { background: #e8eaed; }
+.cfg-btn-sm.cfg-btn-danger { color: #d93025; border-color: #fcd0cd; background: #fef7f6; }
+.cfg-btn-sm.cfg-btn-danger:hover { background: #fcd0cd; }
+.cfg-btn-sm.cfg-btn-save { background: #e6f4ea; color: #137333; border-color: #ceead6; }
+.cfg-btn-sm.cfg-btn-save:hover { background: #ceead6; }
+
+/* ─── Lista ──────────────────────────────────────────────── */
+.cfg-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cfg-lista-titulo {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a2535;
+  margin: 8px 0 4px;
+}
+.cfg-carregando, .cfg-vazio {
+  color: #9aa0a6;
+  font-size: 14px;
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* ─── Item ───────────────────────────────────────────────── */
+.cfg-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid #e8eaed;
+  border-radius: 10px;
+  transition: box-shadow .12s;
+  flex-wrap: wrap;
+}
+.cfg-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.cfg-item-editando {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26,115,232,.12);
+}
+.cfg-item-pendente { opacity: 0.85; border-style: dashed; }
+
+.cfg-item-cor {
+  width: 14px;
+  height: 42px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.cfg-item-nome {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a2535;
+  flex: 1;
+}
+
+.cfg-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.cfg-item-info-edit {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.cfg-item-sub {
+  font-size: 12px;
+  color: #9aa0a6;
+}
+
+.cfg-item-acoes {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ─── Badge pendente ─────────────────────────────────────── */
+.cfg-badge-pendente {
+  font-size: 11px;
+  font-weight: 700;
+  color: #b06000;
+  background: #fef7e0;
+  border: 1px solid #f9ab00;
+  padding: 3px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* ─── Link de cadastro ───────────────────────────────────── */
+.cfg-link-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border: 1px solid #dadce0;
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+.cfg-link-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5f6368;
+  white-space: nowrap;
+}
+.cfg-link-url {
+  flex: 1;
+  font-size: 13px;
+  color: #1a73e8;
+  background: none;
+  border: none;
+  font-family: monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

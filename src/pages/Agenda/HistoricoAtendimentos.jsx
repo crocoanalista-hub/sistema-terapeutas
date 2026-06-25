@@ -6,7 +6,7 @@ import { buscarPaciente } from "../../services/pacientesService";
 import { useAuth } from "../../hooks/useAuth";
 
 const HistoricoAtendimentos = () => {
-  const { user } = useAuth();
+  const { user, workspaceId } = useAuth();
   const navigate = useNavigate();
   const [historico, setHistorico] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -21,7 +21,7 @@ const HistoricoAtendimentos = () => {
   const carregarHistorico = async () => {
     try {
       setCarregando(true);
-      const dados = await historicoAtendimentos(user.uid);
+      const dados = await historicoAtendimentos(workspaceId);
       
       // Buscar nomes dos pacientes
       const dadosComNomes = await Promise.all(

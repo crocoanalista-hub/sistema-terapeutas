@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { marcarSessao, marcarSessoesEmLote, listarAgendamentos } from "../../services/agendamentosService";
 import { listarPacientes, adicionarPaciente } from "../../services/pacientesService";
+import { listarSalas } from "../../services/salasService";
+import { listarProfissionais } from "../../services/profissionaisService";
 import { useAuth } from "../../hooks/useAuth";
 import "../../styles/forms.css";
 import "../../styles/marcar-sessao.css";
@@ -25,9 +27,6 @@ const fmtData = (d) => {
   return `${y}-${m}-${day}`;
 };
 
-const diaSemanaLabel = (idx) => DIAS_SEMANA.find(d => d.idx === idx)?.abrev || "";
-
-// Gera N datas a partir de uma data de início, percorrendo os dias selecionados em ordem
 const gerarDatas = (dataInicio, diasSelecionados, horariosPorDia, numSessoes) => {
   if (!dataInicio || diasSelecionados.length === 0 || numSessoes < 1) return [];
   const [y, mo, d] = dataInicio.split("-").map(Number);
@@ -50,13 +49,16 @@ const gerarDatas = (dataInicio, diasSelecionados, horariosPorDia, numSessoes) =>
 };
 
 const MarcarSessao = () => {
-  const { user } = useAuth();
+  const { user, workspaceId, role } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const buscaRef = useRef(null);
 
   const [pacientes, setPacientes] = useState([]);
   const [agendamentosExistentes, setAgendamentosExistentes] = useState([]);
+  const [salas, setSalas] = useState([]);
+  const [profissionais, setProfissionais] = useState([]);
+
   const [busca, setBusca] = useState("");
   const [dropdownAberto, setDropdownAberto] = useState(false);
   const [criandoPaciente, setCriandoPaciente] = useState(false);
@@ -64,7 +66,6 @@ const MarcarSessao = () => {
   const [salvandoPac, setSalvandoPac] = useState(false);
   const [erroPac, setErroPac] = useState("");
 
-  // Pacote
   const [emPacote, setEmPacote] = useState(false);
   const [pacote, setPacote] = useState({
     diasSelecionados: [],
@@ -74,7 +75,6 @@ const MarcarSessao = () => {
     quitado: false,
   });
   const [previewSessoes, setPreviewSessoes] = useState([]);
-
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
 
@@ -89,16 +89,20 @@ const MarcarSessao = () => {
     valor: "",
     linkAtendimento: "",
     observacoes: "",
+    salaId: "",
+    profissionalId: "",
   });
 
   useEffect(() => {
-    if (user) {
-      carregarPacientes();
-      listarAgendamentos(user.uid).then(setAgendamentosExistentes).catch(() => {});
+    if (!workspaceId) return;
+    carregarPacientes();
+    listarAgendamentos(workspaceId).then(setAgendamentosExistentes).catch(() => {});
+    listarSalas(workspaceId).then(setSalas).catch(() => {});
+    if (role === "owner") {
+      listarProfissionais(workspaceId).then(setProfissionais).catch(() => {});
     }
-  }, [user]);
+  }, [workspaceId, role]);
 
-  // Fecha dropdown ao clicar fora
   useEffect(() => {
     const handler = (e) => {
       if (buscaRef.current && !buscaRef.current.contains(e.target)) {
@@ -109,7 +113,6 @@ const MarcarSessao = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Regenera preview do pacote quando parâmetros mudam
   useEffect(() => {
     if (!emPacote) return;
     const sessoes = gerarDatas(
@@ -123,20 +126,17 @@ const MarcarSessao = () => {
 
   const carregarPacientes = async () => {
     try {
-      const lista = await listarPacientes(user.uid);
-      setPacientes(lista);
+      setPacientes(await listarPacientes(workspaceId));
     } catch (err) {
       setErro("Erro ao carregar pacientes: " + err.message);
     }
   };
 
-  // ─── Conflito ────────────────────────────────────────────
   const temConflito = (data, hora) =>
     agendamentosExistentes.some(
       (a) => a.data === data && a.hora === hora && a.status !== "cancelado"
     );
 
-  // ─── Paciente ─────────────────────────────────────────────
   const pacientesFiltrados = pacientes.filter((p) =>
     p.nome.toLowerCase().includes(busca.toLowerCase())
   );
@@ -172,7 +172,7 @@ const MarcarSessao = () => {
     setSalvandoPac(true);
     setErroPac("");
     try {
-      const id = await adicionarPaciente(user.uid, {
+      const id = await adicionarPaciente(workspaceId, {
         nome: novoPac.nome.trim(),
         telefone: novoPac.telefone.trim(),
         email: novoPac.email.trim(),
@@ -190,16 +190,13 @@ const MarcarSessao = () => {
     }
   };
 
-  // ─── Pacote helpers ───────────────────────────────────────
   const toggleDia = (idx) => {
     setPacote((p) => {
       const dias = p.diasSelecionados.includes(idx)
         ? p.diasSelecionados.filter((d) => d !== idx)
         : [...p.diasSelecionados, idx];
-      // Remove horário se dia desmarcado
       const horarios = { ...p.horariosPorDia };
       if (!dias.includes(idx)) delete horarios[idx];
-      // Horário padrão se não existir
       if (dias.includes(idx) && !horarios[idx]) horarios[idx] = dados.hora || "09:00";
       return { ...p, diasSelecionados: dias, horariosPorDia: horarios };
     });
@@ -209,7 +206,6 @@ const MarcarSessao = () => {
     setPacote((p) => ({ ...p, horariosPorDia: { ...p.horariosPorDia, [idx]: hora } }));
   };
 
-  // ─── Agendamento ──────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value } = e.target;
     setDados((d) => ({ ...d, [name]: value }));
@@ -222,22 +218,30 @@ const MarcarSessao = () => {
     if (!dados.pacienteId) { setErro("Selecione ou crie um paciente."); return; }
     if (!dados.data) { setErro("Selecione a data de início."); return; }
 
+    const extraCampos = {
+      salaId: dados.salaId || null,
+      salaNome: salas.find(s => s.id === dados.salaId)?.nome || null,
+      salaCor: salas.find(s => s.id === dados.salaId)?.cor || null,
+      profissionalId: dados.profissionalId || user.uid,
+      profissionalNome: profissionais.find(p => p.id === dados.profissionalId)?.nome || null,
+    };
+
     if (emPacote) {
       if (pacote.diasSelecionados.length === 0) { setErro("Selecione ao menos um dia da semana para o pacote."); return; }
-      if (previewSessoes.length === 0) { setErro("Não foi possível gerar as datas do pacote. Verifique os campos."); return; }
-
+      if (previewSessoes.length === 0) { setErro("Não foi possível gerar as datas do pacote."); return; }
       setCarregando(true);
       try {
         const valorTotal = pacote.valorTotal ? parseFloat(pacote.valorTotal) : null;
         const valorPorSessao = valorTotal ? valorTotal / pacote.numSessoes : null;
         await marcarSessoesEmLote(
-          user.uid,
+          workspaceId,
           dados.pacienteId,
           previewSessoes.map((s) => ({
             ...s,
             duracao: parseInt(dados.duracao),
             linkAtendimento: dados.linkAtendimento || null,
             observacoes: dados.observacoes,
+            ...extraCampos,
           })),
           {
             valorTotal,
@@ -256,13 +260,14 @@ const MarcarSessao = () => {
       if (!dados.hora) { setErro("Selecione o horário."); return; }
       setCarregando(true);
       try {
-        await marcarSessao(user.uid, dados.pacienteId, {
+        await marcarSessao(workspaceId, dados.pacienteId, {
           data: dados.data,
           hora: dados.hora,
           duracao: parseInt(dados.duracao),
           valor: dados.valor ? parseFloat(dados.valor) : null,
           linkAtendimento: dados.linkAtendimento || null,
           observacoes: dados.observacoes,
+          ...extraCampos,
         });
         navigate("/agenda");
       } catch (err) {
@@ -365,6 +370,34 @@ const MarcarSessao = () => {
             </div>
           )}
 
+          {/* ── Sala e Profissional ── */}
+          {(salas.length > 0 || profissionais.length > 0) && (
+            <div className="form-row" style={{ gridTemplateColumns: salas.length > 0 && profissionais.length > 0 ? "1fr 1fr" : "1fr" }}>
+              {salas.length > 0 && (
+                <div className="form-group">
+                  <label htmlFor="salaId">🚪 Sala</label>
+                  <select id="salaId" name="salaId" value={dados.salaId} onChange={handleChange}>
+                    <option value="">Sem sala específica</option>
+                    {salas.map((s) => (
+                      <option key={s.id} value={s.id}>{s.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {profissionais.length > 0 && role === "owner" && (
+                <div className="form-group">
+                  <label htmlFor="profissionalId">👤 Profissional</label>
+                  <select id="profissionalId" name="profissionalId" value={dados.profissionalId} onChange={handleChange}>
+                    <option value="">Eu mesmo</option>
+                    {profissionais.map((p) => (
+                      <option key={p.id} value={p.id}>{p.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── Toggle: Sessão em Pacote ── */}
           <div className="ms-pacote-toggle">
             <label className="ms-pacote-toggle-label">
@@ -380,7 +413,7 @@ const MarcarSessao = () => {
             </label>
           </div>
 
-          {/* ── Campos comuns: data de início + duração ── */}
+          {/* ── Campos comuns ── */}
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="data">
@@ -388,15 +421,12 @@ const MarcarSessao = () => {
               </label>
               <input type="date" id="data" name="data" value={dados.data} onChange={handleChange} required />
             </div>
-
-            {/* Hora só aparece quando NÃO é pacote (no pacote hora é por dia) */}
             {!emPacote && (
               <div className="form-group">
                 <label htmlFor="hora">Hora <span className="obrigatorio">*</span></label>
                 <input type="time" id="hora" name="hora" value={dados.hora} onChange={handleChange} />
               </div>
             )}
-
             <div className="form-group">
               <label htmlFor="duracao">Duração</label>
               <select id="duracao" name="duracao" value={dados.duracao} onChange={handleChange}>
@@ -414,7 +444,6 @@ const MarcarSessao = () => {
             <div className="ms-pacote-panel">
               <h4 className="ms-pacote-titulo">📦 Configurar Pacote</h4>
 
-              {/* Dias da semana */}
               <div className="form-group">
                 <label>Dias da semana <span className="obrigatorio">*</span></label>
                 <div className="ms-dias-grid">
@@ -431,7 +460,6 @@ const MarcarSessao = () => {
                 </div>
               </div>
 
-              {/* Horário por dia */}
               {pacote.diasSelecionados.length > 0 && (
                 <div className="form-group">
                   <label>Horários por dia</label>
@@ -448,13 +476,11 @@ const MarcarSessao = () => {
                             onChange={(e) => setHorarioDia(d.idx, e.target.value)}
                           />
                         </div>
-                      ))
-                    }
+                      ))}
                   </div>
                 </div>
               )}
 
-              {/* Número de sessões */}
               <div className="form-row" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
                 <div className="form-group">
                   <label>Nº de sessões <span className="obrigatorio">*</span></label>
@@ -489,7 +515,6 @@ const MarcarSessao = () => {
                 </div>
               </div>
 
-              {/* Preview das sessões */}
               {previewSessoes.length > 0 && (
                 <div className="ms-preview">
                   <div className="ms-preview-header">
@@ -522,7 +547,7 @@ const MarcarSessao = () => {
                   </div>
                   {conflitosCount > 0 && (
                     <p className="ms-conflito-aviso">
-                      ⚠️ {conflitosCount} sessão(ões) com conflito de horário. O sistema criará todas mesmo assim — você pode cancelar/reagendar as conflitadas depois.
+                      ⚠️ {conflitosCount} sessão(ões) com conflito de horário. O sistema criará todas — você pode reagendar depois.
                     </p>
                   )}
                 </div>
@@ -534,7 +559,6 @@ const MarcarSessao = () => {
             </div>
           )}
 
-          {/* ── Valor e link (sessão única) ── */}
           {!emPacote && (
             <div className="form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>
               <div className="form-group">
@@ -548,7 +572,6 @@ const MarcarSessao = () => {
             </div>
           )}
 
-          {/* Link online para pacote */}
           {emPacote && (
             <div className="form-group">
               <label htmlFor="linkAtendimento">Link de atendimento online (opcional)</label>

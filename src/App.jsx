@@ -21,6 +21,7 @@ import HistoricoAtendimentos from "./pages/Agenda/HistoricoAtendimentos";
 
 import Financeiro from "./pages/Financeiro/Financeiro";
 import Documentos from "./pages/Documentos/Documentos";
+import Configuracoes from "./pages/Configuracoes/Configuracoes";
 
 import "./App.css";
 
@@ -61,6 +62,9 @@ function App() {
 
         {/* Documentos */}
         <Route path="/documentos" element={<RotaProtegida element={<Documentos />} loading={loading} user={user} />} />
+
+        {/* Configurações */}
+        <Route path="/configuracoes" element={<RotaProtegida element={<Configuracoes />} loading={loading} user={user} />} />
 
         <Route path="/" element={<Navigate to="/dashboard" />} />
       </Routes>

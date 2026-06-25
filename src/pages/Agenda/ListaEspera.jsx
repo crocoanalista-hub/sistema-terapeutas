@@ -10,7 +10,7 @@ import "../../styles/forms.css";
 import "../../styles/pacientes.css";
 
 const ListaEspera = () => {
-  const { user } = useAuth();
+  const { user, workspaceId } = useAuth();
   const navigate = useNavigate();
   const [lista, setLista] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -33,7 +33,7 @@ const ListaEspera = () => {
   const carregar = async () => {
     try {
       setCarregando(true);
-      const itens = await listarEspera(user.uid);
+      const itens = await listarEspera(workspaceId);
       setLista(itens);
     } catch (err) {
       setErro(err.message);
@@ -55,7 +55,7 @@ const ListaEspera = () => {
     }
     setSalvando(true);
     try {
-      await adicionarListaEspera(user.uid, dados);
+      await adicionarListaEspera(workspaceId, dados);
       setDados({ nome: "", telefone: "", email: "", observacoes: "", prioridade: "normal" });
       setMostrarForm(false);
       await carregar();

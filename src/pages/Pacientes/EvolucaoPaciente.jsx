@@ -11,7 +11,7 @@ import { useAuth } from "../../hooks/useAuth";
 import "../../styles/forms.css";
 
 const EvolucaoPaciente = () => {
-  const { user } = useAuth();
+  const { user, workspaceId } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -35,7 +35,7 @@ const EvolucaoPaciente = () => {
       setCarregando(true);
       const [pac, evols] = await Promise.all([
         buscarPaciente(id),
-        listarEvolucoes(user.uid, id),
+        listarEvolucoes(workspaceId, id),
       ]);
       setPaciente(pac);
       setEvolucoes(evols);
@@ -54,7 +54,7 @@ const EvolucaoPaciente = () => {
       if (editando) {
         await atualizarEvolucao(editando.id, dados);
       } else {
-        await adicionarEvolucao(user.uid, id, dados);
+        await adicionarEvolucao(workspaceId, id, dados);
       }
       setDados({ data: hoje, conteudo: "" });
       setMostrarForm(false);

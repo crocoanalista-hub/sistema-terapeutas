@@ -5,7 +5,7 @@ import { useAuth } from "../../hooks/useAuth";
 import "../../styles/pacientes.css";
 
 const ListaPacientes = () => {
-  const { user } = useAuth();
+  const { user, workspaceId } = useAuth();
   const [pacientes, setPacientes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -20,7 +20,7 @@ const ListaPacientes = () => {
   const carregarPacientes = async () => {
     try {
       setCarregando(true);
-      const dados = await listarPacientes(user.uid);
+      const dados = await listarPacientes(workspaceId);
       setPacientes(dados);
     } catch (err) {
       setErro("Erro ao carregar pacientes: " + err.message);

@@ -5,22 +5,39 @@ import {
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, deleteDoc } from "firebase/firestore";
 
-// Registrar novo terapeuta
+// Registrar novo terapeuta (ou profissional, se houver convite)
 export const registrarTerapeuta = async (email, senha, nome) => {
   try {
     const resultado = await createUserWithEmailAndPassword(auth, email, senha);
     const user = resultado.user;
 
-    // Salvar dados do terapeuta no Firestore
-    await setDoc(doc(db, "terapeutas", user.uid), {
-      uid: user.uid,
-      nome: nome,
-      email: email,
-      dataCriacao: new Date(),
-      perfil: "terapeuta",
-    });
+    // Check for professional invite
+    const emailNorm = email.trim().toLowerCase();
+    const conviteSnap = await getDoc(doc(db, "convites", emailNorm));
+    if (conviteSnap.exists()) {
+      const convite = conviteSnap.data();
+      await setDoc(doc(db, "profissionais", user.uid), {
+        uid: user.uid,
+        nome: convite.nome || nome,
+        email: emailNorm,
+        workspaceId: convite.workspaceId,
+        especialidade: convite.especialidade || "",
+        cor: convite.cor || "#9c27b0",
+        ativo: true,
+        dataCriacao: new Date(),
+      });
+      await deleteDoc(doc(db, "convites", emailNorm));
+    } else {
+      await setDoc(doc(db, "terapeutas", user.uid), {
+        uid: user.uid,
+        nome,
+        email: emailNorm,
+        dataCriacao: new Date(),
+        perfil: "terapeuta",
+      });
+    }
 
     return user;
   } catch (erro) {
@@ -55,14 +72,8 @@ export const onAuthStateChangedListener = (callback) => {
 // Buscar dados do terapeuta logado
 export const buscarDadosTerapeuta = async (uid) => {
   try {
-    const docRef = doc(db, "terapeutas", uid);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      return docSnap.data();
-    } else {
-      return null;
-    }
+    const docSnap = await getDoc(doc(db, "terapeutas", uid));
+    return docSnap.exists() ? docSnap.data() : null;
   } catch (erro) {
     throw new Error(erro.message);
   }

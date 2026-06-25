@@ -69,7 +69,7 @@ const TEMPLATE_PADRAO = [
 // ═══════════════════════════════════════════════════════════
 const Anamnese = () => {
   const { id: pacienteId } = useParams();
-  const { user } = useAuth();
+  const { user, workspaceId } = useAuth();
   const navigate = useNavigate();
 
   const [paciente, setPaciente] = useState(null);
@@ -89,7 +89,7 @@ const Anamnese = () => {
       setCarregando(true);
       const [pac, tmpl, resps] = await Promise.all([
         buscarPaciente(pacienteId),
-        buscarTemplateAnamnese(user.uid),
+        buscarTemplateAnamnese(workspaceId),
         buscarRespostasAnamnese(pacienteId),
       ]);
       setPaciente(pac);
@@ -177,7 +177,7 @@ const Anamnese = () => {
   const salvarTemplate = async () => {
     setSalvando(true);
     try {
-      await salvarTemplateAnamnese(user.uid, template);
+      await salvarTemplateAnamnese(workspaceId, template);
       feedback();
       setModo("preencher");
     } catch (err) { alert(err.message); }
@@ -196,7 +196,7 @@ const Anamnese = () => {
   const salvarRespostas = async () => {
     setSalvando(true);
     try {
-      await salvarRespostasAnamnese(pacienteId, user.uid, respostas);
+      await salvarRespostasAnamnese(pacienteId, workspaceId, respostas);
       feedback();
     } catch (err) { alert(err.message); }
     finally { setSalvando(false); }

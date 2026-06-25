@@ -128,8 +128,8 @@ const Documentos = () => {
 
   useEffect(() => {
     if (user) {
-      listarPacientes(user.uid).then(setPacientes).catch(() => {});
-      buscarTemplatesDoc(user.uid).then(tmpl => {
+      listarPacientes(workspaceId).then(setPacientes).catch(() => {});
+      buscarTemplatesDoc(workspaceId).then(tmpl => {
         if (tmpl) {
           const { atualizadoEm, ...docTemplates } = tmpl;
           setTemplates(t => ({ ...t, ...docTemplates }));
@@ -195,7 +195,7 @@ const Documentos = () => {
     setSalvando(true);
     try {
       const novos = { ...templates, [docAtivo]: blocos };
-      await salvarTemplatesDoc(user.uid, novos);
+      await salvarTemplatesDoc(workspaceId, novos);
       setTemplates(novos);
       setEditando(false);
       setSalvo(true);

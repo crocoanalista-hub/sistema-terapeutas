@@ -34,8 +34,8 @@ const Financeiro = () => {
     try {
       setCarregando(true);
       const [sess, pacs] = await Promise.all([
-        listarSessoesConcluidas(user.uid),
-        listarPacientes(user.uid),
+        listarSessoesConcluidas(workspaceId),
+        listarPacientes(workspaceId),
       ]);
       setSessoes(sess);
       const mapa = {};

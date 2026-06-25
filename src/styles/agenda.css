@@ -669,3 +669,77 @@
   .gc-day-header-nome { font-size: 10px; }
   .gc-day-header-num { width: 28px; height: 28px; font-size: 15px; }
 }
+
+/* ─── Barra de filtros ───────────────────────────────────── */
+.gc-filtros {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 20px;
+  border-bottom: 1px solid #e8eaed;
+  background: #f8f9fa;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.gc-filtro-grupo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gc-filtro-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #5f6368;
+  white-space: nowrap;
+}
+
+.gc-filtro-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border: 1.5px solid #dadce0;
+  border-radius: 16px;
+  background: white;
+  font-size: 12px;
+  font-weight: 600;
+  color: #5f6368;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.gc-filtro-btn:hover { border-color: #1a73e8; color: #1a73e8; }
+.gc-filtro-btn.ativo { background: #1a73e8; color: white; border-color: #1a73e8; }
+
+.gc-filtro-cor {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ─── Sala no evento ─────────────────────────────────────── */
+.gc-event-sala {
+  font-size: 10px;
+  opacity: 0.8;
+  margin-top: 1px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Modal evento: sala dot ─────────────────────────────── */
+.gc-ev-sala-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}

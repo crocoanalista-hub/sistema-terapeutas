@@ -9,6 +9,8 @@ import {
   marcarComoPago,
 } from "../../services/agendamentosService";
 import { listarPacientes } from "../../services/pacientesService";
+import { listarSalas } from "../../services/salasService";
+import { listarProfissionais } from "../../services/profissionaisService";
 import { useAuth } from "../../hooks/useAuth";
 import "../../styles/agenda.css";
 
@@ -23,7 +25,7 @@ const DIAS_LABEL = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
                "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
-const CORES = {
+const CORES_STATUS = {
   confirmado: { bg: "#e8f0fe", border: "#4285f4", text: "#1a73e8" },
   "concluído": { bg: "#e6f4ea", border: "#34a853", text: "#137333" },
   cancelado:   { bg: "#f1f3f4", border: "#9aa0a6", text: "#5f6368" },
@@ -100,7 +102,7 @@ const Modal = ({ titulo, onClose, children }) => (
 
 // ═════════════════════════════════════════════════════════════
 const CalendarioAgenda = () => {
-  const { user } = useAuth();
+  const { user, workspaceId, role } = useAuth();
   const navigate = useNavigate();
   const scrollRef = useRef(null);
 
@@ -108,8 +110,14 @@ const CalendarioAgenda = () => {
   const [dataRef, setDataRef] = useState(new Date());
   const [agendamentos, setAgendamentos] = useState([]);
   const [mapaPac, setMapaPac] = useState({});
+  const [salas, setSalas] = useState([]);
+  const [profissionais, setProfissionais] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [nowY, setNowY] = useState(agoraParaPx());
+
+  // Filtros
+  const [filtroSala, setFiltroSala] = useState(null);
+  const [filtroProfissional, setFiltroProfissional] = useState(null);
 
   const [eventoAtivo, setEventoAtivo] = useState(null);
   const [valorPago, setValorPago] = useState("");
@@ -129,8 +137,8 @@ const CalendarioAgenda = () => {
   }, []);
 
   useEffect(() => {
-    if (user) carregar();
-  }, [user]);
+    if (workspaceId) carregar();
+  }, [workspaceId]);
 
   useEffect(() => {
     if (!carregando && scrollRef.current && nowY !== null) {
@@ -138,7 +146,6 @@ const CalendarioAgenda = () => {
     }
   }, [carregando]);
 
-  // Inicializa valorPago quando seleciona evento
   useEffect(() => {
     if (eventoAtivo) {
       setValorPago(eventoAtivo.valor ? String(eventoAtivo.valor) : "");
@@ -148,14 +155,18 @@ const CalendarioAgenda = () => {
   const carregar = async () => {
     try {
       setCarregando(true);
-      const [agends, pacs] = await Promise.all([
-        listarAgendamentos(user.uid),
-        listarPacientes(user.uid),
+      const [agends, pacs, salasLista, profsLista] = await Promise.all([
+        listarAgendamentos(workspaceId),
+        listarPacientes(workspaceId),
+        listarSalas(workspaceId),
+        listarProfissionais(workspaceId),
       ]);
       setAgendamentos(agends);
       const mapa = {};
       pacs.forEach((p) => { mapa[p.id] = { nome: p.nome, telefone: p.telefone || "" }; });
       setMapaPac(mapa);
+      setSalas(salasLista);
+      setProfissionais(profsLista);
     } catch (err) {
       console.error(err);
     } finally {
@@ -163,11 +174,22 @@ const CalendarioAgenda = () => {
     }
   };
 
+  // Agendamentos filtrados
+  const agendamentosFiltrados = agendamentos.filter((a) => {
+    if (filtroSala && a.salaId !== filtroSala) return false;
+    if (filtroProfissional && a.profissionalId !== filtroProfissional) return false;
+    return true;
+  });
+
   const porData = {};
-  agendamentos.forEach((a) => {
+  agendamentosFiltrados.forEach((a) => {
     if (!porData[a.data]) porData[a.data] = [];
     porData[a.data].push(a);
   });
+
+  // Mapa cor dos profissionais para exibir na agenda
+  const mapaProfCor = {};
+  profissionais.forEach(p => { mapaProfCor[p.id] = p.cor || "#9c27b0"; });
 
   // ─── ações ────────────────────────────────────────────────
   const handleReagendar = async () => {
@@ -210,7 +232,6 @@ const CalendarioAgenda = () => {
     const val = valorPago ? parseFloat(valorPago) : null;
     try {
       await marcarComoPago(agend.id, val);
-      // Atualiza o evento ativo sem fechar o modal
       setEventoAtivo(prev => ({ ...prev, pago: true, valorPago: val }));
       await carregar();
     } catch (err) { alert(err.message); }
@@ -227,6 +248,96 @@ const CalendarioAgenda = () => {
         return `${ini.getDate()} ${MESES[ini.getMonth()].slice(0,3)} – ${fim.getDate()} ${MESES[fim.getMonth()].slice(0,3)} ${fim.getFullYear()}`;
       })()
     : `${MESES[dataRef.getMonth()]} ${dataRef.getFullYear()}`;
+
+  // ─── FILTROS ─────────────────────────────────────────────
+  const renderFiltros = () => {
+    const temFiltros = salas.length > 0 || profissionais.length > 0;
+    if (!temFiltros) return null;
+
+    return (
+      <div className="gc-filtros">
+        {salas.length > 0 && (
+          <div className="gc-filtro-grupo">
+            <span className="gc-filtro-label">🚪 Sala:</span>
+            <button
+              className={`gc-filtro-btn${!filtroSala ? " ativo" : ""}`}
+              onClick={() => setFiltroSala(null)}
+            >
+              Todas
+            </button>
+            {salas.map((s) => (
+              <button
+                key={s.id}
+                className={`gc-filtro-btn${filtroSala === s.id ? " ativo" : ""}`}
+                style={filtroSala === s.id ? { background: s.cor, color: "#fff", borderColor: s.cor } : { borderColor: s.cor, color: s.cor }}
+                onClick={() => setFiltroSala(filtroSala === s.id ? null : s.id)}
+              >
+                <span className="gc-filtro-cor" style={{ background: s.cor }} />
+                {s.nome}
+              </button>
+            ))}
+          </div>
+        )}
+        {profissionais.length > 0 && (
+          <div className="gc-filtro-grupo">
+            <span className="gc-filtro-label">👤 Profissional:</span>
+            <button
+              className={`gc-filtro-btn${!filtroProfissional ? " ativo" : ""}`}
+              onClick={() => setFiltroProfissional(null)}
+            >
+              Todos
+            </button>
+            {profissionais.map((p) => (
+              <button
+                key={p.id}
+                className={`gc-filtro-btn${filtroProfissional === p.id ? " ativo" : ""}`}
+                style={filtroProfissional === p.id ? { background: p.cor || "#9c27b0", color: "#fff", borderColor: p.cor || "#9c27b0" } : { borderColor: p.cor || "#9c27b0", color: p.cor || "#9c27b0" }}
+                onClick={() => setFiltroProfissional(filtroProfissional === p.id ? null : p.id)}
+              >
+                <span className="gc-filtro-cor" style={{ background: p.cor || "#9c27b0" }} />
+                {p.nome}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ─── Render do evento ─────────────────────────────────────
+  const renderEvento = (agend, extra = {}) => {
+    const cor = CORES_STATUS[agend.status] || CORES_STATUS.confirmado;
+    const pac = mapaPac[agend.pacienteId];
+    // Se tiver profissional associado, usa a cor dele na borda esquerda
+    const profCor = agend.profissionalId && mapaProfCor[agend.profissionalId]
+      ? mapaProfCor[agend.profissionalId]
+      : cor.border;
+
+    return (
+      <div
+        key={agend.id}
+        className="gc-event"
+        style={{
+          top: extra.top,
+          height: extra.height,
+          background: cor.bg,
+          borderLeftColor: profCor,
+          color: cor.text,
+          ...extra.style,
+        }}
+        onClick={(e) => { e.stopPropagation(); setEventoAtivo(agend); }}
+      >
+        {extra.curto
+          ? <span className="gc-event-curto">{agend.hora} {pac?.nome}</span>
+          : <>
+              <span className="gc-event-nome">{pac?.nome || "Paciente"}</span>
+              <span className="gc-event-hora">{agend.hora} · {agend.duracao || 60}min</span>
+              {agend.salaNome && <span className="gc-event-sala">🚪 {agend.salaNome}</span>}
+            </>
+        }
+      </div>
+    );
+  };
 
   // ─── VISÃO SEMANA ─────────────────────────────────────────
   const renderSemana = () => {
@@ -282,25 +393,8 @@ const CalendarioAgenda = () => {
                   {events.map((agend) => {
                     const top = horaParaPx(agend.hora);
                     const height = Math.max(((agend.duracao || 60) / 60) * HOUR_HEIGHT - 2, 20);
-                    const cor = CORES[agend.status] || CORES.confirmado;
-                    const pac = mapaPac[agend.pacienteId];
-                    const curto = height < 38;
-                    return (
-                      <div
-                        key={agend.id}
-                        className="gc-event"
-                        style={{ top, height, background: cor.bg, borderLeftColor: cor.border, color: cor.text }}
-                        onClick={(e) => { e.stopPropagation(); setEventoAtivo(agend); }}
-                      >
-                        {curto
-                          ? <span className="gc-event-curto">{agend.hora} {pac?.nome}</span>
-                          : <>
-                              <span className="gc-event-nome">{pac?.nome || "Paciente"}</span>
-                              <span className="gc-event-hora">{agend.hora} · {agend.duracao || 60}min</span>
-                            </>
-                        }
-                      </div>
-                    );
+                    const curto = height < 48;
+                    return renderEvento(agend, { top, height, curto });
                   })}
                 </div>
               );
@@ -336,10 +430,12 @@ const CalendarioAgenda = () => {
                 <span className={`gc-mes-num${isHoje ? " hoje" : ""}`}>{dia.getDate()}</span>
                 <div className="gc-mes-events">
                   {visivel.map((agend) => {
-                    const cor = CORES[agend.status] || CORES.confirmado;
+                    const profCor = agend.profissionalId && mapaProfCor[agend.profissionalId]
+                      ? mapaProfCor[agend.profissionalId]
+                      : (CORES_STATUS[agend.status] || CORES_STATUS.confirmado).border;
                     const pac = mapaPac[agend.pacienteId];
                     return (
-                      <div key={agend.id} className="gc-mes-event" style={{ background: cor.border }}
+                      <div key={agend.id} className="gc-mes-event" style={{ background: profCor }}
                         onClick={(e) => { e.stopPropagation(); setEventoAtivo(agend); }}>
                         {agend.hora} {pac?.nome}
                       </div>
@@ -360,12 +456,13 @@ const CalendarioAgenda = () => {
     if (!eventoAtivo) return null;
     const a = eventoAtivo;
     const pac = mapaPac[a.pacienteId];
-    const cor = CORES[a.status] || CORES.confirmado;
+    const cor = CORES_STATUS[a.status] || CORES_STATUS.confirmado;
     const confirmado = a.status === "confirmado";
     const concluido  = a.status === "concluído";
     const dataFmt = parseLocal(a.data).toLocaleDateString("pt-BR", {
       weekday: "long", day: "numeric", month: "long",
     });
+    const profissionalInfo = profissionais.find(p => p.id === a.profissionalId);
 
     return (
       <div className="gc-overlay" onClick={() => setEventoAtivo(null)}>
@@ -383,6 +480,21 @@ const CalendarioAgenda = () => {
             <span className="gc-status-badge" style={{ background: cor.bg, color: cor.text }}>
               {a.status}
             </span>
+
+            {/* Sala e Profissional */}
+            {a.salaNome && (
+              <p className="gc-ev-info">
+                <span className="gc-ev-sala-dot" style={{ background: a.salaCor || "#4285f4" }} />
+                🚪 {a.salaNome}
+              </p>
+            )}
+            {profissionalInfo && (
+              <p className="gc-ev-info">
+                <span className="gc-ev-sala-dot" style={{ background: profissionalInfo.cor || "#9c27b0" }} />
+                👤 {profissionalInfo.nome}
+                {profissionalInfo.especialidade && ` · ${profissionalInfo.especialidade}`}
+              </p>
+            )}
 
             {/* Info de pacote */}
             {a.pacoteId && (
@@ -476,6 +588,9 @@ const CalendarioAgenda = () => {
           <button className="gc-btn-novo" onClick={() => navigate("/agenda/marcar")}>+ Nova Sessão</button>
         </div>
       </div>
+
+      {/* Barra de filtros (salas e profissionais) */}
+      {!carregando && renderFiltros()}
 
       {carregando
         ? <div className="gc-loading">Carregando agenda...</div>

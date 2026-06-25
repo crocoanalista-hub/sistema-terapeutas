@@ -12,7 +12,7 @@ const STATUS_COR = {
 };
 
 const DetalhePaciente = () => {
-  const { user } = useAuth();
+  const { user, workspaceId } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   const [carregando, setCarregando] = useState(true);
@@ -30,7 +30,7 @@ const DetalhePaciente = () => {
       const dadosPaciente = await buscarPaciente(id);
       setPaciente(dadosPaciente);
       if (user) {
-        const ag = await listarAgendamentosPaciente(user.uid, id);
+        const ag = await listarAgendamentosPaciente(workspaceId, id);
         setAgendamentos(ag);
       }
     } catch (err) {
