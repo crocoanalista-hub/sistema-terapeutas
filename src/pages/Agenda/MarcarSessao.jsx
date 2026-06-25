@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { marcarSessao, marcarSessoesEmLote, listarAgendamentos } from "../../services/agendamentosService";
 import { listarPacientes, adicionarPaciente } from "../../services/pacientesService";
-import { listarSalas } from "../../services/salasService";
+import { listarSalas, criarSala } from "../../services/salasService";
 import { listarProfissionais } from "../../services/profissionaisService";
 import { useAuth } from "../../hooks/useAuth";
 import "../../styles/forms.css";
@@ -75,6 +75,11 @@ const MarcarSessao = () => {
     quitado: false,
   });
   const [previewSessoes, setPreviewSessoes] = useState([]);
+  // Criar sala inline
+  const [criandoSala, setCriandoSala] = useState(false);
+  const [novaSalaNome, setNovaSalaNome] = useState("");
+  const [salvandoSala, setSalvandoSala] = useState(false);
+
   // Edição inline de sessão na prévia
   const [editandoSessaoIdx, setEditandoSessaoIdx] = useState(null);
   const [editSessaoData, setEditSessaoData] = useState("");
@@ -208,6 +213,24 @@ const MarcarSessao = () => {
 
   const setHorarioDia = (idx, hora) => {
     setPacote((p) => ({ ...p, horariosPorDia: { ...p.horariosPorDia, [idx]: hora } }));
+  };
+
+  const handleCriarSala = async () => {
+    if (!novaSalaNome.trim()) return;
+    setSalvandoSala(true);
+    try {
+      await criarSala(workspaceId, { nome: novaSalaNome.trim(), cor: "#4285f4" });
+      const novaLista = await listarSalas(workspaceId);
+      setSalas(novaLista);
+      const criada = novaLista.find(s => s.nome === novaSalaNome.trim());
+      if (criada) setDados(d => ({ ...d, salaId: criada.id }));
+      setCriandoSala(false);
+      setNovaSalaNome("");
+    } catch (err) {
+      alert("Erro ao criar sala: " + err.message);
+    } finally {
+      setSalvandoSala(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -375,32 +398,60 @@ const MarcarSessao = () => {
           )}
 
           {/* ── Sala e Profissional ── */}
-          {(salas.length > 0 || profissionais.length > 0) && (
-            <div className="form-row" style={{ gridTemplateColumns: salas.length > 0 && profissionais.length > 0 ? "1fr 1fr" : "1fr" }}>
-              {salas.length > 0 && (
-                <div className="form-group">
-                  <label htmlFor="salaId">🚪 Sala</label>
-                  <select id="salaId" name="salaId" value={dados.salaId} onChange={handleChange}>
-                    <option value="">Sem sala específica</option>
-                    {salas.map((s) => (
-                      <option key={s.id} value={s.id}>{s.nome}</option>
-                    ))}
-                  </select>
+          <div className="form-row" style={{ gridTemplateColumns: profissionais.length > 0 && role === "owner" ? "1fr 1fr" : "1fr" }}>
+            {/* Sala */}
+            <div className="form-group">
+              <div className="ms-sala-label-row">
+                <label htmlFor="salaId">🚪 Sala</label>
+                {!criandoSala && (
+                  <button type="button" className="ms-sala-novo-btn" onClick={() => { setCriandoSala(true); setNovaSalaNome(""); }}>
+                    + Nova sala
+                  </button>
+                )}
+              </div>
+              {criandoSala ? (
+                <div className="ms-sala-criar-row">
+                  <input
+                    className="ms-sala-input"
+                    placeholder="Nome da sala"
+                    value={novaSalaNome}
+                    onChange={(e) => setNovaSalaNome(e.target.value)}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); handleCriarSala(); }
+                      if (e.key === "Escape") setCriandoSala(false);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="ms-sala-salvar"
+                    onClick={handleCriarSala}
+                    disabled={!novaSalaNome.trim() || salvandoSala}
+                  >{salvandoSala ? "…" : "✓"}</button>
+                  <button type="button" className="ms-sala-cancelar" onClick={() => setCriandoSala(false)}>✕</button>
                 </div>
-              )}
-              {profissionais.length > 0 && role === "owner" && (
-                <div className="form-group">
-                  <label htmlFor="profissionalId">👤 Profissional</label>
-                  <select id="profissionalId" name="profissionalId" value={dados.profissionalId} onChange={handleChange}>
-                    <option value="">Eu mesmo</option>
-                    {profissionais.map((p) => (
-                      <option key={p.id} value={p.id}>{p.nome}</option>
-                    ))}
-                  </select>
-                </div>
+              ) : (
+                <select id="salaId" name="salaId" value={dados.salaId} onChange={handleChange}>
+                  <option value="">Sem sala específica</option>
+                  {salas.map((s) => (
+                    <option key={s.id} value={s.id}>{s.nome}</option>
+                  ))}
+                </select>
               )}
             </div>
-          )}
+            {/* Profissional */}
+            {profissionais.length > 0 && role === "owner" && (
+              <div className="form-group">
+                <label htmlFor="profissionalId">👤 Profissional</label>
+                <select id="profissionalId" name="profissionalId" value={dados.profissionalId} onChange={handleChange}>
+                  <option value="">Eu mesmo</option>
+                  {profissionais.map((p) => (
+                    <option key={p.id} value={p.id}>{p.nome}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
 
           {/* ── Toggle: Sessão em Pacote ── */}
           <div className="ms-pacote-toggle">

@@ -5,17 +5,17 @@ import { useAuth } from "../../hooks/useAuth";
 import "../../styles/pacientes.css";
 
 const ListaPacientes = () => {
-  const { user, workspaceId } = useAuth();
+  const { workspaceId } = useAuth();
   const [pacientes, setPacientes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) {
+    if (workspaceId) {
       carregarPacientes();
     }
-  }, [user]);
+  }, [workspaceId]);
 
   const carregarPacientes = async () => {
     try {

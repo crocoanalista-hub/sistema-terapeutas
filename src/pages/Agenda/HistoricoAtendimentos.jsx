@@ -13,10 +13,10 @@ const HistoricoAtendimentos = () => {
   const [filtro, setFiltro] = useState(""); // Para filtrar por paciente
 
   useEffect(() => {
-    if (user) {
+    if (workspaceId) {
       carregarHistorico();
     }
-  }, [user]);
+  }, [workspaceId]);
 
   const carregarHistorico = async () => {
     try {

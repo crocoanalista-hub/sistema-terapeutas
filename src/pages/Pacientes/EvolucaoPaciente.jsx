@@ -27,7 +27,7 @@ const EvolucaoPaciente = () => {
   const [dados, setDados] = useState({ data: hoje, conteudo: "" });
 
   useEffect(() => {
-    if (user) carregar();
+    if (workspaceId) carregar();
   }, [user, id]);
 
   const carregar = async () => {

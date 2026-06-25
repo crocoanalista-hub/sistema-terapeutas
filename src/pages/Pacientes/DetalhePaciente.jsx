@@ -29,7 +29,7 @@ const DetalhePaciente = () => {
       setCarregando(true);
       const dadosPaciente = await buscarPaciente(id);
       setPaciente(dadosPaciente);
-      if (user) {
+      if (workspaceId) {
         const ag = await listarAgendamentosPaciente(workspaceId, id);
         setAgendamentos(ag);
       }

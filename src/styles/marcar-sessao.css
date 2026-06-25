@@ -478,3 +478,62 @@
 }
 .ms-preview-item:hover .ms-edit-btn { opacity: 1; }
 .ms-edit-btn:hover { background: #e8eaed; }
+
+/* ─── Criar sala inline ──────────────────────────────────── */
+.ms-sala-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.ms-sala-novo-btn {
+  background: none;
+  border: none;
+  color: #1a73e8;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: inherit;
+  transition: background .12s;
+}
+.ms-sala-novo-btn:hover { background: #e8f0fe; }
+
+.ms-sala-criar-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ms-sala-input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 2px solid #1a73e8;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+
+.ms-sala-salvar,
+.ms-sala-cancelar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all .12s;
+}
+.ms-sala-salvar { background: #34a853; color: white; }
+.ms-sala-salvar:hover:not(:disabled) { background: #2d9147; }
+.ms-sala-salvar:disabled { opacity: 0.5; }
+.ms-sala-cancelar { background: #f1f3f4; color: #5f6368; }
+.ms-sala-cancelar:hover { background: #e8eaed; }

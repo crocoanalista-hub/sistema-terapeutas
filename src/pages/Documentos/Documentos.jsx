@@ -103,7 +103,7 @@ const interp = (texto, vars) =>
 
 // ═══════════════════════════════════════════════════════════
 const Documentos = () => {
-  const { user, terapeuta } = useAuth();
+  const { workspaceId, terapeuta } = useAuth();
 
   const [docAtivo, setDocAtivo] = useState("contrato");
   const [pacientes, setPacientes] = useState([]);
@@ -127,7 +127,7 @@ const Documentos = () => {
   });
 
   useEffect(() => {
-    if (user) {
+    if (workspaceId) {
       listarPacientes(workspaceId).then(setPacientes).catch(() => {});
       buscarTemplatesDoc(workspaceId).then(tmpl => {
         if (tmpl) {
@@ -136,7 +136,7 @@ const Documentos = () => {
         }
       }).catch(() => {});
     }
-  }, [user]);
+  }, [workspaceId]);
 
   useEffect(() => {
     if (pacienteSelecionado && docAtivo === "anamnese") {

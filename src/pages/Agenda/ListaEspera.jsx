@@ -27,8 +27,8 @@ const ListaEspera = () => {
   });
 
   useEffect(() => {
-    if (user) carregar();
-  }, [user]);
+    if (workspaceId) carregar();
+  }, [workspaceId]);
 
   const carregar = async () => {
     try {

@@ -167,8 +167,8 @@ const CalendarioAgenda = () => {
       const [agends, pacs, salasLista, profsLista] = await Promise.all([
         listarAgendamentos(workspaceId),
         listarPacientes(workspaceId),
-        listarSalas(workspaceId),
-        listarProfissionais(workspaceId),
+        listarSalas(workspaceId).catch(() => []),
+        listarProfissionais(workspaceId).catch(() => []),
       ]);
       setAgendamentos(agends);
       const mapa = {};

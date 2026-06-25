@@ -29,12 +29,12 @@ export const deletarConvite = async (email) =>
 export const listarProfissionais = async (workspaceId) => {
   const q = query(
     collection(db, "profissionais"),
-    where("workspaceId", "==", workspaceId),
-    where("ativo", "==", true)
+    where("workspaceId", "==", workspaceId)
   );
   const snap = await getDocs(q);
   return snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((p) => p.ativo !== false)
     .sort((a, b) => a.nome.localeCompare(b.nome));
 };
 

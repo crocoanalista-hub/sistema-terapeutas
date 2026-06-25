@@ -17,12 +17,12 @@ export const criarSala = async (workspaceId, dados) => {
 export const listarSalas = async (workspaceId) => {
   const q = query(
     collection(db, "salas"),
-    where("workspaceId", "==", workspaceId),
-    where("ativo", "==", true)
+    where("workspaceId", "==", workspaceId)
   );
   const snap = await getDocs(q);
   return snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((s) => s.ativo !== false)
     .sort((a, b) => a.nome.localeCompare(b.nome));
 };
 

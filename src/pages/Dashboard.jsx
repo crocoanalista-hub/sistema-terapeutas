@@ -10,8 +10,8 @@ const Dashboard = () => {
   const [stats, setStats] = useState({ pacientes: 0, hoje: 0, semana: 0 });
 
   useEffect(() => {
-    if (user) carregarStats();
-  }, [user]);
+    if (workspaceId) carregarStats();
+  }, [workspaceId]);
 
   const carregarStats = async () => {
     try {
