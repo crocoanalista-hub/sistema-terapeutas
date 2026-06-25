@@ -1,7 +1,7 @@
 import { db } from "./firebaseConfig";
 import {
   collection, addDoc, updateDoc, deleteDoc,
-  doc, getDocs, query, where, orderBy,
+  doc, getDocs, query, where,
 } from "firebase/firestore";
 
 export const adicionarEvolucao = async (terapeutaId, pacienteId, dados) => {
@@ -19,11 +19,11 @@ export const listarEvolucoes = async (terapeutaId, pacienteId) => {
   const q = query(
     collection(db, "evolucoes"),
     where("terapeutaId", "==", terapeutaId),
-    where("pacienteId", "==", pacienteId),
-    orderBy("data", "desc")
+    where("pacienteId", "==", pacienteId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const evolucoes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return evolucoes.sort((a, b) => b.data.localeCompare(a.data));
 };
 
 export const atualizarEvolucao = async (id, dados) => {

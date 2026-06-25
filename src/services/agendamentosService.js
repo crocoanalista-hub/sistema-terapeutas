@@ -3,26 +3,31 @@ import {
   collection,
   addDoc,
   updateDoc,
-  deleteDoc,
   doc,
   getDocs,
   query,
   where,
-  orderBy,
   getDoc,
-  Timestamp,
 } from "firebase/firestore";
+
+const sortByDataHora = (a, b) => {
+  if (a.data !== b.data) return a.data.localeCompare(b.data);
+  return (a.hora || "").localeCompare(b.hora || "");
+};
 
 // Marcar nova sessão
 export const marcarSessao = async (terapeutaId, pacienteId, dadosSessao) => {
   try {
     const docRef = await addDoc(collection(db, "agendamentos"), {
-      terapeutaId: terapeutaId,
-      pacienteId: pacienteId,
+      terapeutaId,
+      pacienteId,
       data: dadosSessao.data,
       hora: dadosSessao.hora,
       duracao: dadosSessao.duracao || 60,
+      valor: dadosSessao.valor || null,
+      linkAtendimento: dadosSessao.linkAtendimento || null,
       status: "confirmado",
+      pago: false,
       observacoes: dadosSessao.observacoes || "",
       dataCriacao: new Date(),
     });
@@ -32,21 +37,16 @@ export const marcarSessao = async (terapeutaId, pacienteId, dadosSessao) => {
   }
 };
 
-// Listar agendamentos do terapeuta
+// Listar todos os agendamentos do terapeuta
 export const listarAgendamentos = async (terapeutaId) => {
   try {
     const q = query(
       collection(db, "agendamentos"),
-      where("terapeutaId", "==", terapeutaId),
-      orderBy("data", "asc"),
-      orderBy("hora", "asc")
+      where("terapeutaId", "==", terapeutaId)
     );
-    const querySnapshot = await getDocs(q);
-    const agendamentos = [];
-    querySnapshot.forEach((doc) => {
-      agendamentos.push({ id: doc.id, ...doc.data() });
-    });
-    return agendamentos;
+    const snap = await getDocs(q);
+    const agendamentos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return agendamentos.sort(sortByDataHora);
   } catch (erro) {
     throw new Error("Erro ao listar agendamentos: " + erro.message);
   }
@@ -58,15 +58,11 @@ export const listarAgendamentosPaciente = async (terapeutaId, pacienteId) => {
     const q = query(
       collection(db, "agendamentos"),
       where("terapeutaId", "==", terapeutaId),
-      where("pacienteId", "==", pacienteId),
-      orderBy("data", "desc")
+      where("pacienteId", "==", pacienteId)
     );
-    const querySnapshot = await getDocs(q);
-    const agendamentos = [];
-    querySnapshot.forEach((doc) => {
-      agendamentos.push({ id: doc.id, ...doc.data() });
-    });
-    return agendamentos;
+    const snap = await getDocs(q);
+    const agendamentos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return agendamentos.sort((a, b) => b.data.localeCompare(a.data));
   } catch (erro) {
     throw new Error("Erro ao listar agendamentos do paciente: " + erro.message);
   }
@@ -75,14 +71,8 @@ export const listarAgendamentosPaciente = async (terapeutaId, pacienteId) => {
 // Buscar agendamento por ID
 export const buscarAgendamento = async (agendamentoId) => {
   try {
-    const docRef = doc(db, "agendamentos", agendamentoId);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() };
-    } else {
-      return null;
-    }
+    const docSnap = await getDoc(doc(db, "agendamentos", agendamentoId));
+    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
   } catch (erro) {
     throw new Error("Erro ao buscar agendamento: " + erro.message);
   }
@@ -91,8 +81,7 @@ export const buscarAgendamento = async (agendamentoId) => {
 // Reagendar sessão
 export const reagendarSessao = async (agendamentoId, novaData, novaHora) => {
   try {
-    const docRef = doc(db, "agendamentos", agendamentoId);
-    await updateDoc(docRef, {
+    await updateDoc(doc(db, "agendamentos", agendamentoId), {
       data: novaData,
       hora: novaHora,
       statusAlteracao: "reagendado",
@@ -106,8 +95,7 @@ export const reagendarSessao = async (agendamentoId, novaData, novaHora) => {
 // Cancelar sessão
 export const cancelarSessao = async (agendamentoId, motivo = "") => {
   try {
-    const docRef = doc(db, "agendamentos", agendamentoId);
-    await updateDoc(docRef, {
+    await updateDoc(doc(db, "agendamentos", agendamentoId), {
       status: "cancelado",
       motivoCancelamento: motivo,
       dataCancelamento: new Date(),
@@ -120,8 +108,7 @@ export const cancelarSessao = async (agendamentoId, motivo = "") => {
 // Marcar como concluído
 export const marcarComoConcluido = async (agendamentoId, observacoes = "") => {
   try {
-    const docRef = doc(db, "agendamentos", agendamentoId);
-    await updateDoc(docRef, {
+    await updateDoc(doc(db, "agendamentos", agendamentoId), {
       status: "concluído",
       pago: false,
       observacoesConclusao: observacoes,
@@ -144,7 +131,7 @@ export const marcarFalta = async (agendamentoId) => {
   }
 };
 
-// Marcar sessão como paga
+// Marcar como pago
 export const marcarComoPago = async (agendamentoId) => {
   try {
     await updateDoc(doc(db, "agendamentos", agendamentoId), {
@@ -162,42 +149,17 @@ export const listarSessoesConcluidas = async (terapeutaId) => {
     const q = query(
       collection(db, "agendamentos"),
       where("terapeutaId", "==", terapeutaId),
-      where("status", "==", "concluído"),
-      orderBy("data", "desc")
+      where("status", "==", "concluído")
     );
     const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const sessoes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return sessoes.sort((a, b) => b.data.localeCompare(a.data));
   } catch (erro) {
     throw new Error("Erro ao listar sessões concluídas: " + erro.message);
   }
 };
 
-// Listar agendamentos por período (data inicial e final)
-export const listarAgendamentosPorPeriodo = async (
-  terapeutaId,
-  dataInicio,
-  dataFim
-) => {
-  try {
-    const q = query(
-      collection(db, "agendamentos"),
-      where("terapeutaId", "==", terapeutaId),
-      where("data", ">=", dataInicio),
-      where("data", "<=", dataFim),
-      orderBy("data", "asc")
-    );
-    const querySnapshot = await getDocs(q);
-    const agendamentos = [];
-    querySnapshot.forEach((doc) => {
-      agendamentos.push({ id: doc.id, ...doc.data() });
-    });
-    return agendamentos;
-  } catch (erro) {
-    throw new Error("Erro ao listar agendamentos por período: " + erro.message);
-  }
-};
-
-// Histórico de atendimentos (sessões concluídas)
+// Histórico de atendimentos
 export const historicoAtendimentos = async (terapeutaId, pacienteId = null) => {
   try {
     let q;
@@ -206,24 +168,36 @@ export const historicoAtendimentos = async (terapeutaId, pacienteId = null) => {
         collection(db, "agendamentos"),
         where("terapeutaId", "==", terapeutaId),
         where("pacienteId", "==", pacienteId),
-        where("status", "==", "concluído"),
-        orderBy("data", "desc")
+        where("status", "==", "concluído")
       );
     } else {
       q = query(
         collection(db, "agendamentos"),
         where("terapeutaId", "==", terapeutaId),
-        where("status", "==", "concluído"),
-        orderBy("data", "desc")
+        where("status", "==", "concluído")
       );
     }
-    const querySnapshot = await getDocs(q);
-    const atendimentos = [];
-    querySnapshot.forEach((doc) => {
-      atendimentos.push({ id: doc.id, ...doc.data() });
-    });
-    return atendimentos;
+    const snap = await getDocs(q);
+    const atendimentos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return atendimentos.sort((a, b) => b.data.localeCompare(a.data));
   } catch (erro) {
     throw new Error("Erro ao buscar histórico: " + erro.message);
+  }
+};
+
+// Listar agendamentos por período
+export const listarAgendamentosPorPeriodo = async (terapeutaId, dataInicio, dataFim) => {
+  try {
+    const q = query(
+      collection(db, "agendamentos"),
+      where("terapeutaId", "==", terapeutaId)
+    );
+    const snap = await getDocs(q);
+    const agendamentos = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((a) => a.data >= dataInicio && a.data <= dataFim);
+    return agendamentos.sort(sortByDataHora);
+  } catch (erro) {
+    throw new Error("Erro ao listar agendamentos por período: " + erro.message);
   }
 };

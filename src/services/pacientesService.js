@@ -33,15 +33,14 @@ export const listarPacientes = async (terapeutaId) => {
     const q = query(
       collection(db, "pacientes"),
       where("terapeutaId", "==", terapeutaId),
-      where("ativo", "==", true),
-      orderBy("dataCriacao", "desc")
+      where("ativo", "==", true)
     );
     const querySnapshot = await getDocs(q);
     const pacientes = [];
     querySnapshot.forEach((doc) => {
       pacientes.push({ id: doc.id, ...doc.data() });
     });
-    return pacientes;
+    return pacientes.sort((a, b) => a.nome.localeCompare(b.nome));
   } catch (erro) {
     throw new Error("Erro ao listar pacientes: " + erro.message);
   }
