@@ -15,7 +15,7 @@ const CORES_PRESET = [
 ];
 
 export default function Configuracoes() {
-  const { user, workspaceId, role } = useAuth();
+  const { workspaceId, role } = useAuth();
   const [aba, setAba] = useState("salas");
 
   // ── Salas ──

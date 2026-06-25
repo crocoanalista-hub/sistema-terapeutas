@@ -103,7 +103,7 @@ const Modal = ({ titulo, onClose, children }) => (
 
 // ═════════════════════════════════════════════════════════════
 const CalendarioAgenda = () => {
-  const { user, workspaceId, role } = useAuth();
+  const { workspaceId } = useAuth();
   const navigate = useNavigate();
   const scrollRef = useRef(null);
 

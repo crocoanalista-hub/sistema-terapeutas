@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
 import {
   listarSessoesConcluidas,
   marcarComoPago,
@@ -12,8 +11,7 @@ const moeda = (v) =>
   Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const Financeiro = () => {
-  const { user, terapeuta } = useAuth();
-  const navigate = useNavigate();
+  const { workspaceId, terapeuta } = useAuth();
 
   const [aba, setAba] = useState("resumo");
   const [sessoes, setSessoes] = useState([]);
@@ -24,11 +22,10 @@ const Financeiro = () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
   const [reciboSessao, setReciboSessao] = useState(null);
-  const printRef = useRef();
 
   useEffect(() => {
-    if (user) carregar();
-  }, [user]);
+    if (workspaceId) carregar();
+  }, [workspaceId]);
 
   const carregar = async () => {
     try {

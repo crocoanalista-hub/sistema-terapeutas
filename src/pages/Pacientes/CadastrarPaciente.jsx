@@ -5,7 +5,7 @@ import { useAuth } from "../../hooks/useAuth";
 import "../../styles/forms.css";
 
 const CadastrarPaciente = () => {
-  const { user, workspaceId } = useAuth();
+  const { workspaceId } = useAuth();
   const navigate = useNavigate();
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");

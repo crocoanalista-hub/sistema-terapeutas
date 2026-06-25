@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { buscarPaciente, atualizarPaciente } from "../../services/pacientesService";
-import { useAuth } from "../../hooks/useAuth";
 import "../../styles/forms.css";
 
 const EditarPaciente = () => {
-  const { user } = useAuth();
+  
   const navigate = useNavigate();
   const { id } = useParams();
   const [carregando, setCarregando] = useState(true);

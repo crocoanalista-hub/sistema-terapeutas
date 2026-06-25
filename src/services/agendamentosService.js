@@ -26,9 +26,14 @@ export const marcarSessao = async (terapeutaId, pacienteId, dadosSessao) => {
       duracao: dadosSessao.duracao || 60,
       valor: dadosSessao.valor || null,
       linkAtendimento: dadosSessao.linkAtendimento || null,
+      observacoes: dadosSessao.observacoes || "",
+      salaId: dadosSessao.salaId || null,
+      salaNome: dadosSessao.salaNome || null,
+      salaCor: dadosSessao.salaCor || null,
+      profissionalId: dadosSessao.profissionalId || null,
+      profissionalNome: dadosSessao.profissionalNome || null,
       status: "confirmado",
       pago: false,
-      observacoes: dadosSessao.observacoes || "",
       dataCriacao: new Date(),
     });
     return docRef.id;
@@ -187,6 +192,11 @@ export const marcarSessoesEmLote = async (terapeutaId, pacienteId, sessoes, info
           pago: infoPacote.quitado || false,
           linkAtendimento: s.linkAtendimento || null,
           observacoes: s.observacoes || "",
+          salaId: s.salaId || null,
+          salaNome: s.salaNome || null,
+          salaCor: s.salaCor || null,
+          profissionalId: s.profissionalId || null,
+          profissionalNome: s.profissionalNome || null,
           status: "confirmado",
           dataCriacao: new Date(),
         })
