@@ -75,6 +75,10 @@ const MarcarSessao = () => {
     quitado: false,
   });
   const [previewSessoes, setPreviewSessoes] = useState([]);
+  // Edição inline de sessão na prévia
+  const [editandoSessaoIdx, setEditandoSessaoIdx] = useState(null);
+  const [editSessaoData, setEditSessaoData] = useState("");
+  const [editSessaoHora, setEditSessaoHora] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
 
@@ -535,12 +539,58 @@ const MarcarSessao = () => {
                       const dataFmt = new Date(y, m - 1, d).toLocaleDateString("pt-BR", {
                         weekday: "short", day: "numeric", month: "short"
                       });
+                      const editando = editandoSessaoIdx === i;
                       return (
-                        <div key={i} className={`ms-preview-item${conflito ? " conflito" : ""}`}>
+                        <div key={i} className={`ms-preview-item${conflito ? " conflito" : ""}${editando ? " editando" : ""}`}>
                           <span className="ms-preview-num">{i + 1}</span>
-                          <span className="ms-preview-data">{dataFmt}</span>
-                          <span className="ms-preview-hora">{s.hora}</span>
-                          {conflito && <span className="ms-preview-conflito">⚠️ Horário ocupado</span>}
+                          {editando ? (
+                            <>
+                              <input
+                                type="date"
+                                className="ms-edit-input"
+                                value={editSessaoData}
+                                onChange={(e) => setEditSessaoData(e.target.value)}
+                              />
+                              <input
+                                type="time"
+                                className="ms-edit-input ms-edit-hora"
+                                value={editSessaoHora}
+                                onChange={(e) => setEditSessaoHora(e.target.value)}
+                              />
+                              <button
+                                type="button"
+                                className="ms-edit-salvar"
+                                onClick={() => {
+                                  if (!editSessaoData || !editSessaoHora) return;
+                                  setPreviewSessoes(prev => prev.map((ps, pi) =>
+                                    pi === i ? { ...ps, data: editSessaoData, hora: editSessaoHora } : ps
+                                  ));
+                                  setEditandoSessaoIdx(null);
+                                }}
+                              >✓</button>
+                              <button
+                                type="button"
+                                className="ms-edit-cancelar"
+                                onClick={() => setEditandoSessaoIdx(null)}
+                              >✕</button>
+                            </>
+                          ) : (
+                            <>
+                              <span className="ms-preview-data">{dataFmt}</span>
+                              <span className="ms-preview-hora">{s.hora}</span>
+                              {conflito && <span className="ms-preview-conflito">⚠️ Horário ocupado</span>}
+                              <button
+                                type="button"
+                                className="ms-edit-btn"
+                                title="Editar data/hora"
+                                onClick={() => {
+                                  setEditandoSessaoIdx(i);
+                                  setEditSessaoData(s.data);
+                                  setEditSessaoHora(s.hora);
+                                }}
+                              >✏️</button>
+                            </>
+                          )}
                         </div>
                       );
                     })}

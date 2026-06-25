@@ -105,17 +105,42 @@ export const cancelarSessao = async (agendamentoId, motivo = "") => {
   }
 };
 
-// Marcar como concluído
-export const marcarComoConcluido = async (agendamentoId, observacoes = "") => {
+// Marcar como concluído (com pagamento opcional na mesma operação)
+export const marcarComoConcluido = async (agendamentoId, observacoes = "", pagamento = null) => {
   try {
-    await updateDoc(doc(db, "agendamentos", agendamentoId), {
+    const update = {
       status: "concluído",
-      pago: false,
       observacoesConclusao: observacoes,
       dataConclusao: new Date(),
-    });
+    };
+    if (pagamento && pagamento.pago) {
+      update.pago = true;
+      if (pagamento.valor != null) update.valorPago = pagamento.valor;
+      update.dataPagamento = new Date();
+    } else {
+      update.pago = false;
+    }
+    await updateDoc(doc(db, "agendamentos", agendamentoId), update);
   } catch (erro) {
     throw new Error("Erro ao marcar como concluído: " + erro.message);
+  }
+};
+
+// Editar sessão já concluída (observações e/ou pagamento)
+export const editarSessaoConcluida = async (agendamentoId, dados) => {
+  try {
+    const update = { observacoesConclusao: dados.observacoesConclusao ?? "" };
+    if (dados.pago) {
+      update.pago = true;
+      if (dados.valorPago != null) update.valorPago = dados.valorPago;
+      update.dataPagamento = new Date();
+    } else {
+      update.pago = false;
+      update.valorPago = null;
+    }
+    await updateDoc(doc(db, "agendamentos", agendamentoId), update);
+  } catch (erro) {
+    throw new Error("Erro ao editar sessão: " + erro.message);
   }
 };
 

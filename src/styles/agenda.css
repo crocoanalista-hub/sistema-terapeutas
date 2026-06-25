@@ -743,3 +743,50 @@
   margin-right: 4px;
   vertical-align: middle;
 }
+
+/* ─── Pagamento na conclusão ─────────────────────────────── */
+.gc-concluir-pagar {
+  margin: 12px 0 4px;
+  padding: 12px 14px;
+  background: #f8f9fa;
+  border: 1px solid #e8eaed;
+  border-radius: 8px;
+}
+
+.gc-concluir-pagar-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+.gc-concluir-pagar-toggle input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: #34a853;
+  flex-shrink: 0;
+}
+
+.gc-concluir-valor-row {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.gc-concluir-pagar-dica {
+  font-size: 12px;
+  color: #9aa0a6;
+  font-style: italic;
+}
+
+/* ─── Botão editar sessão concluída ──────────────────────── */
+.gc-act-btn.editar {
+  background: #e8eaed;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+}
+.gc-act-btn.editar:hover { background: #d2e3fc; color: #1a73e8; border-color: #1a73e8; }

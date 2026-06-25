@@ -423,3 +423,58 @@
   padding: 12px 0 4px;
   margin: 0;
 }
+
+/* ─── Edição inline de sessão na prévia ──────────────────── */
+.ms-preview-item.editando {
+  background: #e8f0fe;
+  padding: 10px 14px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ms-edit-input {
+  padding: 5px 8px;
+  border: 1px solid #1a73e8;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #333;
+  background: white;
+}
+.ms-edit-input:focus { outline: none; box-shadow: 0 0 0 2px rgba(26,115,232,.2); }
+.ms-edit-hora { width: 100px; }
+
+.ms-edit-salvar,
+.ms-edit-cancelar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .12s;
+  flex-shrink: 0;
+}
+.ms-edit-salvar { background: #34a853; color: white; }
+.ms-edit-salvar:hover { background: #2d9147; }
+.ms-edit-cancelar { background: #f1f3f4; color: #5f6368; }
+.ms-edit-cancelar:hover { background: #e8eaed; }
+
+.ms-edit-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  opacity: 0;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: opacity .12s, background .12s;
+  flex-shrink: 0;
+}
+.ms-preview-item:hover .ms-edit-btn { opacity: 1; }
+.ms-edit-btn:hover { background: #e8eaed; }

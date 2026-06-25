@@ -7,6 +7,7 @@ import {
   marcarComoConcluido,
   marcarFalta,
   marcarComoPago,
+  editarSessaoConcluida,
 } from "../../services/agendamentosService";
 import { listarPacientes } from "../../services/pacientesService";
 import { listarSalas } from "../../services/salasService";
@@ -125,10 +126,18 @@ const CalendarioAgenda = () => {
   const [modalReagendar, setModalReagendar] = useState(null);
   const [modalCancelar, setModalCancelar] = useState(null);
   const [modalConcluir, setModalConcluir] = useState(null);
+  const [modalEditar, setModalEditar] = useState(null);
   const [novaData, setNovaData] = useState("");
   const [novaHora, setNovaHora] = useState("");
   const [motivo, setMotivo] = useState("");
   const [obsConc, setObsConc] = useState("");
+  // Pagamento no modal concluir
+  const [pagarNaConclusao, setPagarNaConclusao] = useState(false);
+  const [valorConclusao, setValorConclusao] = useState("");
+  // Edição de sessão concluída
+  const [editObs, setEditObs] = useState("");
+  const [editPago, setEditPago] = useState(false);
+  const [editValor, setEditValor] = useState("");
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
@@ -214,10 +223,46 @@ const CalendarioAgenda = () => {
   const handleConcluir = async () => {
     setSalvando(true);
     try {
-      await marcarComoConcluido(modalConcluir.id, obsConc);
-      setModalConcluir(null); setObsConc(""); setEventoAtivo(null); await carregar();
+      const pagamento = pagarNaConclusao
+        ? { pago: true, valor: valorConclusao ? parseFloat(valorConclusao) : null }
+        : null;
+      await marcarComoConcluido(modalConcluir.id, obsConc, pagamento);
+      setModalConcluir(null);
+      setObsConc("");
+      setPagarNaConclusao(false);
+      setValorConclusao("");
+      setEventoAtivo(null);
+      await carregar();
     } catch (err) { alert(err.message); }
     finally { setSalvando(false); }
+  };
+
+  const handleSalvarEdicao = async () => {
+    setSalvando(true);
+    try {
+      await editarSessaoConcluida(modalEditar.id, {
+        observacoesConclusao: editObs,
+        pago: editPago,
+        valorPago: editPago && editValor ? parseFloat(editValor) : null,
+      });
+      // Atualiza evento ativo sem fechar
+      setEventoAtivo(prev => ({
+        ...prev,
+        observacoesConclusao: editObs,
+        pago: editPago,
+        valorPago: editPago && editValor ? parseFloat(editValor) : null,
+      }));
+      setModalEditar(null);
+      await carregar();
+    } catch (err) { alert(err.message); }
+    finally { setSalvando(false); }
+  };
+
+  const abrirEdicao = (agend) => {
+    setEditObs(agend.observacoesConclusao || "");
+    setEditPago(agend.pago || false);
+    setEditValor(agend.valorPago != null ? String(agend.valorPago) : agend.valor ? String(agend.valor) : "");
+    setModalEditar(agend);
   };
 
   const handleFalta = async (agend) => {
@@ -540,6 +585,7 @@ const CalendarioAgenda = () => {
               </a>
             )}
             {a.observacoes && <p className="gc-ev-info">📝 {a.observacoes}</p>}
+            {a.observacoesConclusao && <p className="gc-ev-info">📋 {a.observacoesConclusao}</p>}
           </div>
 
           {confirmado && (
@@ -552,9 +598,19 @@ const CalendarioAgenda = () => {
                 onClick={() => { setModalReagendar(a); setNovaData(a.data); setNovaHora(a.hora); }}>
                 Reagendar
               </button>
-              <button className="gc-act-btn concluir" onClick={() => setModalConcluir(a)}>Concluir</button>
+              <button className="gc-act-btn concluir" onClick={() => {
+                setObsConc(a.observacoes || "");
+                setPagarNaConclusao(false);
+                setValorConclusao(a.valor ? String(a.valor) : "");
+                setModalConcluir(a);
+              }}>Concluir</button>
               <button className="gc-act-btn falta" onClick={() => handleFalta(a)}>Falta</button>
               <button className="gc-act-btn cancelar" onClick={() => setModalCancelar(a)}>Cancelar</button>
+            </div>
+          )}
+          {concluido && (
+            <div className="gc-ev-actions">
+              <button className="gc-act-btn editar" onClick={() => abrirEdicao(a)}>✏️ Editar</button>
             </div>
           )}
         </div>
@@ -638,16 +694,83 @@ const CalendarioAgenda = () => {
 
       {/* Modal Concluir */}
       {modalConcluir && (
-        <Modal titulo="Concluir Sessão" onClose={() => setModalConcluir(null)}>
+        <Modal titulo="Concluir Sessão" onClose={() => { setModalConcluir(null); setPagarNaConclusao(false); }}>
           <p style={{ color:"#666", fontSize:"14px", marginBottom:"16px" }}>
             Paciente: <strong>{mapaPac[modalConcluir.pacienteId]?.nome}</strong>
           </p>
-          <div className="form-group"><label>Observações da sessão (opcional)</label>
-            <textarea rows="3" value={obsConc} onChange={(e) => setObsConc(e.target.value)} placeholder="Anotações sobre a sessão..." /></div>
+          <div className="form-group">
+            <label>Observações da sessão (opcional)</label>
+            <textarea rows="3" value={obsConc} onChange={(e) => setObsConc(e.target.value)} placeholder="Anotações sobre a sessão..." />
+          </div>
+          {/* Pagamento na conclusão */}
+          <div className="gc-concluir-pagar">
+            <label className="gc-concluir-pagar-toggle">
+              <input
+                type="checkbox"
+                checked={pagarNaConclusao}
+                onChange={(e) => setPagarNaConclusao(e.target.checked)}
+              />
+              <span>💰 Registrar pagamento agora</span>
+            </label>
+            {pagarNaConclusao && (
+              <div className="gc-concluir-valor-row">
+                <input
+                  type="number"
+                  className="gc-pagar-input"
+                  value={valorConclusao}
+                  onChange={(e) => setValorConclusao(e.target.value)}
+                  placeholder={modalConcluir.valor ? `R$ ${modalConcluir.valor}` : "Valor recebido"}
+                  min="0"
+                  step="0.01"
+                  autoFocus
+                />
+                <span className="gc-concluir-pagar-dica">Deixe vazio para usar o valor da sessão</span>
+              </div>
+            )}
+          </div>
           <div className="modal-buttons">
-            <button className="btn-modal-cancelar" onClick={() => setModalConcluir(null)}>Cancelar</button>
+            <button className="btn-modal-cancelar" onClick={() => { setModalConcluir(null); setPagarNaConclusao(false); }}>Cancelar</button>
             <button className="btn-modal-confirmar" onClick={handleConcluir} disabled={salvando}>
-              {salvando ? "Salvando..." : "Marcar como Concluída"}
+              {salvando ? "Salvando..." : pagarNaConclusao ? "Concluir e Registrar Pagamento" : "Marcar como Concluída"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal Editar sessão concluída */}
+      {modalEditar && (
+        <Modal titulo="Editar Sessão Concluída" onClose={() => setModalEditar(null)}>
+          <p style={{ color:"#666", fontSize:"14px", marginBottom:"16px" }}>
+            Paciente: <strong>{mapaPac[modalEditar.pacienteId]?.nome}</strong>
+            {" · "}{mapaPac[modalEditar.pacienteId] && parseLocal(modalEditar.data).toLocaleDateString("pt-BR")} às {modalEditar.hora}
+          </p>
+          <div className="form-group">
+            <label>Observações da sessão</label>
+            <textarea rows="4" value={editObs} onChange={(e) => setEditObs(e.target.value)} placeholder="Anotações sobre a sessão..." />
+          </div>
+          <div className="gc-concluir-pagar">
+            <label className="gc-concluir-pagar-toggle">
+              <input type="checkbox" checked={editPago} onChange={(e) => setEditPago(e.target.checked)} />
+              <span>💰 {editPago ? "Sessão paga" : "Marcar como paga"}</span>
+            </label>
+            {editPago && (
+              <div className="gc-concluir-valor-row">
+                <input
+                  type="number"
+                  className="gc-pagar-input"
+                  value={editValor}
+                  onChange={(e) => setEditValor(e.target.value)}
+                  placeholder={modalEditar.valor ? `R$ ${modalEditar.valor}` : "Valor recebido"}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            )}
+          </div>
+          <div className="modal-buttons">
+            <button className="btn-modal-cancelar" onClick={() => setModalEditar(null)}>Cancelar</button>
+            <button className="btn-modal-confirmar" onClick={handleSalvarEdicao} disabled={salvando}>
+              {salvando ? "Salvando..." : "Salvar alterações"}
             </button>
           </div>
         </Modal>
