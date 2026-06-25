@@ -131,15 +131,44 @@ export const marcarFalta = async (agendamentoId) => {
   }
 };
 
-// Marcar como pago
-export const marcarComoPago = async (agendamentoId) => {
+// Marcar como pago (valorPago pode ser parcial)
+export const marcarComoPago = async (agendamentoId, valorPago = null) => {
   try {
-    await updateDoc(doc(db, "agendamentos", agendamentoId), {
-      pago: true,
-      dataPagamento: new Date(),
-    });
+    const update = { pago: true, dataPagamento: new Date() };
+    if (valorPago !== null) update.valorPago = valorPago;
+    await updateDoc(doc(db, "agendamentos", agendamentoId), update);
   } catch (erro) {
     throw new Error("Erro ao marcar como pago: " + erro.message);
+  }
+};
+
+// Criar múltiplas sessões de um pacote
+export const marcarSessoesEmLote = async (terapeutaId, pacienteId, sessoes, infoPacote) => {
+  try {
+    const pacoteId = `pac_${Date.now()}`;
+    await Promise.all(
+      sessoes.map((s) =>
+        addDoc(collection(db, "agendamentos"), {
+          terapeutaId,
+          pacienteId,
+          data: s.data,
+          hora: s.hora,
+          duracao: s.duracao || 60,
+          valor: infoPacote.valorPorSessao || null,
+          valorPacote: infoPacote.valorTotal || null,
+          numSessoesPacote: infoPacote.numSessoes || null,
+          pacoteQuitado: infoPacote.quitado || false,
+          pacoteId,
+          pago: infoPacote.quitado || false,
+          linkAtendimento: s.linkAtendimento || null,
+          observacoes: s.observacoes || "",
+          status: "confirmado",
+          dataCriacao: new Date(),
+        })
+      )
+    );
+  } catch (erro) {
+    throw new Error("Erro ao criar sessões do pacote: " + erro.message);
   }
 };
 

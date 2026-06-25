@@ -1,397 +1,358 @@
-.agenda-container {
-  max-width: 1200px;
+/* ============================================================
+   AGENDA — Estilo Google Calendar
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ─── Container principal ─────────────────────────────────── */
+.gc-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  overflow: hidden;
 }
 
-.agenda-header {
+/* ─── Toolbar ─────────────────────────────────────────────── */
+.gc-toolbar {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.agenda-header h2 {
-  margin: 0;
-  font-size: 26px;
-  color: #1a2535;
-}
-
-.btn-nova-sessao {
-  padding: 10px 18px;
-  background-color: #27ae60;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-
-.btn-nova-sessao:hover {
-  background-color: #219a52;
-}
-
-/* Toolbar */
-.agenda-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: white;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  padding: 12px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
-.agenda-vista-toggle {
+.gc-toolbar-left,
+.gc-toolbar-right {
   display: flex;
-  background: #f4f6f9;
-  border-radius: 6px;
-  padding: 3px;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.btn-vista {
+.gc-btn-hoje {
+  padding: 8px 16px;
+  background: #fff;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #3c4043;
+  cursor: pointer;
+  transition: background .15s;
+  white-space: nowrap;
+}
+.gc-btn-hoje:hover { background: #f8f9fa; }
+
+.gc-nav-group { display: flex; gap: 2px; }
+
+.gc-nav-btn {
+  width: 34px;
+  height: 34px;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  color: #5f6368;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+}
+.gc-nav-btn:hover { background: #f1f3f4; }
+
+.gc-periodo {
+  font-size: 20px;
+  font-weight: 400;
+  color: #202124;
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Toggle Semana / Mês */
+.gc-toggle {
+  display: flex;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.gc-toggle-btn {
   padding: 7px 16px;
   background: none;
   border: none;
-  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3c4043;
+  cursor: pointer;
+  transition: background .15s;
+}
+.gc-toggle-btn + .gc-toggle-btn { border-left: 1px solid #dadce0; }
+.gc-toggle-btn.ativo { background: #e8f0fe; color: #1a73e8; }
+
+.gc-btn-espera {
+  padding: 8px 14px;
+  background: none;
+  border: 1px solid #1a73e8;
+  border-radius: 6px;
+  color: #1a73e8;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  color: #666;
-  transition: all 0.15s;
+  transition: background .15s;
+  white-space: nowrap;
 }
+.gc-btn-espera:hover { background: #e8f0fe; }
 
-.btn-vista.ativo {
-  background: white;
-  color: #1a2535;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-}
-
-.agenda-nav {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  justify-content: center;
-}
-
-.btn-nav {
-  background: none;
-  border: 1px solid #ddd;
+.gc-btn-novo {
+  padding: 8px 18px;
+  background: #1a73e8;
+  border: none;
   border-radius: 6px;
-  width: 32px;
-  height: 32px;
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #555;
-  transition: all 0.15s;
-}
-
-.btn-nav:hover {
-  background: #f4f6f9;
-  border-color: #bbb;
-}
-
-.agenda-periodo {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a2535;
-  min-width: 220px;
-  text-align: center;
-}
-
-.btn-hoje {
-  padding: 7px 14px;
-  background: none;
-  border: 1px solid #3498db;
-  border-radius: 6px;
-  color: #3498db;
+  color: #fff;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background .15s;
+  white-space: nowrap;
+}
+.gc-btn-novo:hover { background: #1557b0; }
+
+.gc-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: #5f6368;
+  font-size: 14px;
 }
 
-.btn-hoje:hover {
-  background: #3498db;
-  color: white;
-}
-
-.carregando-agenda {
-  text-align: center;
-  color: #999;
-  padding: 40px;
-}
-
-/* === SEMANA === */
-.agenda-semana {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-  min-height: 400px;
-}
-
-.semana-dia {
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+/* ─── VISÃO SEMANA ────────────────────────────────────────── */
+.gc-semana-wrapper {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  overflow: hidden;
 }
 
-.semana-dia.hoje .semana-dia-header {
-  background: #3498db;
-  color: white;
+/* Cabeçalho fixo dos dias */
+.gc-semana-header {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+  background: #fff;
 }
 
-.semana-dia.hoje .semana-dia-num {
-  background: white;
-  color: #3498db;
-}
+.gc-corner { width: 56px; flex-shrink: 0; }
 
-.semana-dia-header {
-  padding: 10px 8px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #eee;
+.gc-day-header-col {
+  flex: 1;
+  padding: 8px 4px;
   text-align: center;
+  border-left: 1px solid #e0e0e0;
 }
 
-.semana-dia-nome {
+.gc-day-header-nome {
   display: block;
   font-size: 11px;
   font-weight: 600;
+  color: #70757a;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: inherit;
+  letter-spacing: .5px;
   margin-bottom: 4px;
 }
 
-.semana-dia-num {
+.gc-day-header-num {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  font-size: 14px;
+  font-size: 20px;
+  font-weight: 400;
+  color: #3c4043;
+}
+.gc-day-header-num.hoje {
+  background: #1a73e8;
+  color: #fff;
   font-weight: 700;
-  color: #1a2535;
 }
 
-.semana-dia-agends {
+/* Corpo com scroll */
+.gc-semana-body {
+  display: flex;
   flex: 1;
-  padding: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+/* Coluna de horas */
+.gc-time-col {
+  width: 56px;
+  flex-shrink: 0;
+}
+
+.gc-time-label {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding-right: 8px;
+  padding-top: 0;
+}
+.gc-time-label span {
+  font-size: 10px;
+  color: #70757a;
+  font-weight: 500;
+  transform: translateY(-6px);
+  white-space: nowrap;
+}
+
+/* Área dos dias com grade */
+.gc-days-area {
+  flex: 1;
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+/* Linhas horizontais das horas */
+.gc-hline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #e8eaed;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Coluna de cada dia */
+.gc-day-col {
+  flex: 1;
+  position: relative;
+  border-left: 1px solid #e8eaed;
+  min-width: 0;
+  cursor: pointer;
+}
+.gc-day-col.hoje { background: #fafbff; }
+.gc-day-col:hover { background: rgba(26,115,232,.03); }
+
+/* Linha do horário atual */
+.gc-now-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #ea4335;
+  pointer-events: none;
+  z-index: 5;
+}
+.gc-now-dot {
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ea4335;
+}
+
+/* Evento na grade */
+.gc-event {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border-radius: 4px;
+  border-left: 3px solid;
+  padding: 2px 5px;
+  cursor: pointer;
+  overflow: hidden;
+  font-size: 12px;
+  z-index: 2;
+  transition: filter .12s, box-shadow .12s;
+}
+.gc-event:hover {
+  filter: brightness(.93);
+  box-shadow: 0 2px 8px rgba(0,0,0,.18);
+  z-index: 10;
+}
+
+.gc-event-nome {
+  display: block;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.gc-event-hora {
+  display: block;
+  font-size: 11px;
+  opacity: .8;
+  line-height: 1.3;
+}
+.gc-event-curto {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── VISÃO MÊS ───────────────────────────────────────────── */
+.gc-mes-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.semana-vazio {
-  color: #ccc;
-  text-align: center;
-  font-size: 18px;
-  margin: 20px 0;
-}
-
-/* === CARD de agendamento === */
-.agenda-card {
-  background: #f8f9fa;
-  border-radius: 6px;
-  padding: 8px 10px;
-  border-left: 3px solid #3498db;
-  font-size: 12px;
-}
-
-.agenda-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-  gap: 4px;
-}
-
-.agenda-card-hora {
-  font-weight: 700;
-  color: #1a2535;
-  font-size: 13px;
-}
-
-.agenda-card-status {
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.agenda-card-paciente {
-  margin: 0 0 2px 0;
-  font-weight: 600;
-  color: #333;
-  font-size: 12px;
-  white-space: nowrap;
+  flex: 1;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.agenda-card-duracao {
-  margin: 0 0 2px 0;
-  color: #888;
-  font-size: 11px;
-}
-
-.agenda-card-obs {
-  margin: 4px 0 0 0;
-  color: #666;
-  font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.agenda-card-acoes {
-  display: flex;
-  gap: 4px;
-  margin-top: 6px;
-  flex-wrap: wrap;
-}
-
-.btn-ag {
-  padding: 3px 7px;
-  border: none;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-
-.btn-ag:hover {
-  opacity: 0.8;
-}
-
-.btn-reagendar {
-  background: #f39c12;
-  color: white;
-}
-
-.btn-concluir {
-  background: #27ae60;
-  color: white;
-}
-
-.btn-cancelar-ag {
-  background: #e74c3c;
-  color: white;
-}
-
-.btn-falta {
-  background: #f39c12;
-  color: white;
-}
-
-.btn-whatsapp {
-  background: #25d366;
-  color: white;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-}
-
-.agenda-card-link {
-  display: inline-block;
-  margin: 4px 0;
-  font-size: 11px;
-  color: #3498db;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.agenda-card-link:hover {
-  text-decoration: underline;
-}
-
-.btn-lista-espera {
-  padding: 10px 16px;
-  background: white;
-  border: 2px solid #3498db;
-  border-radius: 6px;
-  color: #3498db;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-lista-espera:hover {
-  background: #3498db;
-  color: white;
-}
-
-/* === MÊS === */
-.agenda-mes-grid {
+.gc-mes-dias-header {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-  background: #e0e0e0;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
 }
-
-.mes-header-dia {
-  background: #1a2535;
-  color: rgba(255, 255, 255, 0.7);
+.gc-mes-header-dia {
+  padding: 8px 4px;
   text-align: center;
-  padding: 10px 4px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
+  color: #70757a;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: .5px;
 }
 
-.mes-dia {
-  background: white;
-  min-height: 72px;
-  padding: 6px;
+.gc-mes-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 1fr;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.gc-mes-dia {
+  border-right: 1px solid #e8eaed;
+  border-bottom: 1px solid #e8eaed;
+  padding: 4px;
+  min-height: 90px;
   cursor: pointer;
-  position: relative;
-  transition: background 0.1s;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  transition: background .12s;
 }
+.gc-mes-dia:hover { background: #f8f9fa; }
+.gc-mes-dia.outro-mes { background: #fafafa; }
+.gc-mes-dia.hoje { background: #fafbff; }
 
-.mes-dia:hover {
-  background: #f0f7ff;
-}
-
-.mes-dia.outro-mes {
-  background: #fafafa;
-}
-
-.mes-dia.outro-mes .mes-dia-num {
-  color: #ccc;
-}
-
-.mes-dia.hoje .mes-dia-num {
-  background: #3498db;
-  color: white;
-}
-
-.mes-dia.selecionado {
-  background: #e8f4fd;
-  outline: 2px solid #3498db;
-  outline-offset: -2px;
-}
-
-.mes-dia-num {
+.gc-mes-num {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -399,42 +360,52 @@
   height: 26px;
   border-radius: 50%;
   font-size: 13px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
+  font-weight: 400;
+  color: #3c4043;
+  margin-bottom: 2px;
+}
+.gc-mes-dia.outro-mes .gc-mes-num { color: #bdc1c6; }
+.gc-mes-num.hoje {
+  background: #1a73e8;
+  color: #fff;
+  font-weight: 700;
 }
 
-.mes-badge {
-  display: inline-block;
-  background: #3498db;
-  color: white;
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 6px;
+.gc-mes-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   margin-top: 2px;
 }
-
-.mes-detalhe {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  margin-top: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+.gc-mes-event {
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: filter .1s;
 }
+.gc-mes-event:hover { filter: brightness(.88); }
 
-.mes-detalhe h4 {
-  margin: 0 0 16px 0;
-  color: #1a2535;
-  font-size: 15px;
-  text-transform: capitalize;
+.gc-mes-mais {
+  font-size: 11px;
+  color: #70757a;
+  padding: 1px 4px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
 }
+.gc-mes-mais:hover { background: #f1f3f4; }
 
-/* === MODAIS === */
-.modal-overlay {
+/* ─── MODAL DO EVENTO ─────────────────────────────────────── */
+.gc-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0,0,0,.32);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -442,48 +413,172 @@
   padding: 20px;
 }
 
+.gc-ev-modal {
+  background: #fff;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.22);
+  overflow: hidden;
+  animation: gc-pop .18s ease;
+}
+@keyframes gc-pop {
+  from { transform: scale(.94); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.gc-ev-modal-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  border-top: 5px solid;
+}
+
+.gc-ev-nome {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 500;
+  color: #202124;
+}
+.gc-ev-data {
+  margin: 0 0 2px;
+  font-size: 13px;
+  color: #5f6368;
+}
+.gc-ev-hora {
+  margin: 0;
+  font-size: 13px;
+  color: #5f6368;
+}
+
+.gc-ev-close {
+  background: none;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 15px;
+  color: #5f6368;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .12s;
+}
+.gc-ev-close:hover { background: #f1f3f4; }
+
+.gc-ev-modal-body {
+  padding: 0 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gc-status-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  width: fit-content;
+  text-transform: capitalize;
+}
+
+.gc-ev-info {
+  margin: 0;
+  font-size: 13px;
+  color: #3c4043;
+}
+
+.gc-link-sessao {
+  font-size: 13px;
+  color: #1a73e8;
+  text-decoration: none;
+  font-weight: 600;
+}
+.gc-link-sessao:hover { text-decoration: underline; }
+
+.gc-ev-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.gc-act-btn {
+  padding: 7px 13px;
+  border: none;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .12s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  font-family: inherit;
+}
+.gc-act-btn:hover { opacity: .82; }
+.gc-act-btn.whatsapp  { background: #25d366; color: #fff; }
+.gc-act-btn.reagendar { background: #fbbc04; color: #202124; }
+.gc-act-btn.concluir  { background: #34a853; color: #fff; }
+.gc-act-btn.falta     { background: #ff7043; color: #fff; }
+.gc-act-btn.cancelar  { background: #ea4335; color: #fff; }
+
+/* ─── Modais de ação (reagendar / cancelar / concluir) ────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 20px;
+}
+
 .modal-box {
-  background: white;
+  background: #fff;
   border-radius: 10px;
   padding: 28px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 40px rgba(0,0,0,.22);
+  animation: gc-pop .18s ease;
 }
-
 .modal-box h3 {
-  margin: 0 0 16px 0;
-  color: #1a2535;
+  margin: 0 0 16px;
   font-size: 18px;
+  color: #202124;
 }
 
-.modal-box .form-group {
-  margin-bottom: 16px;
-}
-
-.modal-box .form-group label {
+.form-group { margin-bottom: 16px; }
+.form-group label {
   display: block;
   margin-bottom: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: #555;
+  color: #444;
 }
-
-.modal-box .form-group input,
-.modal-box .form-group textarea {
+.form-group input,
+.form-group textarea {
   width: 100%;
   padding: 9px 12px;
-  border: 1px solid #ddd;
+  border: 1px solid #dadce0;
   border-radius: 6px;
   font-size: 14px;
   font-family: inherit;
-  transition: border-color 0.15s;
+  transition: border-color .15s;
 }
-
-.modal-box .form-group input:focus,
-.modal-box .form-group textarea:focus {
+.form-group input:focus,
+.form-group textarea:focus {
   outline: none;
-  border-color: #3498db;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26,115,232,.15);
 }
 
 .modal-buttons {
@@ -496,65 +591,51 @@
 .btn-modal-cancelar {
   padding: 9px 18px;
   background: #f4f6f9;
-  color: #555;
-  border: 1px solid #ddd;
+  color: #5f6368;
+  border: 1px solid #dadce0;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  font-family: inherit;
 }
-
-.btn-modal-cancelar:hover {
-  background: #e8e8e8;
-}
+.btn-modal-cancelar:hover { background: #e8eaed; }
 
 .btn-modal-confirmar {
   padding: 9px 18px;
-  background: #27ae60;
-  color: white;
+  background: #34a853;
+  color: #fff;
   border: none;
   border-radius: 6px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s;
+  font-family: inherit;
+  transition: background .15s;
 }
-
-.btn-modal-confirmar:hover:not(:disabled) {
-  background: #219a52;
-}
-
-.btn-modal-confirmar:disabled {
-  background: #bdc3c7;
-  cursor: not-allowed;
-}
+.btn-modal-confirmar:hover:not(:disabled) { background: #2d9147; }
+.btn-modal-confirmar:disabled { background: #bdc3c7; cursor: not-allowed; }
 
 .btn-modal-deletar {
   padding: 9px 18px;
-  background: #e74c3c;
-  color: white;
+  background: #ea4335;
+  color: #fff;
   border: none;
   border-radius: 6px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s;
+  font-family: inherit;
+  transition: background .15s;
 }
+.btn-modal-deletar:hover:not(:disabled) { background: #c0392b; }
+.btn-modal-deletar:disabled { background: #bdc3c7; cursor: not-allowed; }
 
-.btn-modal-deletar:hover:not(:disabled) {
-  background: #c0392b;
-}
-
-.btn-modal-deletar:disabled {
-  background: #bdc3c7;
-  cursor: not-allowed;
-}
-
-/* Mobile: semana vira scroll horizontal */
-@media (max-width: 900px) {
-  .agenda-semana {
-    grid-template-columns: repeat(7, minmax(120px, 1fr));
-    overflow-x: auto;
-  }
+/* ─── Responsivo ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .gc-toolbar { padding: 10px 12px; }
+  .gc-periodo { font-size: 15px; }
+  .gc-btn-espera { display: none; }
+  .gc-day-header-nome { font-size: 10px; }
+  .gc-day-header-num { width: 28px; height: 28px; font-size: 15px; }
 }

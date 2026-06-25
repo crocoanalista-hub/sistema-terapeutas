@@ -1,204 +1,411 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { salvarAnamnese, buscarAnamnese } from "../../services/anamneseService";
+import { useAuth } from "../../hooks/useAuth";
+import {
+  salvarTemplateAnamnese,
+  buscarTemplateAnamnese,
+  salvarRespostasAnamnese,
+  buscarRespostasAnamnese,
+} from "../../services/anamneseService";
 import { buscarPaciente } from "../../services/pacientesService";
-import "../../styles/forms.css";
+import "../../styles/anamnese.css";
 
-const VAZIO = {
-  queixaPrincipal: "",
-  historiaDoenca: "",
-  historicoFamiliar: "",
-  medicamentos: "",
-  cirurgias: "",
-  alergias: "",
-  qualidadeSono: "",
-  habitosAlimentares: "",
-  atividadeFisica: "",
-  vidaSocial: "",
-  relacionamentos: "",
-  motivoBusca: "",
-  objetivosTerapia: "",
-  diagnosticosAnteriores: "",
-  terapiasAnteriores: "",
-  outrasObservacoes: "",
-};
+const uid = () => `${Date.now()}-${Math.floor(Math.random() * 9999)}`;
 
-const SECOES = [
+const TIPOS = [
+  { valor: "paragrafo",       label: "Parágrafo",         icone: "≡" },
+  { valor: "texto-curto",     label: "Resposta curta",    icone: "—" },
+  { valor: "multipla-escolha",label: "Múltipla escolha",  icone: "◉" },
+  { valor: "checkboxes",      label: "Caixas de seleção", icone: "☑" },
+  { valor: "sim-nao",         label: "Sim / Não",         icone: "⇄" },
+];
+
+const TEMPLATE_PADRAO = [
   {
-    titulo: "1. Queixa e Histórico",
-    campos: [
-      { key: "queixaPrincipal", label: "Queixa principal", rows: 3, placeholder: "Descreva o principal motivo que trouxe o paciente à terapia..." },
-      { key: "historiaDoenca", label: "História da doença atual", rows: 3, placeholder: "Como e quando os sintomas começaram..." },
-      { key: "motivoBusca", label: "Motivo da busca por terapia", rows: 2, placeholder: "O que levou o paciente a buscar atendimento agora..." },
+    id: "s1", titulo: "Queixa e Histórico",
+    perguntas: [
+      { id: "p1", tipo: "paragrafo", texto: "Queixa principal", obrigatoria: false, opcoes: [] },
+      { id: "p2", tipo: "paragrafo", texto: "História da doença atual (como e quando os sintomas começaram)", obrigatoria: false, opcoes: [] },
+      { id: "p3", tipo: "paragrafo", texto: "Motivo da busca por terapia neste momento", obrigatoria: false, opcoes: [] },
     ],
   },
   {
-    titulo: "2. Histórico de Saúde",
-    campos: [
-      { key: "diagnosticosAnteriores", label: "Diagnósticos anteriores", rows: 2, placeholder: "CIDs, condições de saúde já diagnosticadas..." },
-      { key: "medicamentos", label: "Medicamentos em uso", rows: 2, placeholder: "Nome, dosagem e frequência..." },
-      { key: "cirurgias", label: "Cirurgias / internações anteriores", rows: 2, placeholder: "Descreva..." },
-      { key: "alergias", label: "Alergias", rows: 1, placeholder: "Alergias a medicamentos, alimentos, etc..." },
-      { key: "terapiasAnteriores", label: "Terapias / tratamentos anteriores", rows: 2, placeholder: "Já fez terapia antes? Com qual abordagem? Por quanto tempo?" },
+    id: "s2", titulo: "Histórico de Saúde",
+    perguntas: [
+      { id: "p4", tipo: "texto-curto", texto: "Diagnósticos anteriores (CIDs ou condições conhecidas)", obrigatoria: false, opcoes: [] },
+      { id: "p5", tipo: "paragrafo", texto: "Medicamentos em uso (nome, dosagem, frequência)", obrigatoria: false, opcoes: [] },
+      { id: "p6", tipo: "texto-curto", texto: "Cirurgias ou internações anteriores", obrigatoria: false, opcoes: [] },
+      { id: "p7", tipo: "texto-curto", texto: "Alergias", obrigatoria: false, opcoes: [] },
+      { id: "p8", tipo: "sim-nao", texto: "Já fez terapia anteriormente?", obrigatoria: false, opcoes: [] },
+      { id: "p9", tipo: "paragrafo", texto: "Se sim, descreva a terapia anterior (abordagem, duração, motivo da interrupção)", obrigatoria: false, opcoes: [] },
     ],
   },
   {
-    titulo: "3. Histórico Familiar",
-    campos: [
-      { key: "historicoFamiliar", label: "Histórico familiar relevante", rows: 3, placeholder: "Doenças mentais ou físicas na família, dinâmica familiar..." },
-      { key: "relacionamentos", label: "Relacionamentos", rows: 2, placeholder: "Estado civil, filhos, relações familiares significativas..." },
+    id: "s3", titulo: "Histórico Familiar",
+    perguntas: [
+      { id: "p10", tipo: "paragrafo", texto: "Histórico familiar relevante (doenças físicas ou mentais na família)", obrigatoria: false, opcoes: [] },
+      { id: "p11", tipo: "multipla-escolha", texto: "Estado civil", obrigatoria: false, opcoes: ["Solteiro(a)", "Casado(a) / União estável", "Divorciado(a) / Separado(a)", "Viúvo(a)"] },
+      { id: "p12", tipo: "paragrafo", texto: "Filhos e dinâmica familiar", obrigatoria: false, opcoes: [] },
     ],
   },
   {
-    titulo: "4. Hábitos e Estilo de Vida",
-    campos: [
-      { key: "qualidadeSono", label: "Qualidade do sono", rows: 2, placeholder: "Horas de sono, insônia, pesadelos..." },
-      { key: "habitosAlimentares", label: "Hábitos alimentares", rows: 2, placeholder: "Alimentação, restrições, compulsões..." },
-      { key: "atividadeFisica", label: "Atividade física", rows: 1, placeholder: "Pratica exercícios? Com que frequência?" },
-      { key: "vidaSocial", label: "Vida social e trabalho", rows: 2, placeholder: "Profissão, relações sociais, lazer..." },
+    id: "s4", titulo: "Hábitos e Estilo de Vida",
+    perguntas: [
+      { id: "p13", tipo: "paragrafo", texto: "Qualidade do sono (horas, insônia, pesadelos)", obrigatoria: false, opcoes: [] },
+      { id: "p14", tipo: "paragrafo", texto: "Hábitos alimentares", obrigatoria: false, opcoes: [] },
+      { id: "p15", tipo: "sim-nao", texto: "Pratica atividade física regularmente?", obrigatoria: false, opcoes: [] },
+      { id: "p16", tipo: "paragrafo", texto: "Vida social, profissional e lazer", obrigatoria: false, opcoes: [] },
     ],
   },
   {
-    titulo: "5. Objetivos e Observações",
-    campos: [
-      { key: "objetivosTerapia", label: "Objetivos terapêuticos", rows: 3, placeholder: "O que o paciente espera alcançar com a terapia..." },
-      { key: "outrasObservacoes", label: "Outras observações", rows: 3, placeholder: "Qualquer informação relevante não contemplada acima..." },
+    id: "s5", titulo: "Objetivos e Observações",
+    perguntas: [
+      { id: "p17", tipo: "paragrafo", texto: "O que espera alcançar com a terapia?", obrigatoria: false, opcoes: [] },
+      { id: "p18", tipo: "paragrafo", texto: "Outras informações relevantes", obrigatoria: false, opcoes: [] },
     ],
   },
 ];
 
+// ═══════════════════════════════════════════════════════════
 const Anamnese = () => {
-  const { id } = useParams();
+  const { id: pacienteId } = useParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [paciente, setPaciente] = useState(null);
-  const [dados, setDados] = useState(VAZIO);
+  const [modo, setModo] = useState("preencher"); // "preencher" | "configurar"
+  const [template, setTemplate] = useState(TEMPLATE_PADRAO);
+  const [respostas, setRespostas] = useState({});
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
-  const [erro, setErro] = useState("");
 
   useEffect(() => {
-    carregar();
-  }, [id]);
+    if (user && pacienteId) carregar();
+  }, [user, pacienteId]);
 
   const carregar = async () => {
     try {
       setCarregando(true);
-      const [pac, anam] = await Promise.all([
-        buscarPaciente(id),
-        buscarAnamnese(id),
+      const [pac, tmpl, resps] = await Promise.all([
+        buscarPaciente(pacienteId),
+        buscarTemplateAnamnese(user.uid),
+        buscarRespostasAnamnese(pacienteId),
       ]);
       setPaciente(pac);
-      if (anam) setDados({ ...VAZIO, ...anam });
+      if (tmpl?.secoes?.length) setTemplate(tmpl.secoes);
+      setRespostas(resps || {});
     } catch (err) {
-      setErro(err.message);
+      console.error(err);
     } finally {
       setCarregando(false);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setDados((prev) => ({ ...prev, [name]: value }));
+  const feedback = (ok = true) => { setSalvo(ok); setTimeout(() => setSalvo(false), 3000); };
+
+  // ─── BUILDER — seções ─────────────────────────────────────
+  const addSecao = () =>
+    setTemplate(t => [...t, { id: uid(), titulo: "Nova Seção", perguntas: [] }]);
+
+  const updateSecao = (sId, field, val) =>
+    setTemplate(t => t.map(s => s.id === sId ? { ...s, [field]: val } : s));
+
+  const removeSecao = (sId) => {
+    if (!window.confirm("Remover esta seção e todas as perguntas?")) return;
+    setTemplate(t => t.filter(s => s.id !== sId));
   };
 
-  const handleSalvar = async (e) => {
-    e.preventDefault();
+  const moveSecao = (idx, dir) =>
+    setTemplate(t => { const a = [...t]; const [x] = a.splice(idx, 1); a.splice(idx + dir, 0, x); return a; });
+
+  // ─── BUILDER — perguntas ──────────────────────────────────
+  const addPergunta = (sId) =>
+    setTemplate(t => t.map(s =>
+      s.id === sId
+        ? { ...s, perguntas: [...s.perguntas, { id: uid(), tipo: "paragrafo", texto: "Nova pergunta", obrigatoria: false, opcoes: [] }] }
+        : s
+    ));
+
+  const updatePerg = (sId, pId, field, val) =>
+    setTemplate(t => t.map(s =>
+      s.id === sId
+        ? { ...s, perguntas: s.perguntas.map(p => p.id === pId ? { ...p, [field]: val } : p) }
+        : s
+    ));
+
+  const removePerg = (sId, pId) =>
+    setTemplate(t => t.map(s =>
+      s.id === sId ? { ...s, perguntas: s.perguntas.filter(p => p.id !== pId) } : s
+    ));
+
+  const movePerg = (sId, idx, dir) =>
+    setTemplate(t => t.map(s => {
+      if (s.id !== sId) return s;
+      const a = [...s.perguntas]; const [x] = a.splice(idx, 1); a.splice(idx + dir, 0, x);
+      return { ...s, perguntas: a };
+    }));
+
+  // ─── BUILDER — opções ─────────────────────────────────────
+  const addOpcao = (sId, pId) =>
+    setTemplate(t => t.map(s =>
+      s.id === sId
+        ? { ...s, perguntas: s.perguntas.map(p => p.id === pId ? { ...p, opcoes: [...p.opcoes, "Nova opção"] } : p) }
+        : s
+    ));
+
+  const updateOpcao = (sId, pId, idx, val) =>
+    setTemplate(t => t.map(s =>
+      s.id === sId
+        ? { ...s, perguntas: s.perguntas.map(p => {
+            if (p.id !== pId) return p;
+            const o = [...p.opcoes]; o[idx] = val; return { ...p, opcoes: o };
+          })}
+        : s
+    ));
+
+  const removeOpcao = (sId, pId, idx) =>
+    setTemplate(t => t.map(s =>
+      s.id === sId
+        ? { ...s, perguntas: s.perguntas.map(p =>
+            p.id === pId ? { ...p, opcoes: p.opcoes.filter((_, i) => i !== idx) } : p
+          )}
+        : s
+    ));
+
+  // ─── SALVAR TEMPLATE ──────────────────────────────────────
+  const salvarTemplate = async () => {
     setSalvando(true);
-    setSalvo(false);
     try {
-      await salvarAnamnese(id, dados);
-      setSalvo(true);
-      setTimeout(() => setSalvo(false), 3000);
-    } catch (err) {
-      setErro(err.message);
-    } finally {
-      setSalvando(false);
-    }
+      await salvarTemplateAnamnese(user.uid, template);
+      feedback();
+      setModo("preencher");
+    } catch (err) { alert(err.message); }
+    finally { setSalvando(false); }
   };
 
-  const handleImprimir = () => window.print();
+  // ─── RESPOSTAS ────────────────────────────────────────────
+  const setResp = (pId, val) => setRespostas(r => ({ ...r, [pId]: val }));
 
-  if (carregando) return <p style={{ color: "#999" }}>Carregando...</p>;
+  const toggleCheck = (pId, opc, checked) =>
+    setRespostas(r => {
+      const cur = Array.isArray(r[pId]) ? r[pId] : [];
+      return { ...r, [pId]: checked ? [...cur, opc] : cur.filter(o => o !== opc) };
+    });
+
+  const salvarRespostas = async () => {
+    setSalvando(true);
+    try {
+      await salvarRespostasAnamnese(pacienteId, user.uid, respostas);
+      feedback();
+    } catch (err) { alert(err.message); }
+    finally { setSalvando(false); }
+  };
+
+  // ─── RENDER CAMPO (modo preencher) ───────────────────────
+  const renderCampo = (perg) => {
+    const { id: pId, tipo, opcoes } = perg;
+    const val = respostas[pId];
+
+    if (tipo === "texto-curto")
+      return <input className="af-input" value={val || ""} onChange={e => setResp(pId, e.target.value)} placeholder="Resposta..." />;
+
+    if (tipo === "paragrafo")
+      return <textarea className="af-textarea" rows={4} value={val || ""} onChange={e => setResp(pId, e.target.value)} placeholder="Resposta..." />;
+
+    if (tipo === "sim-nao")
+      return (
+        <div className="af-toggle-group">
+          {["Sim", "Não"].map(o => (
+            <button key={o} className={`af-toggle-btn${val === o ? " ativo" : ""}`} onClick={() => setResp(pId, o)}>{o}</button>
+          ))}
+        </div>
+      );
+
+    if (tipo === "multipla-escolha")
+      return (
+        <div className="af-opcoes-fill">
+          {(opcoes || []).map(o => (
+            <label key={o} className={`af-radio-label${val === o ? " ativo" : ""}`}>
+              <input type="radio" name={pId} checked={val === o} onChange={() => setResp(pId, o)} />
+              <span>{o}</span>
+            </label>
+          ))}
+        </div>
+      );
+
+    if (tipo === "checkboxes") {
+      const checked = Array.isArray(val) ? val : [];
+      return (
+        <div className="af-opcoes-fill">
+          {(opcoes || []).map(o => (
+            <label key={o} className={`af-check-label${checked.includes(o) ? " ativo" : ""}`}>
+              <input type="checkbox" checked={checked.includes(o)} onChange={e => toggleCheck(pId, o, e.target.checked)} />
+              <span>{o}</span>
+            </label>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // ─── MODO PREENCHER ───────────────────────────────────────
+  const renderFill = () => (
+    <div className="af-fill">
+      {template.map(sec => (
+        <div key={sec.id} className="af-card">
+          <h3 className="af-sec-titulo">{sec.titulo}</h3>
+          {sec.perguntas.map(p => (
+            <div key={p.id} className="af-pergunta">
+              <p className="af-perg-label">{p.texto}{p.obrigatoria && <span className="af-req">*</span>}</p>
+              {renderCampo(p)}
+            </div>
+          ))}
+        </div>
+      ))}
+      <div className="af-fill-acoes">
+        <button className="af-btn-outline" onClick={() => window.print()}>🖨️ Imprimir</button>
+        <button className="af-btn-primary" onClick={salvarRespostas} disabled={salvando}>
+          {salvando ? "Salvando..." : "Salvar Respostas"}
+        </button>
+      </div>
+    </div>
+  );
+
+  // ─── MODO CONFIGURAR (Form Builder) ───────────────────────
+  const renderBuilder = () => (
+    <div className="af-builder">
+      <div className="af-builder-aviso">
+        ⚙️ <strong>Modo de configuração</strong> — edite a estrutura do formulário. As respostas já salvas pelos pacientes são preservadas.
+      </div>
+
+      {template.map((sec, sIdx) => (
+        <div key={sec.id} className="af-builder-sec">
+          {/* Header da seção */}
+          <div className="af-builder-sec-header">
+            <div className="af-sec-pill">Seção {sIdx + 1}</div>
+            <input
+              className="af-builder-sec-input"
+              value={sec.titulo}
+              onChange={e => updateSecao(sec.id, "titulo", e.target.value)}
+              placeholder="Título da seção"
+            />
+            <div className="af-ctrl-btns">
+              <button className="af-ctrl" disabled={sIdx === 0} onClick={() => moveSecao(sIdx, -1)} title="Subir seção">↑</button>
+              <button className="af-ctrl" disabled={sIdx === template.length - 1} onClick={() => moveSecao(sIdx, 1)} title="Descer seção">↓</button>
+              <button className="af-ctrl danger" onClick={() => removeSecao(sec.id)} title="Remover seção">🗑</button>
+            </div>
+          </div>
+
+          {/* Perguntas */}
+          <div className="af-builder-pergs">
+            {sec.perguntas.map((p, pIdx) => (
+              <div key={p.id} className="af-builder-perg">
+                {/* Linha de controle */}
+                <div className="af-perg-top">
+                  <span className="af-perg-num">{pIdx + 1}</span>
+                  <input
+                    className="af-perg-input"
+                    value={p.texto}
+                    onChange={e => updatePerg(sec.id, p.id, "texto", e.target.value)}
+                    placeholder="Texto da pergunta"
+                  />
+                  <select
+                    className="af-tipo-sel"
+                    value={p.tipo}
+                    onChange={e => updatePerg(sec.id, p.id, "tipo", e.target.value)}
+                  >
+                    {TIPOS.map(t => <option key={t.valor} value={t.valor}>{t.icone} {t.label}</option>)}
+                  </select>
+                  <div className="af-ctrl-btns">
+                    <button className="af-ctrl" disabled={pIdx === 0} onClick={() => movePerg(sec.id, pIdx, -1)}>↑</button>
+                    <button className="af-ctrl" disabled={pIdx === sec.perguntas.length - 1} onClick={() => movePerg(sec.id, pIdx, 1)}>↓</button>
+                    <button className="af-ctrl danger" onClick={() => removePerg(sec.id, p.id)}>🗑</button>
+                  </div>
+                </div>
+
+                {/* Preview + opções editáveis */}
+                <div className="af-perg-body">
+                  {p.tipo === "texto-curto" && <input disabled className="af-input" placeholder="Resposta curta..." />}
+                  {p.tipo === "paragrafo"   && <textarea disabled className="af-textarea" rows={2} placeholder="Parágrafo..." />}
+                  {p.tipo === "sim-nao"     && (
+                    <div className="af-toggle-group preview">
+                      <span className="af-toggle-btn">Sim</span>
+                      <span className="af-toggle-btn">Não</span>
+                    </div>
+                  )}
+                  {(p.tipo === "multipla-escolha" || p.tipo === "checkboxes") && (
+                    <div className="af-opcoes-editor">
+                      {p.opcoes.map((opc, oIdx) => (
+                        <div key={oIdx} className="af-opcao-row">
+                          <span className="af-opc-icone">{p.tipo === "checkboxes" ? "☐" : "○"}</span>
+                          <input
+                            className="af-opc-input"
+                            value={opc}
+                            onChange={e => updateOpcao(sec.id, p.id, oIdx, e.target.value)}
+                          />
+                          <button className="af-ctrl danger sm" onClick={() => removeOpcao(sec.id, p.id, oIdx)}>✕</button>
+                        </div>
+                      ))}
+                      <button className="af-add-opc" onClick={() => addOpcao(sec.id, p.id)}>+ Adicionar opção</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer da pergunta */}
+                <div className="af-perg-footer">
+                  <label className="af-obrig-label">
+                    <input type="checkbox" checked={p.obrigatoria} onChange={e => updatePerg(sec.id, p.id, "obrigatoria", e.target.checked)} />
+                    Obrigatória
+                  </label>
+                </div>
+              </div>
+            ))}
+
+            <button className="af-add-perg" onClick={() => addPergunta(sec.id)}>
+              + Adicionar pergunta
+            </button>
+          </div>
+        </div>
+      ))}
+
+      <button className="af-add-sec" onClick={addSecao}>+ Adicionar seção</button>
+
+      <div className="af-builder-acoes">
+        <button className="af-btn-outline" onClick={() => setModo("preencher")}>Cancelar</button>
+        <button className="af-btn-primary" onClick={salvarTemplate} disabled={salvando}>
+          {salvando ? "Salvando..." : "Salvar Formulário"}
+        </button>
+      </div>
+    </div>
+  );
+
+  // ──────────────────────────────────────────────────────────
+  if (carregando) return <p style={{ color: "#999", padding: "32px" }}>Carregando...</p>;
 
   return (
-    <div style={{ maxWidth: "860px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "6px" }}>
-        <button
-          onClick={() => navigate(`/pacientes/${id}`)}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "#666", fontSize: "20px" }}
-        >
-          ←
-        </button>
+    <div className="af-page">
+      <div className="af-page-header">
+        <button className="af-back" onClick={() => navigate(`/pacientes/${pacienteId}`)}>←</button>
         <div>
-          <h2 style={{ margin: 0, color: "#1a2535" }}>Anamnese Digital</h2>
-          {paciente && (
-            <p style={{ margin: "2px 0 0 0", color: "#888", fontSize: "14px" }}>{paciente.nome}</p>
-          )}
+          <h2 className="af-page-titulo">Anamnese Digital</h2>
+          {paciente && <p className="af-page-sub">{paciente.nome}</p>}
         </div>
-        <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
-          <button
-            onClick={handleImprimir}
-            style={{
-              padding: "9px 16px", background: "#f4f6f9", color: "#555",
-              border: "1px solid #ddd", borderRadius: "6px", fontSize: "13px",
-              fontWeight: "600", cursor: "pointer",
-            }}
-          >
-            🖨️ Imprimir
-          </button>
+        <div className="af-page-acoes">
+          {modo === "preencher" ? (
+            <button className="af-btn-config" onClick={() => setModo("configurar")}>
+              ⚙️ Configurar Formulário
+            </button>
+          ) : (
+            <span className="af-badge-config">Modo de configuração</span>
+          )}
         </div>
       </div>
 
-      {erro && <div className="erro-message" style={{ marginTop: "12px" }}>{erro}</div>}
-      {salvo && (
-        <div style={{
-          background: "#d4edda", border: "1px solid #c3e6cb", color: "#155724",
-          padding: "12px 16px", borderRadius: "6px", marginTop: "12px", fontSize: "14px",
-        }}>
-          ✅ Anamnese salva com sucesso!
-        </div>
-      )}
+      {salvo && <div className="af-success">✅ Salvo com sucesso!</div>}
 
-      <form onSubmit={handleSalvar} style={{ marginTop: "16px" }}>
-        {SECOES.map((secao) => (
-          <div key={secao.titulo} style={{
-            background: "white", borderRadius: "8px", padding: "24px",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.08)", marginBottom: "16px",
-          }}>
-            <h3 style={{ margin: "0 0 20px 0", color: "#1a2535", fontSize: "15px", borderBottom: "2px solid #f4f6f9", paddingBottom: "10px" }}>
-              {secao.titulo}
-            </h3>
-            {secao.campos.map((campo) => (
-              <div key={campo.key} className="form-group">
-                <label style={{ fontWeight: "600", color: "#444" }}>{campo.label}</label>
-                <textarea
-                  name={campo.key}
-                  rows={campo.rows}
-                  value={dados[campo.key]}
-                  onChange={handleChange}
-                  placeholder={campo.placeholder}
-                  style={{ resize: "vertical" }}
-                />
-              </div>
-            ))}
-          </div>
-        ))}
-
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginBottom: "32px" }}>
-          <button
-            type="button"
-            onClick={() => navigate(`/pacientes/${id}`)}
-            className="btn-cancelar"
-          >
-            Cancelar
-          </button>
-          <button type="submit" disabled={salvando} className="btn-salvar">
-            {salvando ? "Salvando..." : "Salvar Anamnese"}
-          </button>
-        </div>
-      </form>
+      {modo === "preencher" ? renderFill() : renderBuilder()}
     </div>
   );
 };
