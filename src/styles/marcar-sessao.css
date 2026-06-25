@@ -209,3 +209,217 @@
   gap: 10px;
   padding: 8px 20px 16px;
 }
+
+/* ─── Toggle "Sessão em Pacote" ──────────────────────────── */
+.ms-pacote-toggle {
+  margin: 4px 0 16px;
+}
+
+.ms-pacote-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 12px 16px;
+  border: 2px solid #dadce0;
+  border-radius: 8px;
+  transition: all .15s;
+  background: white;
+}
+.ms-pacote-toggle-label:has(input:checked) {
+  border-color: #1a73e8;
+  background: #e8f0fe;
+}
+.ms-pacote-toggle-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #1a73e8;
+  flex-shrink: 0;
+}
+
+.ms-pacote-toggle-texto {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+  line-height: 1.3;
+}
+.ms-pacote-toggle-dica {
+  font-size: 12px;
+  font-weight: 400;
+  color: #888;
+  margin-top: 1px;
+}
+
+/* ─── Painel do pacote ───────────────────────────────────── */
+.ms-pacote-panel {
+  border: 2px solid #1a73e8;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  background: #fafcff;
+  animation: ms-drop .18s ease;
+}
+
+.ms-pacote-titulo {
+  margin: 0 0 18px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a2535;
+}
+
+/* Dias da semana */
+.ms-dias-grid {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ms-dia-btn {
+  padding: 8px 14px;
+  border: 2px solid #dadce0;
+  border-radius: 24px;
+  background: white;
+  font-size: 13px;
+  font-weight: 700;
+  color: #5f6368;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+.ms-dia-btn:hover { border-color: #1a73e8; color: #1a73e8; background: #e8f0fe; }
+.ms-dia-btn.ativo { border-color: #1a73e8; background: #1a73e8; color: white; }
+
+/* Horários por dia */
+.ms-horarios-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ms-horario-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ms-horario-dia {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3c4043;
+  min-width: 72px;
+}
+
+.ms-horario-input {
+  padding: 7px 10px;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  width: 120px;
+}
+.ms-horario-input:focus { outline: none; border-color: #1a73e8; }
+
+/* Quitado checkbox */
+.ms-quitado-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  padding-top: 22px;
+}
+.ms-quitado-label input { accent-color: #34a853; width: 16px; height: 16px; }
+
+/* Preview das sessões */
+.ms-preview {
+  margin-top: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+.ms-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #f4f6f9;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #3c4043;
+  flex-wrap: wrap;
+}
+
+.ms-conflito-badge {
+  background: #fef7e0;
+  border: 1px solid #f9ab00;
+  color: #b06000;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.ms-preview-valor {
+  margin-left: auto;
+  font-size: 12px;
+  color: #34a853;
+  font-weight: 700;
+}
+
+.ms-preview-lista {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.ms-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid #f4f6f9;
+  font-size: 13px;
+}
+.ms-preview-item:last-child { border-bottom: none; }
+.ms-preview-item.conflito { background: #fef7e0; }
+
+.ms-preview-num {
+  width: 22px;
+  height: 22px;
+  background: #e8eaed;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  color: #5f6368;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ms-preview-data { flex: 1; font-weight: 600; color: #333; text-transform: capitalize; }
+.ms-preview-hora { color: #5f6368; font-size: 12px; }
+.ms-preview-conflito { font-size: 11px; color: #b06000; font-weight: 700; }
+
+.ms-conflito-aviso {
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #b06000;
+  background: #fef7e0;
+  border-top: 1px solid #f9ab00;
+  margin: 0;
+}
+
+.ms-pacote-hint {
+  text-align: center;
+  color: #9aa0a6;
+  font-size: 13px;
+  padding: 12px 0 4px;
+  margin: 0;
+}

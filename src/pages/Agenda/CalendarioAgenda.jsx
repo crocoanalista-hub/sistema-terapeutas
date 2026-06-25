@@ -6,6 +6,7 @@ import {
   cancelarSessao,
   marcarComoConcluido,
   marcarFalta,
+  marcarComoPago,
 } from "../../services/agendamentosService";
 import { listarPacientes } from "../../services/pacientesService";
 import { useAuth } from "../../hooks/useAuth";
@@ -14,7 +15,7 @@ import "../../styles/agenda.css";
 // ─── constantes ───────────────────────────────────────────────
 const START_HOUR = 7;
 const END_HOUR = 22;
-const HOUR_HEIGHT = 64; // px por hora
+const HOUR_HEIGHT = 64;
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
 const TOTAL_HEIGHT = HOURS.length * HOUR_HEIGHT;
 
@@ -87,6 +88,16 @@ const whatsappLink = (tel, nome, data, hora) => {
   return `https://wa.me/55${t}?text=${msg}`;
 };
 
+// ─── Modal genérico (FORA do componente — evita bug de re-render) ──
+const Modal = ({ titulo, onClose, children }) => (
+  <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+      <h3>{titulo}</h3>
+      {children}
+    </div>
+  </div>
+);
+
 // ═════════════════════════════════════════════════════════════
 const CalendarioAgenda = () => {
   const { user } = useAuth();
@@ -101,6 +112,8 @@ const CalendarioAgenda = () => {
   const [nowY, setNowY] = useState(agoraParaPx());
 
   const [eventoAtivo, setEventoAtivo] = useState(null);
+  const [valorPago, setValorPago] = useState("");
+
   const [modalReagendar, setModalReagendar] = useState(null);
   const [modalCancelar, setModalCancelar] = useState(null);
   const [modalConcluir, setModalConcluir] = useState(null);
@@ -110,7 +123,6 @@ const CalendarioAgenda = () => {
   const [obsConc, setObsConc] = useState("");
   const [salvando, setSalvando] = useState(false);
 
-  // Atualiza linha do agora a cada minuto
   useEffect(() => {
     const t = setInterval(() => setNowY(agoraParaPx()), 60000);
     return () => clearInterval(t);
@@ -120,12 +132,18 @@ const CalendarioAgenda = () => {
     if (user) carregar();
   }, [user]);
 
-  // Scroll para horário atual ao carregar
   useEffect(() => {
     if (!carregando && scrollRef.current && nowY !== null) {
       scrollRef.current.scrollTop = Math.max(0, nowY - 120);
     }
   }, [carregando]);
+
+  // Inicializa valorPago quando seleciona evento
+  useEffect(() => {
+    if (eventoAtivo) {
+      setValorPago(eventoAtivo.valor ? String(eventoAtivo.valor) : "");
+    }
+  }, [eventoAtivo?.id]);
 
   const carregar = async () => {
     try {
@@ -145,7 +163,6 @@ const CalendarioAgenda = () => {
     }
   };
 
-  // Agrupado por data
   const porData = {};
   agendamentos.forEach((a) => {
     if (!porData[a.data]) porData[a.data] = [];
@@ -153,18 +170,12 @@ const CalendarioAgenda = () => {
   });
 
   // ─── ações ────────────────────────────────────────────────
-  const fecharModais = () => {
-    setModalReagendar(null);
-    setModalCancelar(null);
-    setModalConcluir(null);
-  };
-
   const handleReagendar = async () => {
     if (!novaData || !novaHora) return;
     setSalvando(true);
     try {
       await reagendarSessao(modalReagendar.id, novaData, novaHora);
-      fecharModais(); setEventoAtivo(null); await carregar();
+      setModalReagendar(null); setEventoAtivo(null); await carregar();
     } catch (err) { alert(err.message); }
     finally { setSalvando(false); }
   };
@@ -173,7 +184,7 @@ const CalendarioAgenda = () => {
     setSalvando(true);
     try {
       await cancelarSessao(modalCancelar.id, motivo);
-      fecharModais(); setMotivo(""); setEventoAtivo(null); await carregar();
+      setModalCancelar(null); setMotivo(""); setEventoAtivo(null); await carregar();
     } catch (err) { alert(err.message); }
     finally { setSalvando(false); }
   };
@@ -182,7 +193,7 @@ const CalendarioAgenda = () => {
     setSalvando(true);
     try {
       await marcarComoConcluido(modalConcluir.id, obsConc);
-      fecharModais(); setObsConc(""); setEventoAtivo(null); await carregar();
+      setModalConcluir(null); setObsConc(""); setEventoAtivo(null); await carregar();
     } catch (err) { alert(err.message); }
     finally { setSalvando(false); }
   };
@@ -192,6 +203,16 @@ const CalendarioAgenda = () => {
     try {
       await marcarFalta(agend.id);
       setEventoAtivo(null); await carregar();
+    } catch (err) { alert(err.message); }
+  };
+
+  const handleMarcarPago = async (agend) => {
+    const val = valorPago ? parseFloat(valorPago) : null;
+    try {
+      await marcarComoPago(agend.id, val);
+      // Atualiza o evento ativo sem fechar o modal
+      setEventoAtivo(prev => ({ ...prev, pago: true, valorPago: val }));
+      await carregar();
     } catch (err) { alert(err.message); }
   };
 
@@ -214,27 +235,21 @@ const CalendarioAgenda = () => {
 
     return (
       <div className="gc-semana-wrapper">
-        {/* Cabeçalho dos dias */}
         <div className="gc-semana-header">
           <div className="gc-corner" />
           {dias.map((dia) => {
             const ds = fmt(dia);
             const isHoje = ds === hoje;
-            const label = DIAS_LABEL[dia.getDay()];
             return (
               <div key={ds} className="gc-day-header-col">
-                <span className="gc-day-header-nome">{label}</span>
-                <span className={`gc-day-header-num${isHoje ? " hoje" : ""}`}>
-                  {dia.getDate()}
-                </span>
+                <span className="gc-day-header-nome">{DIAS_LABEL[dia.getDay()]}</span>
+                <span className={`gc-day-header-num${isHoje ? " hoje" : ""}`}>{dia.getDate()}</span>
               </div>
             );
           })}
         </div>
 
-        {/* Corpo com scroll */}
         <div className="gc-semana-body" ref={scrollRef}>
-          {/* Labels de hora */}
           <div className="gc-time-col">
             {HOURS.map((h) => (
               <div key={h} className="gc-time-label" style={{ height: HOUR_HEIGHT }}>
@@ -243,14 +258,11 @@ const CalendarioAgenda = () => {
             ))}
           </div>
 
-          {/* Grade + colunas dos dias */}
           <div className="gc-days-area" style={{ height: TOTAL_HEIGHT }}>
-            {/* Linhas horizontais das horas */}
             {HOURS.map((_, i) => (
               <div key={i} className="gc-hline" style={{ top: i * HOUR_HEIGHT }} />
             ))}
 
-            {/* Colunas dos dias */}
             {dias.map((dia) => {
               const ds = fmt(dia);
               const isHoje = ds === hoje;
@@ -262,21 +274,17 @@ const CalendarioAgenda = () => {
                   className={`gc-day-col${isHoje ? " hoje" : ""}`}
                   onClick={() => navigate(`/agenda/marcar?data=${ds}`)}
                 >
-                  {/* Linha do horário atual */}
                   {isHoje && nowY !== null && (
                     <div className="gc-now-line" style={{ top: nowY }}>
                       <div className="gc-now-dot" />
                     </div>
                   )}
-
-                  {/* Eventos */}
                   {events.map((agend) => {
                     const top = horaParaPx(agend.hora);
                     const height = Math.max(((agend.duracao || 60) / 60) * HOUR_HEIGHT - 2, 20);
                     const cor = CORES[agend.status] || CORES.confirmado;
                     const pac = mapaPac[agend.pacienteId];
                     const curto = height < 38;
-
                     return (
                       <div
                         key={agend.id}
@@ -284,14 +292,13 @@ const CalendarioAgenda = () => {
                         style={{ top, height, background: cor.bg, borderLeftColor: cor.border, color: cor.text }}
                         onClick={(e) => { e.stopPropagation(); setEventoAtivo(agend); }}
                       >
-                        {curto ? (
-                          <span className="gc-event-curto">{agend.hora} {pac?.nome}</span>
-                        ) : (
-                          <>
-                            <span className="gc-event-nome">{pac?.nome || "Paciente"}</span>
-                            <span className="gc-event-hora">{agend.hora} · {agend.duracao || 60}min</span>
-                          </>
-                        )}
+                        {curto
+                          ? <span className="gc-event-curto">{agend.hora} {pac?.nome}</span>
+                          : <>
+                              <span className="gc-event-nome">{pac?.nome || "Paciente"}</span>
+                              <span className="gc-event-hora">{agend.hora} · {agend.duracao || 60}min</span>
+                            </>
+                        }
                       </div>
                     );
                   })}
@@ -308,12 +315,13 @@ const CalendarioAgenda = () => {
   const renderMes = () => {
     const { dias, mes } = diasDoMes(dataRef);
     const hoje = fmt(new Date());
-    const DIAS_HEADER = ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
 
     return (
       <div className="gc-mes-wrapper">
         <div className="gc-mes-dias-header">
-          {DIAS_HEADER.map((d) => <div key={d} className="gc-mes-header-dia">{d}</div>)}
+          {["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"].map((d) => (
+            <div key={d} className="gc-mes-header-dia">{d}</div>
+          ))}
         </div>
         <div className="gc-mes-grid">
           {dias.map((dia) => {
@@ -323,7 +331,6 @@ const CalendarioAgenda = () => {
             const events = (porData[ds] || []).sort((a, b) => a.hora.localeCompare(b.hora));
             const visivel = events.slice(0, 3);
             const extra = events.length - 3;
-
             return (
               <div key={ds} className={`gc-mes-dia${!isMes ? " outro-mes" : ""}${isHoje ? " hoje" : ""}`}>
                 <span className={`gc-mes-num${isHoje ? " hoje" : ""}`}>{dia.getDate()}</span>
@@ -332,12 +339,8 @@ const CalendarioAgenda = () => {
                     const cor = CORES[agend.status] || CORES.confirmado;
                     const pac = mapaPac[agend.pacienteId];
                     return (
-                      <div
-                        key={agend.id}
-                        className="gc-mes-event"
-                        style={{ background: cor.border }}
-                        onClick={(e) => { e.stopPropagation(); setEventoAtivo(agend); }}
-                      >
+                      <div key={agend.id} className="gc-mes-event" style={{ background: cor.border }}
+                        onClick={(e) => { e.stopPropagation(); setEventoAtivo(agend); }}>
                         {agend.hora} {pac?.nome}
                       </div>
                     );
@@ -359,6 +362,7 @@ const CalendarioAgenda = () => {
     const pac = mapaPac[a.pacienteId];
     const cor = CORES[a.status] || CORES.confirmado;
     const confirmado = a.status === "confirmado";
+    const concluido  = a.status === "concluído";
     const dataFmt = parseLocal(a.data).toLocaleDateString("pt-BR", {
       weekday: "long", day: "numeric", month: "long",
     });
@@ -379,7 +383,45 @@ const CalendarioAgenda = () => {
             <span className="gc-status-badge" style={{ background: cor.bg, color: cor.text }}>
               {a.status}
             </span>
-            {a.valor && <p className="gc-ev-info">💰 R$ {Number(a.valor).toFixed(2).replace(".", ",")}</p>}
+
+            {/* Info de pacote */}
+            {a.pacoteId && (
+              <p className="gc-ev-info">
+                📦 Pacote de {a.numSessoesPacote} sessões
+                {a.valorPacote && ` · R$ ${Number(a.valorPacote).toFixed(2).replace(".", ",")}`}
+                {a.pacoteQuitado ? " · ✅ Quitado" : " · ⏳ Pendente"}
+              </p>
+            )}
+
+            {a.valor && !a.pacoteId && (
+              <p className="gc-ev-info">💰 Valor: R$ {Number(a.valor).toFixed(2).replace(".", ",")}</p>
+            )}
+
+            {/* Status de pagamento */}
+            {a.pago ? (
+              <p className="gc-ev-info gc-pago-ok">
+                ✅ Pago: R$ {Number(a.valorPago ?? a.valor ?? 0).toFixed(2).replace(".", ",")}
+              </p>
+            ) : concluido ? (
+              <div className="gc-pagar-section">
+                <p className="gc-pagar-label">💰 Registrar pagamento</p>
+                <div className="gc-pagar-row">
+                  <input
+                    type="number"
+                    className="gc-pagar-input"
+                    value={valorPago}
+                    onChange={(e) => setValorPago(e.target.value)}
+                    placeholder={a.valor ? `R$ ${a.valor}` : "Valor recebido"}
+                    min="0"
+                    step="0.01"
+                  />
+                  <button className="gc-act-btn pagar" onClick={() => handleMarcarPago(a)}>
+                    Marcar como Pago
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             {a.linkAtendimento && (
               <a href={a.linkAtendimento} target="_blank" rel="noreferrer" className="gc-link-sessao">
                 🔗 Entrar na sessão online
@@ -392,39 +434,21 @@ const CalendarioAgenda = () => {
             <div className="gc-ev-actions">
               {pac?.telefone && (
                 <a href={whatsappLink(pac.telefone, pac.nome, a.data, a.hora)}
-                   target="_blank" rel="noreferrer" className="gc-act-btn whatsapp">
-                  WhatsApp
-                </a>
+                   target="_blank" rel="noreferrer" className="gc-act-btn whatsapp">WhatsApp</a>
               )}
               <button className="gc-act-btn reagendar"
                 onClick={() => { setModalReagendar(a); setNovaData(a.data); setNovaHora(a.hora); }}>
                 Reagendar
               </button>
-              <button className="gc-act-btn concluir" onClick={() => setModalConcluir(a)}>
-                Concluir
-              </button>
-              <button className="gc-act-btn falta" onClick={() => handleFalta(a)}>
-                Falta
-              </button>
-              <button className="gc-act-btn cancelar" onClick={() => setModalCancelar(a)}>
-                Cancelar
-              </button>
+              <button className="gc-act-btn concluir" onClick={() => setModalConcluir(a)}>Concluir</button>
+              <button className="gc-act-btn falta" onClick={() => handleFalta(a)}>Falta</button>
+              <button className="gc-act-btn cancelar" onClick={() => setModalCancelar(a)}>Cancelar</button>
             </div>
           )}
         </div>
       </div>
     );
   };
-
-  // ─── MODAIS DE AÇÃO ───────────────────────────────────────
-  const Modal = ({ titulo, onClose, children }) => (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-        <h3>{titulo}</h3>
-        {children}
-      </div>
-    </div>
-  );
 
   // ═══════════════════════════════════════════════════════════
   return (
@@ -434,8 +458,12 @@ const CalendarioAgenda = () => {
         <div className="gc-toolbar-left">
           <button className="gc-btn-hoje" onClick={() => setDataRef(new Date())}>Hoje</button>
           <div className="gc-nav-group">
-            <button className="gc-nav-btn" onClick={() => vista === "semana" ? setDataRef(d => { const n = new Date(d); n.setDate(n.getDate()-7); return n; }) : setDataRef(d => { const n = new Date(d); n.setMonth(n.getMonth()-1); return n; })}>‹</button>
-            <button className="gc-nav-btn" onClick={() => vista === "semana" ? setDataRef(d => { const n = new Date(d); n.setDate(n.getDate()+7); return n; }) : setDataRef(d => { const n = new Date(d); n.setMonth(n.getMonth()+1); return n; })}>›</button>
+            <button className="gc-nav-btn" onClick={() => vista === "semana"
+              ? setDataRef(d => { const n = new Date(d); n.setDate(n.getDate()-7); return n; })
+              : setDataRef(d => { const n = new Date(d); n.setMonth(n.getMonth()-1); return n; })}>‹</button>
+            <button className="gc-nav-btn" onClick={() => vista === "semana"
+              ? setDataRef(d => { const n = new Date(d); n.setDate(n.getDate()+7); return n; })
+              : setDataRef(d => { const n = new Date(d); n.setMonth(n.getMonth()+1); return n; })}>›</button>
           </div>
           <h2 className="gc-periodo">{labelPeriodo}</h2>
         </div>
@@ -449,13 +477,11 @@ const CalendarioAgenda = () => {
         </div>
       </div>
 
-      {/* Corpo */}
       {carregando
         ? <div className="gc-loading">Carregando agenda...</div>
         : vista === "semana" ? renderSemana() : renderMes()
       }
 
-      {/* Modal evento */}
       {renderModalEvento()}
 
       {/* Modal Reagendar */}

@@ -523,9 +523,39 @@
   font-family: inherit;
 }
 .gc-act-btn:hover { opacity: .82; }
+/* Marcar como pago */
+.gc-pagar-section {
+  background: #f6fef8;
+  border: 1px solid #34a853;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.gc-pagar-label {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #137333;
+}
+.gc-pagar-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.gc-pagar-input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid #34a853;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+}
+.gc-pagar-input:focus { outline: none; box-shadow: 0 0 0 2px rgba(52,168,83,.2); }
+.gc-pago-ok { color: #137333 !important; font-weight: 700; }
+
 .gc-act-btn.whatsapp  { background: #25d366; color: #fff; }
 .gc-act-btn.reagendar { background: #fbbc04; color: #202124; }
 .gc-act-btn.concluir  { background: #34a853; color: #fff; }
+.gc-act-btn.pagar     { background: #34a853; color: #fff; }
 .gc-act-btn.falta     { background: #ff7043; color: #fff; }
 .gc-act-btn.cancelar  { background: #ea4335; color: #fff; }
 
