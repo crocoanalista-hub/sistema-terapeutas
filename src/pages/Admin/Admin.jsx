@@ -6,7 +6,12 @@ import {
 } from "../../services/planoService";
 import "../../styles/admin.css";
 
-const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL;
+const ADMIN_EMAILS = [
+  process.env.REACT_APP_ADMIN_EMAIL,
+  "igorcroco@gmail.com",
+].filter(Boolean);
+
+const isAdmin = (email) => ADMIN_EMAILS.includes(email);
 
 const diasAte = (data) => {
   if (!data) return null;
@@ -35,7 +40,9 @@ export default function Admin() {
 
   // Acesso restrito
   useEffect(() => {
-    if (!authLoading && (!user || user.email !== ADMIN_EMAIL)) {
+    if (authLoading) return;
+    console.log("[Admin] user:", user?.email, "isAdmin:", isAdmin(user?.email), "ADMIN_EMAILS:", ADMIN_EMAILS);
+    if (!user || !isAdmin(user.email)) {
       navigate("/dashboard");
     }
   }, [user, authLoading, navigate]);
@@ -112,7 +119,7 @@ export default function Admin() {
   };
 
   if (authLoading || carregando) return <div className="admin-loading">Carregando painel admin...</div>;
-  if (!user || user.email !== ADMIN_EMAIL) return null;
+  if (!user || !isAdmin(user.email)) return null;
 
   return (
     <div className="admin-page">
