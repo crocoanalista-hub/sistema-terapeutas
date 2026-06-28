@@ -595,15 +595,24 @@ export default function Configuracoes() {
             </div>
             {slugErro && <p style={{ fontSize: 12, color: "#d93025", margin: "6px 0 0" }}>{slugErro}</p>}
             {slug && !slugErro && (
-              <p style={{ fontSize: 12, color: "#137333", margin: "6px 0 0" }}>
-                ✓ Link: <strong>{window.location.origin}/{slug}</strong>
-                <button
-                  onClick={() => navigator.clipboard.writeText(`${window.location.origin}/${slug}`)}
-                  style={{ marginLeft: 8, fontSize: 11, padding: "2px 8px", cursor: "pointer", border: "1px solid #dadce0", borderRadius: 4, background: "white" }}
-                >
-                  Copiar
-                </button>
-              </p>
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#137333" }}>
+                  🔐 Login:
+                  <strong>{window.location.origin}/{slug}</strong>
+                  <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/${slug}`)}
+                    style={{ fontSize: 11, padding: "2px 8px", cursor: "pointer", border: "1px solid #dadce0", borderRadius: 4, background: "white", color: "#333" }}>
+                    Copiar
+                  </button>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#1a73e8" }}>
+                  📅 Agendamento online:
+                  <strong>{window.location.origin}/{slug}/agendar</strong>
+                  <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/${slug}/agendar`)}
+                    style={{ fontSize: 11, padding: "2px 8px", cursor: "pointer", border: "1px solid #dadce0", borderRadius: 4, background: "white", color: "#333" }}>
+                    Copiar
+                  </button>
+                </div>
+              </div>
             )}
           </div>
 

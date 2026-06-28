@@ -1,5 +1,5 @@
 .fin-container {
-  max-width: 1000px;
+  max-width: 1080px;
 }
 
 .fin-titulo {
@@ -8,6 +8,7 @@
   font-size: 26px;
 }
 
+/* ===== Abas ===== */
 .fin-abas {
   display: flex;
   gap: 0;
@@ -36,23 +37,24 @@
   color: white;
 }
 
+/* ===== Cards ===== */
 .fin-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .fin-card {
   padding: 20px 24px;
-  border-radius: 10px;
+  border-radius: 12px;
   color: white;
 }
 
-.fin-card.azul { background: #3498db; }
-.fin-card.verde { background: #27ae60; }
+.fin-card.azul    { background: #3498db; }
+.fin-card.verde   { background: #27ae60; }
 .fin-card.laranja { background: #f39c12; }
-.fin-card.roxo { background: #9b59b6; }
+.fin-card.roxo    { background: #9b59b6; }
 
 .fin-card-label {
   margin: 0 0 8px 0;
@@ -73,10 +75,97 @@
   opacity: 0.75;
 }
 
+/* ===== Gráfico de barras SVG ===== */
+.fin-grafico-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px 28px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+}
+
+.fin-grafico-svg {
+  width: 100%;
+  max-width: 560px;
+  display: block;
+  margin: 8px 0 0;
+}
+
+.fin-barra {
+  fill: #3498db;
+  transition: fill 0.15s;
+}
+
+.fin-barra:hover {
+  fill: #2175a9;
+}
+
+.fin-grafico-legenda {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #777;
+}
+
+.fin-legenda-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: #3498db;
+}
+
+/* ===== Seletor de mês / filtros ===== */
+.fin-resumo-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.fin-extrato-filtros {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.fin-filtro-grupo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fin-label-mes {
+  font-weight: 600;
+  color: #555;
+  font-size: 14px;
+}
+
+.fin-select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+}
+
+/* ===== Tabelas ===== */
 .fin-subtitulo {
   margin: 0 0 16px 0;
   color: #1a2535;
   font-size: 16px;
+  font-weight: 600;
+}
+
+.fin-desc {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 16px 0;
 }
 
 .fin-vazio {
@@ -116,6 +205,17 @@
   letter-spacing: 0.4px;
 }
 
+.fin-th-sort {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.fin-th-sort:hover {
+  color: #1a2535;
+  background: #f0f2f5;
+}
+
 .fin-tabela td {
   padding: 12px 16px;
   border-bottom: 1px solid #f0f0f0;
@@ -130,11 +230,18 @@
   background: #fafafa;
 }
 
+.fin-acoes {
+  display: flex;
+  gap: 6px;
+}
+
+/* ===== Badges ===== */
 .fin-badge {
   padding: 3px 10px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .fin-badge.pago {
@@ -147,11 +254,22 @@
   color: #856404;
 }
 
+/* ===== Valores ===== */
 .fin-sem-valor {
   color: #bbb;
   font-style: italic;
 }
 
+.fin-valor-aberto {
+  color: #e67e22;
+  font-weight: 700;
+}
+
+.fin-valor-ok {
+  color: #27ae60;
+}
+
+/* ===== Botões ===== */
 .btn-pagar {
   padding: 5px 10px;
   background: #27ae60;
@@ -179,6 +297,42 @@
 }
 
 .btn-recibo:hover { background: #2980b9; }
+
+/* ===== Aba Inadimplentes ===== */
+.fin-inadimplente-grupo {
+  margin-bottom: 24px;
+}
+
+.fin-inadimplente-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff8f0;
+  border: 1px solid #f0d9b5;
+  border-radius: 8px 8px 0 0;
+  padding: 12px 16px;
+  border-bottom: none;
+}
+
+.fin-inadimplente-nome {
+  font-weight: 700;
+  color: #1a2535;
+  font-size: 15px;
+}
+
+.fin-inadimplente-total {
+  font-size: 13px;
+  color: #666;
+}
+
+.fin-inadimplente-total strong {
+  color: #e67e22;
+  font-size: 15px;
+}
+
+.fin-inadimplente-grupo .fin-tabela-wrap {
+  border-radius: 0 0 8px 8px;
+}
 
 /* ===== RECIBO (visível só no print) ===== */
 .recibo-print {

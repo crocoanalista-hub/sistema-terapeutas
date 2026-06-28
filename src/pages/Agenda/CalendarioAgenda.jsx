@@ -12,6 +12,7 @@ import {
 import { listarPacientes } from "../../services/pacientesService";
 import { listarSalas } from "../../services/salasService";
 import { listarProfissionais } from "../../services/profissionaisService";
+import { listarSolicitacoes, atualizarStatusSolicitacao } from "../../services/solicitacoesService";
 import { useAuth } from "../../hooks/useAuth";
 import "../../styles/agenda.css";
 
@@ -127,6 +128,8 @@ const CalendarioAgenda = () => {
   const [modalCancelar, setModalCancelar] = useState(null);
   const [modalConcluir, setModalConcluir] = useState(null);
   const [modalEditar, setModalEditar] = useState(null);
+  const [solicitacoes, setSolicitacoes] = useState([]);
+  const [mostrarSolicitacoes, setMostrarSolicitacoes] = useState(false);
   const [novaData, setNovaData] = useState("");
   const [novaHora, setNovaHora] = useState("");
   const [motivo, setMotivo] = useState("");
@@ -164,12 +167,14 @@ const CalendarioAgenda = () => {
   const carregar = async () => {
     try {
       setCarregando(true);
-      const [agends, pacs, salasLista, profsLista] = await Promise.all([
+      const [agends, pacs, salasLista, profsLista, solics] = await Promise.all([
         listarAgendamentos(workspaceId),
         listarPacientes(workspaceId),
         listarSalas(workspaceId).catch(() => []),
         listarProfissionais(workspaceId).catch(() => []),
+        listarSolicitacoes(workspaceId).catch(() => []),
       ]);
+      setSolicitacoes(solics.filter(s => s.status === "pendente"));
       setAgendamentos(agends);
       const mapa = {};
       pacs.forEach((p) => { mapa[p.id] = { nome: p.nome, telefone: p.telefone || "" }; });
@@ -641,9 +646,62 @@ const CalendarioAgenda = () => {
             <button className={`gc-toggle-btn${vista === "mes" ? " ativo" : ""}`} onClick={() => setVista("mes")}>Mês</button>
           </div>
           <button className="gc-btn-espera" onClick={() => navigate("/agenda/lista-espera")}>Lista de Espera</button>
+          <button
+            className="gc-btn-solicitacoes"
+            onClick={() => setMostrarSolicitacoes(v => !v)}
+          >
+            📥 Solicitações{solicitacoes.length > 0 && <span className="gc-badge-sol">{solicitacoes.length}</span>}
+          </button>
           <button className="gc-btn-novo" onClick={() => navigate("/agenda/marcar")}>+ Nova Sessão</button>
         </div>
       </div>
+
+      {/* Painel de solicitações pendentes */}
+      {mostrarSolicitacoes && (
+        <div className="gc-solicitacoes-painel">
+          <div className="gc-sol-header">
+            <h3>Solicitações de agendamento</h3>
+            <button className="gc-sol-fechar" onClick={() => setMostrarSolicitacoes(false)}>✕</button>
+          </div>
+          {solicitacoes.length === 0 ? (
+            <p className="gc-sol-vazio">Nenhuma solicitação pendente.</p>
+          ) : solicitacoes.map(s => (
+            <div key={s.id} className="gc-sol-card">
+              <div className="gc-sol-info">
+                <span className="gc-sol-nome">{s.nome}</span>
+                <span className="gc-sol-tel">📱 {s.telefone}</span>
+                {s.email && <span className="gc-sol-email">✉️ {s.email}</span>}
+                <span className="gc-sol-data">
+                  📅 {s.dataPreferida ? new Date(s.dataPreferida + "T12:00").toLocaleDateString("pt-BR") : "—"} às {s.horaPreferida || "—"}
+                </span>
+                {s.mensagem && <span className="gc-sol-msg">💬 {s.mensagem}</span>}
+              </div>
+              <div className="gc-sol-acoes">
+                <a
+                  href={`https://wa.me/55${s.telefone.replace(/\D/g,"")}?text=${encodeURIComponent(`Olá ${s.nome}! Recebemos sua solicitação de agendamento para ${s.dataPreferida ? new Date(s.dataPreferida+"T12:00").toLocaleDateString("pt-BR") : ""} às ${s.horaPreferida}. Vamos confirmar seu horário!`)}`}
+                  target="_blank" rel="noreferrer"
+                  className="gc-sol-btn gc-sol-btn--wpp"
+                >WhatsApp</a>
+                <button
+                  className="gc-sol-btn gc-sol-btn--confirm"
+                  onClick={async () => {
+                    await atualizarStatusSolicitacao(s.id, "confirmado");
+                    setSolicitacoes(prev => prev.filter(x => x.id !== s.id));
+                    navigate(`/agenda/marcar?nome=${encodeURIComponent(s.nome)}&telefone=${encodeURIComponent(s.telefone)}&data=${s.dataPreferida}&hora=${s.horaPreferida}`);
+                  }}
+                >Agendar</button>
+                <button
+                  className="gc-sol-btn gc-sol-btn--recusar"
+                  onClick={async () => {
+                    await atualizarStatusSolicitacao(s.id, "recusado");
+                    setSolicitacoes(prev => prev.filter(x => x.id !== s.id));
+                  }}
+                >Recusar</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Barra de filtros (salas e profissionais) */}
       {!carregando && renderFiltros()}

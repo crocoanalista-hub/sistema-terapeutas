@@ -1,0 +1,161 @@
+.ap-loading, .ap-not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: #5f6368;
+  gap: 8px;
+}
+
+.ap-page {
+  min-height: 100vh;
+  background: #f4f6f9;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+.ap-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 32px;
+}
+.ap-logo-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,.25);
+  flex-shrink: 0;
+}
+.ap-logo-emoji { font-size: 40px; line-height: 1; }
+.ap-header-text { display: flex; flex-direction: column; gap: 2px; }
+.ap-clinica { font-size: 22px; font-weight: 800; color: white; margin: 0; }
+.ap-header-sub { font-size: 13px; color: rgba(255,255,255,.65); margin: 0; }
+
+/* ── Body ───────────────────────────────────────────────────── */
+.ap-body {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.ap-card {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+}
+
+.ap-titulo { font-size: 22px; font-weight: 800; color: #1a2535; margin: 0 0 6px; }
+.ap-desc   { font-size: 14px; color: #5f6368; margin: 0 0 24px; }
+
+.ap-erro {
+  background: #fce8e6;
+  color: #7a1c14;
+  border: 1px solid #f5c6c2;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* ── Form ───────────────────────────────────────────────────── */
+.ap-form { display: flex; flex-direction: column; gap: 16px; }
+
+.ap-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 500px) { .ap-row { grid-template-columns: 1fr; } }
+
+.ap-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.ap-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5f6368;
+}
+.ap-opcional { font-weight: 400; color: #9aa0a6; }
+.ap-field input,
+.ap-field select,
+.ap-field textarea {
+  padding: 10px 13px;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #333;
+  transition: border-color .15s, box-shadow .15s;
+  resize: vertical;
+}
+.ap-field input:focus,
+.ap-field select:focus,
+.ap-field textarea:focus {
+  outline: none;
+  border-color: var(--cor-primaria, #1a73e8);
+  box-shadow: 0 0 0 3px rgba(26,115,232,.12);
+}
+
+/* ── Seletor visual de horário ──────────────────────────────── */
+.ap-horas-grid { display: flex; flex-direction: column; gap: 8px; }
+.ap-horas-label { font-size: 12px; font-weight: 600; color: #9aa0a6; margin: 0; }
+.ap-horas { display: flex; flex-wrap: wrap; gap: 6px; }
+.ap-hora-btn {
+  padding: 5px 10px;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #5f6368;
+  background: white;
+  cursor: pointer;
+  transition: all .12s;
+}
+.ap-hora-btn:hover { background: #f1f3f4; }
+.ap-hora-btn.ativa { color: white; }
+
+/* ── Botão submit ───────────────────────────────────────────── */
+.ap-submit {
+  padding: 13px;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity .15s;
+  margin-top: 4px;
+}
+.ap-submit:hover:not(:disabled) { opacity: .88; }
+.ap-submit:disabled { opacity: .5; cursor: default; }
+
+/* ── Sucesso ────────────────────────────────────────────────── */
+.ap-sucesso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 16px 0;
+}
+.ap-sucesso-icon { font-size: 56px; }
+.ap-sucesso h2   { font-size: 22px; font-weight: 800; color: #1a2535; margin: 0; }
+.ap-sucesso p    { font-size: 14px; color: #5f6368; margin: 0; max-width: 380px; }
+.ap-sucesso-detalhe { background: #f8f9fa; border-radius: 8px; padding: 10px 16px; font-size: 14px !important; }
+.ap-btn-novo {
+  padding: 11px 28px;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  margin-top: 8px;
+}

@@ -9,26 +9,143 @@ import {
 import { buscarPaciente } from "../../services/pacientesService";
 import { useAuth } from "../../hooks/useAuth";
 import "../../styles/forms.css";
+import "../../styles/prontuario.css";
+
+/* ------------------------------------------------------------------ */
+/*  Constantes                                                          */
+/* ------------------------------------------------------------------ */
+
+const HUMOR_OPCOES = [
+  { nivel: 1, emoji: "😔", label: "Muito triste" },
+  { nivel: 2, emoji: "😟", label: "Triste" },
+  { nivel: 3, emoji: "😐", label: "Neutro" },
+  { nivel: 4, emoji: "🙂", label: "Bem" },
+  { nivel: 5, emoji: "😊", label: "Muito bem" },
+];
+
+const TIPO_OPCOES = ["Individual", "Casal", "Grupo", "Online"];
+
+const DADOS_INICIAIS = {
+  data: new Date().toISOString().slice(0, 10),
+  tipo: "Individual",
+  humor: null,
+  queixa: "",
+  conteudo: "",
+  intervencao: "",
+  plano: "",
+};
+
+/* ------------------------------------------------------------------ */
+/*  Sub-componente: Seção dobrável                                      */
+/* ------------------------------------------------------------------ */
+
+const Secao = ({ titulo, icone, conteudo }) => {
+  const [aberta, setAberta] = useState(false);
+
+  if (!conteudo || !conteudo.trim()) return null;
+
+  return (
+    <div className="prontuario-section">
+      <button
+        className="prontuario-section-toggle"
+        onClick={() => setAberta((v) => !v)}
+        type="button"
+      >
+        <span>{icone}</span>
+        <span>{titulo}</span>
+        <span className={`prontuario-section-chevron ${aberta ? "aberto" : ""}`}>▼</span>
+      </button>
+      {aberta && (
+        <div className="prontuario-section-body">{conteudo}</div>
+      )}
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/*  Sub-componente: Card de evolução                                    */
+/* ------------------------------------------------------------------ */
+
+const EvolucaoCard = ({ evol, onEditar, onDeletar }) => {
+  const dataFormatada = new Date(evol.data + "T00:00:00").toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const humorOpcao = evol.humor
+    ? HUMOR_OPCOES.find((h) => h.nivel === evol.humor)
+    : null;
+
+  // Registro legado: só tem conteudo, sem campos estruturados
+  const ehLegado =
+    !evol.queixa && !evol.intervencao && !evol.plano && !evol.tipo && !evol.humor;
+
+  return (
+    <div className="prontuario-card">
+      <div className="prontuario-card-header">
+        <div className="prontuario-card-meta">
+          <span className="prontuario-card-data">📅 {dataFormatada}</span>
+          {evol.tipo && (
+            <span className="prontuario-card-tipo">{evol.tipo}</span>
+          )}
+          {humorOpcao && (
+            <span
+              className="prontuario-card-humor"
+              title={humorOpcao.label}
+            >
+              {humorOpcao.emoji}
+            </span>
+          )}
+        </div>
+        <div className="prontuario-card-actions">
+          <button className="btn-editar-card" onClick={() => onEditar(evol)}>
+            Editar
+          </button>
+          <button className="btn-deletar-card" onClick={() => onDeletar(evol)}>
+            Excluir
+          </button>
+        </div>
+      </div>
+
+      {ehLegado ? (
+        /* Registro antigo — exibe conteudo direto */
+        <div className="prontuario-conteudo-simples">{evol.conteudo}</div>
+      ) : (
+        <div className="prontuario-sections">
+          <Secao titulo="Queixa / Motivo da sessão" icone="💬" conteudo={evol.queixa} />
+          <Secao titulo="Evolução / Observações clínicas" icone="📝" conteudo={evol.conteudo} />
+          <Secao titulo="Intervenções realizadas" icone="🛠" conteudo={evol.intervencao} />
+          <Secao titulo="Plano para próxima sessão" icone="🎯" conteudo={evol.plano} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/*  Componente principal                                                */
+/* ------------------------------------------------------------------ */
 
 const EvolucaoPaciente = () => {
   const { user, workspaceId } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [paciente, setPaciente] = useState(null);
-  const [evolucoes, setEvolucoes] = useState([]);
+  const [paciente, setPaciente]     = useState(null);
+  const [evolucoes, setEvolucoes]   = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [mostrarForm, setMostrarForm] = useState(false);
-  const [editando, setEditando] = useState(null);
-  const [salvando, setSalvando] = useState(false);
-  const [erro, setErro] = useState("");
-
-  const hoje = new Date().toISOString().slice(0, 10);
-  const [dados, setDados] = useState({ data: hoje, conteudo: "" });
+  const [editando, setEditando]     = useState(null);
+  const [salvando, setSalvando]     = useState(false);
+  const [erro, setErro]             = useState("");
+  const [dados, setDados]           = useState({ ...DADOS_INICIAIS });
 
   useEffect(() => {
     if (workspaceId) carregar();
-  }, [user, id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, id, workspaceId]);
 
   const carregar = async () => {
     try {
@@ -46,36 +163,34 @@ const EvolucaoPaciente = () => {
     }
   };
 
-  const handleSalvar = async (e) => {
-    e.preventDefault();
-    if (!dados.conteudo.trim()) { setErro("O conteúdo é obrigatório."); return; }
-    setSalvando(true);
-    try {
-      if (editando) {
-        await atualizarEvolucao(editando.id, dados);
-      } else {
-        await adicionarEvolucao(workspaceId, id, dados);
-      }
-      setDados({ data: hoje, conteudo: "" });
-      setMostrarForm(false);
-      setEditando(null);
-      setErro("");
-      await carregar();
-    } catch (err) {
-      setErro(err.message);
-    } finally {
-      setSalvando(false);
-    }
+  const resetForm = () => {
+    setDados({ ...DADOS_INICIAIS, data: new Date().toISOString().slice(0, 10) });
+    setEditando(null);
+    setErro("");
+  };
+
+  const abrirNovaEvolucao = () => {
+    resetForm();
+    setMostrarForm(true);
   };
 
   const handleEditar = (evol) => {
     setEditando(evol);
-    setDados({ data: evol.data, conteudo: evol.conteudo });
+    setDados({
+      data:        evol.data        || new Date().toISOString().slice(0, 10),
+      tipo:        evol.tipo        || "Individual",
+      humor:       evol.humor       || null,
+      queixa:      evol.queixa      || "",
+      conteudo:    evol.conteudo    || "",
+      intervencao: evol.intervencao || "",
+      plano:       evol.plano       || "",
+    });
     setMostrarForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDeletar = async (evol) => {
-    if (!window.confirm("Deletar esta evolução?")) return;
+    if (!window.confirm("Excluir esta evolução? Esta ação não pode ser desfeita.")) return;
     try {
       await deletarEvolucao(evol.id);
       await carregar();
@@ -84,140 +199,205 @@ const EvolucaoPaciente = () => {
     }
   };
 
-  const cancelarForm = () => {
-    setMostrarForm(false);
-    setEditando(null);
-    setDados({ data: hoje, conteudo: "" });
-    setErro("");
+  const handleSalvar = async (e) => {
+    e.preventDefault();
+    if (!dados.conteudo.trim() && !dados.queixa.trim()) {
+      setErro("Preencha pelo menos o campo de Evolução ou Queixa.");
+      return;
+    }
+    setSalvando(true);
+    try {
+      if (editando) {
+        await atualizarEvolucao(editando.id, dados);
+      } else {
+        await adicionarEvolucao(workspaceId, id, dados);
+      }
+      resetForm();
+      setMostrarForm(false);
+      await carregar();
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setSalvando(false);
+    }
   };
+
+  const cancelar = () => {
+    setMostrarForm(false);
+    resetForm();
+  };
+
+  const set = (campo) => (e) =>
+    setDados((prev) => ({ ...prev, [campo]: e.target.value }));
+
+  /* ---------------------------------------------------------------- */
+  /*  Render                                                            */
+  /* ---------------------------------------------------------------- */
 
   return (
     <div style={{ maxWidth: "860px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "6px" }}>
-        <button
-          onClick={() => navigate(`/pacientes/${id}`)}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "#666", fontSize: "20px" }}
-        >
+
+      {/* Header */}
+      <div className="prontuario-header">
+        <button className="btn-voltar" onClick={() => navigate(`/pacientes/${id}`)}>
           ←
         </button>
-        <div>
-          <h2 style={{ margin: 0, color: "#1a2535" }}>Evolução do Paciente</h2>
-          {paciente && (
-            <p style={{ margin: "2px 0 0 0", color: "#888", fontSize: "14px" }}>{paciente.nome}</p>
-          )}
+        <div className="prontuario-header-info">
+          <h2>
+            Prontuário
+            {evolucoes.length > 0 && (
+              <span className="prontuario-sessoes-badge">
+                {evolucoes.length} {evolucoes.length === 1 ? "sessão" : "sessões"}
+              </span>
+            )}
+          </h2>
+          {paciente && <p>{paciente.nome}</p>}
         </div>
-        <button
-          onClick={() => { setMostrarForm(true); setEditando(null); setDados({ data: hoje, conteudo: "" }); }}
-          style={{
-            marginLeft: "auto", padding: "10px 18px", backgroundColor: "#9b59b6",
-            color: "white", border: "none", borderRadius: "6px", fontWeight: "600",
-            cursor: "pointer", fontSize: "14px",
-          }}
-        >
+        <button className="btn-nova-evolucao" onClick={abrirNovaEvolucao}>
           + Nova Evolução
         </button>
       </div>
 
-      {erro && <div className="erro-message" style={{ marginTop: "12px" }}>{erro}</div>}
+      {erro && (
+        <div className="erro-message" style={{ marginTop: "12px" }}>{erro}</div>
+      )}
 
+      {/* Formulário */}
       {mostrarForm && (
-        <div style={{
-          background: "white", borderRadius: "8px", padding: "24px",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.08)", margin: "16px 0",
-        }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: "16px" }}>
-            {editando ? "Editar Evolução" : "Nova Evolução"}
-          </h3>
+        <div className="prontuario-form-box">
+          <h3>{editando ? "Editar Evolução" : "Nova Evolução"}</h3>
           <form onSubmit={handleSalvar}>
-            <div className="form-group">
-              <label>Data da sessão</label>
-              <input type="date" value={dados.data}
-                onChange={(e) => setDados((p) => ({ ...p, data: e.target.value }))} required />
+
+            {/* Linha 1: Data + Tipo */}
+            <div className="form-row-2">
+              <div className="form-group">
+                <label>Data da sessão <span className="obrigatorio">*</span></label>
+                <input
+                  type="date"
+                  value={dados.data}
+                  onChange={set("data")}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Tipo de atendimento</label>
+                <select value={dados.tipo} onChange={set("tipo")}>
+                  {TIPO_OPCOES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
             </div>
+
+            {/* Humor */}
             <div className="form-group">
-              <label>Anotações clínicas <span className="obrigatorio">*</span></label>
+              <label className="humor-label">Humor do paciente</label>
+              <div className="humor-scale">
+                {HUMOR_OPCOES.map((h) => (
+                  <button
+                    key={h.nivel}
+                    type="button"
+                    data-nivel={h.nivel}
+                    className={`humor-btn ${dados.humor === h.nivel ? "ativo" : ""}`}
+                    title={h.label}
+                    onClick={() =>
+                      setDados((prev) => ({
+                        ...prev,
+                        humor: prev.humor === h.nivel ? null : h.nivel,
+                      }))
+                    }
+                  >
+                    {h.emoji}
+                    <span className="humor-num">{h.nivel}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Queixa */}
+            <div className="form-group">
+              <label>Queixa / Motivo da sessão</label>
               <textarea
-                rows="8"
-                value={dados.conteudo}
-                onChange={(e) => setDados((p) => ({ ...p, conteudo: e.target.value }))}
-                placeholder="Descreva a evolução do paciente: temas trabalhados, observações clínicas, tarefas, próximos objetivos..."
+                rows="3"
+                value={dados.queixa}
+                onChange={set("queixa")}
+                placeholder="Descreva o motivo principal relatado pelo paciente..."
                 style={{ resize: "vertical" }}
-                required
               />
             </div>
+
+            {/* Evolução */}
+            <div className="form-group">
+              <label>
+                Evolução / Observações clínicas <span className="obrigatorio">*</span>
+              </label>
+              <textarea
+                rows="7"
+                value={dados.conteudo}
+                onChange={set("conteudo")}
+                placeholder="Temas trabalhados, dinâmica da sessão, observações clínicas relevantes..."
+                style={{ resize: "vertical" }}
+              />
+            </div>
+
+            {/* Intervenção */}
+            <div className="form-group">
+              <label>Intervenções realizadas</label>
+              <textarea
+                rows="3"
+                value={dados.intervencao}
+                onChange={set("intervencao")}
+                placeholder="Técnicas e intervenções aplicadas durante a sessão..."
+                style={{ resize: "vertical" }}
+              />
+            </div>
+
+            {/* Plano */}
+            <div className="form-group">
+              <label>Plano para próxima sessão</label>
+              <textarea
+                rows="3"
+                value={dados.plano}
+                onChange={set("plano")}
+                placeholder="Objetivos, tarefas ou temas a abordar na próxima sessão..."
+                style={{ resize: "vertical" }}
+              />
+            </div>
+
             <div className="form-buttons">
-              <button type="button" className="btn-cancelar" onClick={cancelarForm}>Cancelar</button>
-              <button type="submit" disabled={salvando} className="btn-salvar">
-                {salvando ? "Salvando..." : editando ? "Salvar Alterações" : "Salvar Evolução"}
+              <button type="button" className="btn-cancelar" onClick={cancelar}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn-salvar" disabled={salvando}>
+                {salvando
+                  ? "Salvando..."
+                  : editando
+                  ? "Salvar Alterações"
+                  : "Salvar Evolução"}
               </button>
             </div>
           </form>
         </div>
       )}
 
+      {/* Timeline */}
       {carregando ? (
         <p style={{ color: "#999", marginTop: "20px" }}>Carregando...</p>
       ) : evolucoes.length === 0 ? (
-        <div style={{
-          background: "white", borderRadius: "8px", padding: "40px",
-          textAlign: "center", color: "#999", boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-          marginTop: "16px",
-        }}>
-          Nenhuma evolução registrada ainda.
+        <div className="prontuario-vazio">
+          <div style={{ fontSize: "40px" }}>📋</div>
+          <p>Nenhuma evolução registrada ainda.<br />Clique em "Nova Evolução" para começar.</p>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
-          {evolucoes.map((evol) => {
-            const data = new Date(evol.data + "T00:00:00").toLocaleDateString("pt-BR", {
-              weekday: "long", day: "numeric", month: "long", year: "numeric",
-            });
-            return (
-              <div key={evol.id} style={{
-                background: "white", borderRadius: "8px",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.08)", overflow: "hidden",
-              }}>
-                <div style={{
-                  background: "#f4f6f9", padding: "12px 20px",
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  borderBottom: "1px solid #eee",
-                }}>
-                  <span style={{ fontWeight: "600", color: "#1a2535", textTransform: "capitalize", fontSize: "14px" }}>
-                    📅 {data}
-                  </span>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button
-                      onClick={() => handleEditar(evol)}
-                      style={{
-                        padding: "5px 10px", background: "#f39c12", color: "white",
-                        border: "none", borderRadius: "4px", fontSize: "12px",
-                        fontWeight: "600", cursor: "pointer",
-                      }}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleDeletar(evol)}
-                      style={{
-                        padding: "5px 10px", background: "#e74c3c", color: "white",
-                        border: "none", borderRadius: "4px", fontSize: "12px",
-                        fontWeight: "600", cursor: "pointer",
-                      }}
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                </div>
-                <div style={{ padding: "16px 20px" }}>
-                  <p style={{
-                    margin: 0, color: "#444", fontSize: "14px",
-                    lineHeight: "1.7", whiteSpace: "pre-wrap",
-                  }}>
-                    {evol.conteudo}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
+        <div className="prontuario-timeline">
+          {evolucoes.map((evol) => (
+            <EvolucaoCard
+              key={evol.id}
+              evol={evol}
+              onEditar={handleEditar}
+              onDeletar={handleDeletar}
+            />
+          ))}
         </div>
       )}
     </div>

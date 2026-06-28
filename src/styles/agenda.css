@@ -790,3 +790,93 @@
   border: 1px solid #dadce0;
 }
 .gc-act-btn.editar:hover { background: #d2e3fc; color: #1a73e8; border-color: #1a73e8; }
+
+/* ── Solicitações de agendamento ────────────────────────────── */
+.gc-btn-solicitacoes {
+  position: relative;
+  padding: 8px 14px;
+  background: #e8f0fe;
+  color: #1a73e8;
+  border: 1px solid #c5d8fb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .12s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.gc-btn-solicitacoes:hover { background: #c5d8fb; }
+
+.gc-badge-sol {
+  background: #ea4335;
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 10px;
+  padding: 1px 6px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.gc-solicitacoes-painel {
+  background: white;
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  margin: 0 0 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,.1);
+}
+.gc-sol-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f3f4;
+  background: #f8f9fa;
+}
+.gc-sol-header h3 { font-size: 15px; font-weight: 700; color: #1a2535; margin: 0; }
+.gc-sol-fechar {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #5f6368;
+  padding: 4px 8px;
+}
+.gc-sol-vazio { padding: 20px; color: #9aa0a6; text-align: center; font-size: 14px; }
+
+.gc-sol-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f3f4;
+  flex-wrap: wrap;
+}
+.gc-sol-card:last-child { border-bottom: none; }
+.gc-sol-info { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.gc-sol-nome { font-size: 15px; font-weight: 700; color: #1a2535; }
+.gc-sol-tel, .gc-sol-email, .gc-sol-data, .gc-sol-msg {
+  font-size: 13px;
+  color: #5f6368;
+}
+.gc-sol-msg { font-style: italic; color: #9aa0a6; }
+.gc-sol-acoes { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
+.gc-sol-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.gc-sol-btn--wpp  { background: #e6f4ea; color: #137333; border-color: #ceead6; }
+.gc-sol-btn--confirm { background: #e8f0fe; color: #1558b0; border-color: #c5d8fb; }
+.gc-sol-btn--recusar { background: #fce8e6; color: #7a1c14; border-color: #fcd0cd; }

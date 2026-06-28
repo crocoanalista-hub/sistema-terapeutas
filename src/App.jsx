@@ -20,6 +20,7 @@ import MarcarSessao from "./pages/Agenda/MarcarSessao";
 import CalendarioAgenda from "./pages/Agenda/CalendarioAgenda";
 import ListaEspera from "./pages/Agenda/ListaEspera";
 import HistoricoAtendimentos from "./pages/Agenda/HistoricoAtendimentos";
+import AgendamentoPublico from "./pages/Agenda/AgendamentoPublico";
 
 import Financeiro from "./pages/Financeiro/Financeiro";
 import Documentos from "./pages/Documentos/Documentos";
@@ -70,6 +71,9 @@ function App() {
 
         {/* Admin — sem Layout (página própria) */}
         <Route path="/admin" element={<Admin />} />
+
+        {/* Agendamento público do paciente */}
+        <Route path="/:slug/agendar" element={<AgendamentoPublico />} />
 
         {/* Entrada brandada por workspace */}
         <Route path="/:slug" element={<WorkspaceEntrada />} />

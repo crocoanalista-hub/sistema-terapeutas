@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   listarSessoesConcluidas,
   marcarComoPago,
@@ -10,6 +10,129 @@ import "../../styles/financeiro.css";
 const moeda = (v) =>
   Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+const fmtData = (iso) =>
+  iso ? new Date(iso + "T00:00").toLocaleDateString("pt-BR") : "—";
+
+const nomeMes = (yyyymm) => {
+  const [y, m] = yyyymm.split("-");
+  return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+};
+
+// ---------- Gráfico de barras SVG ----------
+const GraficoBarras = ({ dados }) => {
+  // dados: [{ mes: "2025-01", valor: 1200 }, ...]
+  if (!dados.length) return null;
+  const maxVal = Math.max(...dados.map((d) => d.valor), 1);
+  const W = 560;
+  const H = 180;
+  const PAD = { top: 16, right: 16, bottom: 36, left: 64 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top - PAD.bottom;
+  const barW = Math.max(24, (chartW / dados.length) * 0.55);
+  const barGap = chartW / dados.length;
+
+  // y-axis ticks
+  const ticks = 4;
+  const tickVals = Array.from({ length: ticks + 1 }, (_, i) =>
+    Math.round((maxVal / ticks) * i)
+  );
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="fin-grafico-svg"
+      role="img"
+      aria-label="Receita por mês"
+    >
+      {/* grid lines */}
+      {tickVals.map((tv) => {
+        const y = PAD.top + chartH - (tv / maxVal) * chartH;
+        return (
+          <g key={tv}>
+            <line
+              x1={PAD.left}
+              x2={PAD.left + chartW}
+              y1={y}
+              y2={y}
+              stroke="#e8eaed"
+              strokeWidth="1"
+            />
+            <text
+              x={PAD.left - 8}
+              y={y + 4}
+              textAnchor="end"
+              fontSize="10"
+              fill="#999"
+            >
+              {tv >= 1000 ? `${(tv / 1000).toFixed(0)}k` : tv}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* bars */}
+      {dados.map((d, i) => {
+        const barH = Math.max(2, (d.valor / maxVal) * chartH);
+        const x = PAD.left + i * barGap + (barGap - barW) / 2;
+        const y = PAD.top + chartH - barH;
+        const [, m] = d.mes.split("-");
+        const label = new Date(2024, Number(m) - 1, 1).toLocaleDateString(
+          "pt-BR",
+          { month: "short" }
+        );
+        return (
+          <g key={d.mes}>
+            <rect
+              x={x}
+              y={y}
+              width={barW}
+              height={barH}
+              rx="4"
+              className="fin-barra"
+            />
+            <text
+              x={x + barW / 2}
+              y={PAD.top + chartH + 16}
+              textAnchor="middle"
+              fontSize="11"
+              fill="#666"
+            >
+              {label}
+            </text>
+            {d.valor > 0 && (
+              <text
+                x={x + barW / 2}
+                y={y - 4}
+                textAnchor="middle"
+                fontSize="9"
+                fill="#555"
+              >
+                {d.valor >= 1000
+                  ? `${(d.valor / 1000).toFixed(1)}k`
+                  : moeda(d.valor).replace("R$ ", "")}
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {/* y-axis line */}
+      <line
+        x1={PAD.left}
+        x2={PAD.left}
+        y1={PAD.top}
+        y2={PAD.top + chartH}
+        stroke="#ccc"
+        strokeWidth="1"
+      />
+    </svg>
+  );
+};
+
+// ---------- Component principal ----------
 const Financeiro = () => {
   const { workspaceId, terapeuta } = useAuth();
 
@@ -23,11 +146,14 @@ const Financeiro = () => {
   });
   const [reciboSessao, setReciboSessao] = useState(null);
 
-  useEffect(() => {
-    if (workspaceId) carregar();
-  }, [workspaceId]);
+  // Aba 3 — Por Paciente ordenação
+  const [ordemPac, setOrdemPac] = useState({ col: "totalAberto", dir: "desc" });
 
-  const carregar = async () => {
+  // Aba 4 — Extrato filtro status
+  const [filtroStatus, setFiltroStatus] = useState("todos");
+
+  const carregar = useCallback(async () => {
+    if (!workspaceId) return;
     try {
       setCarregando(true);
       const [sess, pacs] = await Promise.all([
@@ -36,14 +162,20 @@ const Financeiro = () => {
       ]);
       setSessoes(sess);
       const mapa = {};
-      pacs.forEach((p) => { mapa[p.id] = p; });
+      pacs.forEach((p) => {
+        mapa[p.id] = p;
+      });
       setMapaPacientes(mapa);
     } catch (err) {
       console.error(err);
     } finally {
       setCarregando(false);
     }
-  };
+  }, [workspaceId]);
+
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
 
   const handleMarcarPago = async (sessao) => {
     try {
@@ -54,70 +186,298 @@ const Financeiro = () => {
     }
   };
 
-  // Cálculos
-  const pagas = sessoes.filter((s) => s.pago);
-  const pendentes = sessoes.filter((s) => !s.pago);
-  const totalRecebido = pagas.reduce((acc, s) => acc + (s.valor || 0), 0);
-  const totalPendente = pendentes.reduce((acc, s) => acc + (s.valor || 0), 0);
-
-  const sessoesMes = sessoes.filter((s) => s.data && s.data.startsWith(mesSelecionado));
-  const recebidoMes = sessoesMes.filter((s) => s.pago).reduce((acc, s) => acc + (s.valor || 0), 0);
-  const pendenteMes = sessoesMes.filter((s) => !s.pago).reduce((acc, s) => acc + (s.valor || 0), 0);
-
-  const mesesDisponiveis = [...new Set(sessoes.map((s) => s.data?.slice(0, 7)).filter(Boolean))].sort().reverse();
-
   const imprimirRecibo = (sessao) => {
     setReciboSessao(sessao);
     setTimeout(() => window.print(), 300);
   };
 
+  // ---- Dados derivados ----
+  const mesesDisponiveis = [
+    ...new Set(sessoes.map((s) => s.data?.slice(0, 7)).filter(Boolean)),
+  ].sort().reverse();
+
+  const sessoesMes = sessoes.filter(
+    (s) => s.data && s.data.startsWith(mesSelecionado)
+  );
+  const recebidoMes = sessoesMes
+    .filter((s) => s.pago)
+    .reduce((acc, s) => acc + (s.valor || 0), 0);
+  const pendenteMes = sessoesMes
+    .filter((s) => !s.pago)
+    .reduce((acc, s) => acc + (s.valor || 0), 0);
+  const ticketMedio =
+    sessoesMes.length > 0
+      ? (recebidoMes + pendenteMes) / sessoesMes.length
+      : 0;
+
+  // Gráfico — últimos 6 meses
+  const ultimos6Meses = (() => {
+    const result = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const valor = sessoes
+        .filter((s) => s.data?.startsWith(key) && s.pago)
+        .reduce((acc, s) => acc + (s.valor || 0), 0);
+      result.push({ mes: key, valor });
+    }
+    return result;
+  })();
+
+  // Inadimplentes — agrupados por paciente
+  const inadimplentes = (() => {
+    const grupos = {};
+    sessoes
+      .filter((s) => !s.pago)
+      .forEach((s) => {
+        if (!grupos[s.pacienteId]) grupos[s.pacienteId] = [];
+        grupos[s.pacienteId].push(s);
+      });
+    return Object.entries(grupos)
+      .map(([pacId, sess]) => ({
+        pacId,
+        nome: mapaPacientes[pacId]?.nome || "—",
+        total: sess.reduce((acc, s) => acc + (s.valor || 0), 0),
+        sessoes: sess.sort((a, b) => a.data?.localeCompare(b.data)),
+      }))
+      .sort((a, b) => b.total - a.total);
+  })();
+
+  // Por paciente
+  const porPaciente = (() => {
+    const grupos = {};
+    sessoes.forEach((s) => {
+      if (!grupos[s.pacienteId]) {
+        grupos[s.pacienteId] = {
+          pacId: s.pacienteId,
+          nome: mapaPacientes[s.pacienteId]?.nome || "—",
+          qtd: 0,
+          recebido: 0,
+          aberto: 0,
+          ultimaData: "",
+        };
+      }
+      const g = grupos[s.pacienteId];
+      g.qtd += 1;
+      if (s.pago) g.recebido += s.valor || 0;
+      else g.aberto += s.valor || 0;
+      if (!g.ultimaData || (s.data || "") > g.ultimaData)
+        g.ultimaData = s.data || "";
+    });
+    const arr = Object.values(grupos);
+    const { col, dir } = ordemPac;
+    arr.sort((a, b) => {
+      let va = a[col];
+      let vb = b[col];
+      if (typeof va === "string") va = va.toLowerCase();
+      if (typeof vb === "string") vb = vb.toLowerCase();
+      if (va < vb) return dir === "asc" ? -1 : 1;
+      if (va > vb) return dir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  })();
+
+  const toggleOrdem = (col) => {
+    setOrdemPac((prev) =>
+      prev.col === col
+        ? { col, dir: prev.dir === "asc" ? "desc" : "asc" }
+        : { col, dir: "desc" }
+    );
+  };
+
+  const setaOrdem = (col) => {
+    if (ordemPac.col !== col) return " ↕";
+    return ordemPac.dir === "asc" ? " ↑" : " ↓";
+  };
+
+  // Extrato
+  const extratoFiltrado = sessoesMes
+    .filter((s) => {
+      if (filtroStatus === "pago") return s.pago;
+      if (filtroStatus === "pendente") return !s.pago;
+      return true;
+    })
+    .sort((a, b) => (b.data || "").localeCompare(a.data || ""));
+
+  // ---- Renders ----
+
   const renderResumo = () => (
     <div>
+      <div className="fin-resumo-header">
+        <label className="fin-label-mes">Mês:</label>
+        <select
+          className="fin-select"
+          value={mesSelecionado}
+          onChange={(e) => setMesSelecionado(e.target.value)}
+        >
+          {mesesDisponiveis.length === 0 && (
+            <option value={mesSelecionado}>{mesSelecionado}</option>
+          )}
+          {mesesDisponiveis.map((m) => (
+            <option key={m} value={m}>
+              {nomeMes(m)}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="fin-cards">
-        <div className="fin-card azul">
-          <p className="fin-card-label">Total Recebido</p>
-          <p className="fin-card-valor">{moeda(totalRecebido)}</p>
-          <p className="fin-card-sub">{pagas.length} sessões</p>
+        <div className="fin-card verde">
+          <p className="fin-card-label">Recebido no mês</p>
+          <p className="fin-card-valor">{moeda(recebidoMes)}</p>
+          <p className="fin-card-sub">
+            {sessoesMes.filter((s) => s.pago).length} sessões pagas
+          </p>
         </div>
         <div className="fin-card laranja">
-          <p className="fin-card-label">Aguardando Pagamento</p>
-          <p className="fin-card-valor">{moeda(totalPendente)}</p>
-          <p className="fin-card-sub">{pendentes.length} sessões</p>
+          <p className="fin-card-label">A receber</p>
+          <p className="fin-card-valor">{moeda(pendenteMes)}</p>
+          <p className="fin-card-sub">
+            {sessoesMes.filter((s) => !s.pago).length} sessões pendentes
+          </p>
         </div>
-        <div className="fin-card verde">
-          <p className="fin-card-label">Total (Recebido + Pendente)</p>
-          <p className="fin-card-valor">{moeda(totalRecebido + totalPendente)}</p>
-          <p className="fin-card-sub">{sessoes.length} sessões concluídas</p>
+        <div className="fin-card azul">
+          <p className="fin-card-label">Total de sessões</p>
+          <p className="fin-card-valor">{sessoesMes.length}</p>
+          <p className="fin-card-sub">sessões concluídas no mês</p>
+        </div>
+        <div className="fin-card roxo">
+          <p className="fin-card-label">Ticket médio</p>
+          <p className="fin-card-valor">{moeda(ticketMedio)}</p>
+          <p className="fin-card-sub">por sessão no mês</p>
         </div>
       </div>
 
-      <h3 className="fin-subtitulo">Sessões Pendentes de Pagamento</h3>
-      {pendentes.length === 0 ? (
-        <p className="fin-vazio">Nenhuma sessão aguardando pagamento. 🎉</p>
+      <div className="fin-grafico-card">
+        <h3 className="fin-subtitulo">Receita dos últimos 6 meses</h3>
+        <GraficoBarras dados={ultimos6Meses} />
+        <div className="fin-grafico-legenda">
+          <span className="fin-legenda-dot" /> Receita recebida
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderInadimplentes = () => (
+    <div>
+      <p className="fin-desc">
+        Sessões concluídas não pagas, agrupadas por paciente — ordenadas por
+        maior valor em aberto.
+      </p>
+      {inadimplentes.length === 0 ? (
+        <p className="fin-vazio">Nenhum paciente inadimplente. 🎉</p>
+      ) : (
+        inadimplentes.map(({ pacId, nome, total, sessoes: ss }) => (
+          <div key={pacId} className="fin-inadimplente-grupo">
+            <div className="fin-inadimplente-header">
+              <span className="fin-inadimplente-nome">{nome}</span>
+              <span className="fin-inadimplente-total">
+                Total em aberto: <strong>{moeda(total)}</strong>
+              </span>
+            </div>
+            <div className="fin-tabela-wrap">
+              <table className="fin-tabela">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Hora</th>
+                    <th>Valor</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ss.map((s) => (
+                    <tr key={s.id}>
+                      <td>{fmtData(s.data)}</td>
+                      <td>{s.hora || "—"}</td>
+                      <td>
+                        {s.valor ? (
+                          moeda(s.valor)
+                        ) : (
+                          <span className="fin-sem-valor">Sem valor</span>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          className="btn-pagar"
+                          onClick={() => handleMarcarPago(s)}
+                        >
+                          Marcar como pago
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+
+  const renderPorPaciente = () => (
+    <div>
+      <p className="fin-desc">
+        Clique nos cabeçalhos para ordenar.
+      </p>
+      {porPaciente.length === 0 ? (
+        <p className="fin-vazio">Nenhuma sessão registrada.</p>
       ) : (
         <div className="fin-tabela-wrap">
           <table className="fin-tabela">
             <thead>
               <tr>
-                <th>Paciente</th>
-                <th>Data</th>
-                <th>Hora</th>
-                <th>Valor</th>
-                <th>Ação</th>
+                <th
+                  className="fin-th-sort"
+                  onClick={() => toggleOrdem("nome")}
+                >
+                  Paciente{setaOrdem("nome")}
+                </th>
+                <th
+                  className="fin-th-sort"
+                  onClick={() => toggleOrdem("qtd")}
+                >
+                  Sessões{setaOrdem("qtd")}
+                </th>
+                <th
+                  className="fin-th-sort"
+                  onClick={() => toggleOrdem("recebido")}
+                >
+                  Total recebido{setaOrdem("recebido")}
+                </th>
+                <th
+                  className="fin-th-sort"
+                  onClick={() => toggleOrdem("aberto")}
+                >
+                  A receber{setaOrdem("aberto")}
+                </th>
+                <th
+                  className="fin-th-sort"
+                  onClick={() => toggleOrdem("ultimaData")}
+                >
+                  Última sessão{setaOrdem("ultimaData")}
+                </th>
               </tr>
             </thead>
             <tbody>
-              {pendentes.map((s) => (
-                <tr key={s.id}>
-                  <td>{mapaPacientes[s.pacienteId]?.nome || "—"}</td>
-                  <td>{new Date(s.data + "T00:00").toLocaleDateString("pt-BR")}</td>
-                  <td>{s.hora}</td>
-                  <td>{s.valor ? moeda(s.valor) : <span className="fin-sem-valor">Sem valor</span>}</td>
+              {porPaciente.map((p) => (
+                <tr key={p.pacId}>
                   <td>
-                    <button className="btn-pagar" onClick={() => handleMarcarPago(s)}>
-                      Marcar como Pago
-                    </button>
+                    <strong>{p.nome}</strong>
                   </td>
+                  <td>{p.qtd}</td>
+                  <td>{moeda(p.recebido)}</td>
+                  <td>
+                    {p.aberto > 0 ? (
+                      <span className="fin-valor-aberto">{moeda(p.aberto)}</span>
+                    ) : (
+                      <span className="fin-valor-ok">R$ 0,00</span>
+                    )}
+                  </td>
+                  <td>{p.ultimaData ? fmtData(p.ultimaData) : "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -127,17 +487,49 @@ const Financeiro = () => {
     </div>
   );
 
-  const renderPagamentos = () => (
+  const renderExtrato = () => (
     <div>
-      <div className="fin-tabela-wrap">
-        {sessoes.length === 0 ? (
-          <p className="fin-vazio">Nenhuma sessão concluída ainda.</p>
-        ) : (
+      <div className="fin-extrato-filtros">
+        <div className="fin-filtro-grupo">
+          <label className="fin-label-mes">Mês:</label>
+          <select
+            className="fin-select"
+            value={mesSelecionado}
+            onChange={(e) => setMesSelecionado(e.target.value)}
+          >
+            {mesesDisponiveis.length === 0 && (
+              <option value={mesSelecionado}>{mesSelecionado}</option>
+            )}
+            {mesesDisponiveis.map((m) => (
+              <option key={m} value={m}>
+                {nomeMes(m)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="fin-filtro-grupo">
+          <label className="fin-label-mes">Status:</label>
+          <select
+            className="fin-select"
+            value={filtroStatus}
+            onChange={(e) => setFiltroStatus(e.target.value)}
+          >
+            <option value="todos">Todos</option>
+            <option value="pago">Pagos</option>
+            <option value="pendente">Pendentes</option>
+          </select>
+        </div>
+      </div>
+
+      {extratoFiltrado.length === 0 ? (
+        <p className="fin-vazio">Nenhuma sessão encontrada com esses filtros.</p>
+      ) : (
+        <div className="fin-tabela-wrap">
           <table className="fin-tabela">
             <thead>
               <tr>
-                <th>Paciente</th>
                 <th>Data</th>
+                <th>Paciente</th>
                 <th>Hora</th>
                 <th>Valor</th>
                 <th>Status</th>
@@ -145,25 +537,37 @@ const Financeiro = () => {
               </tr>
             </thead>
             <tbody>
-              {sessoes.map((s) => (
+              {extratoFiltrado.map((s) => (
                 <tr key={s.id}>
+                  <td>{fmtData(s.data)}</td>
                   <td>{mapaPacientes[s.pacienteId]?.nome || "—"}</td>
-                  <td>{new Date(s.data + "T00:00").toLocaleDateString("pt-BR")}</td>
-                  <td>{s.hora}</td>
-                  <td>{s.valor ? moeda(s.valor) : <span className="fin-sem-valor">—</span>}</td>
+                  <td>{s.hora || "—"}</td>
+                  <td>
+                    {s.valor ? (
+                      moeda(s.valor)
+                    ) : (
+                      <span className="fin-sem-valor">—</span>
+                    )}
+                  </td>
                   <td>
                     <span className={`fin-badge ${s.pago ? "pago" : "pendente"}`}>
                       {s.pago ? "Pago" : "Pendente"}
                     </span>
                   </td>
-                  <td style={{ display: "flex", gap: "6px" }}>
+                  <td className="fin-acoes">
                     {!s.pago && (
-                      <button className="btn-pagar" onClick={() => handleMarcarPago(s)}>
+                      <button
+                        className="btn-pagar"
+                        onClick={() => handleMarcarPago(s)}
+                      >
                         Pagar
                       </button>
                     )}
                     {s.valor && (
-                      <button className="btn-recibo" onClick={() => imprimirRecibo(s)}>
+                      <button
+                        className="btn-recibo"
+                        onClick={() => imprimirRecibo(s)}
+                      >
                         Recibo
                       </button>
                     )}
@@ -172,94 +576,24 @@ const Financeiro = () => {
               ))}
             </tbody>
           </table>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderFluxo = () => (
-    <div>
-      <div style={{ marginBottom: "20px", display: "flex", alignItems: "center", gap: "12px" }}>
-        <label style={{ fontWeight: "600", color: "#555", fontSize: "14px" }}>Mês:</label>
-        <select
-          value={mesSelecionado}
-          onChange={(e) => setMesSelecionado(e.target.value)}
-          style={{ padding: "8px 12px", border: "1px solid #ddd", borderRadius: "6px", fontSize: "14px" }}
-        >
-          {mesesDisponiveis.length === 0 && (
-            <option value={mesSelecionado}>{mesSelecionado}</option>
-          )}
-          {mesesDisponiveis.map((m) => {
-            const [y, mo] = m.split("-");
-            const label = new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-            return <option key={m} value={m}>{label}</option>;
-          })}
-        </select>
-      </div>
-
-      <div className="fin-cards" style={{ marginBottom: "24px" }}>
-        <div className="fin-card verde">
-          <p className="fin-card-label">Recebido no mês</p>
-          <p className="fin-card-valor">{moeda(recebidoMes)}</p>
-          <p className="fin-card-sub">{sessoesMes.filter((s) => s.pago).length} sessões</p>
-        </div>
-        <div className="fin-card laranja">
-          <p className="fin-card-label">Pendente no mês</p>
-          <p className="fin-card-valor">{moeda(pendenteMes)}</p>
-          <p className="fin-card-sub">{sessoesMes.filter((s) => !s.pago).length} sessões</p>
-        </div>
-        <div className="fin-card azul">
-          <p className="fin-card-label">Total do mês</p>
-          <p className="fin-card-valor">{moeda(recebidoMes + pendenteMes)}</p>
-          <p className="fin-card-sub">{sessoesMes.length} sessões</p>
-        </div>
-      </div>
-
-      {sessoesMes.length === 0 ? (
-        <p className="fin-vazio">Nenhuma sessão concluída neste mês.</p>
-      ) : (
-        <div className="fin-tabela-wrap">
-          <table className="fin-tabela">
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Paciente</th>
-                <th>Valor</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sessoesMes
-                .sort((a, b) => a.data.localeCompare(b.data))
-                .map((s) => (
-                  <tr key={s.id}>
-                    <td>{new Date(s.data + "T00:00").toLocaleDateString("pt-BR")}</td>
-                    <td>{mapaPacientes[s.pacienteId]?.nome || "—"}</td>
-                    <td>{s.valor ? moeda(s.valor) : <span className="fin-sem-valor">—</span>}</td>
-                    <td>
-                      <span className={`fin-badge ${s.pago ? "pago" : "pendente"}`}>
-                        {s.pago ? "Pago" : "Pendente"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
         </div>
       )}
     </div>
   );
+
+  const abas = [
+    { key: "resumo", label: "Resumo" },
+    { key: "inadimplentes", label: "Inadimplentes" },
+    { key: "porPaciente", label: "Por Paciente" },
+    { key: "extrato", label: "Extrato" },
+  ];
 
   return (
     <div className="fin-container">
       <h2 className="fin-titulo">Financeiro</h2>
 
       <div className="fin-abas">
-        {[
-          { key: "resumo", label: "Resumo" },
-          { key: "pagamentos", label: "Pagamentos" },
-          { key: "fluxo", label: "Fluxo de Caixa" },
-        ].map((a) => (
+        {abas.map((a) => (
           <button
             key={a.key}
             className={`fin-aba ${aba === a.key ? "ativa" : ""}`}
@@ -274,10 +608,12 @@ const Financeiro = () => {
         <p className="fin-vazio">Carregando...</p>
       ) : aba === "resumo" ? (
         renderResumo()
-      ) : aba === "pagamentos" ? (
-        renderPagamentos()
+      ) : aba === "inadimplentes" ? (
+        renderInadimplentes()
+      ) : aba === "porPaciente" ? (
+        renderPorPaciente()
       ) : (
-        renderFluxo()
+        renderExtrato()
       )}
 
       {/* Recibo para impressão */}
@@ -293,8 +629,7 @@ const Financeiro = () => {
               {mapaPacientes[reciboSessao.pacienteId]?.nome || ""}
             </div>
             <div className="recibo-linha">
-              <strong>Data da sessão:</strong>{" "}
-              {new Date(reciboSessao.data + "T00:00").toLocaleDateString("pt-BR")}
+              <strong>Data da sessão:</strong> {fmtData(reciboSessao.data)}
             </div>
             <div className="recibo-linha">
               <strong>Horário:</strong> {reciboSessao.hora}
@@ -310,8 +645,7 @@ const Financeiro = () => {
               <strong>{mapaPacientes[reciboSessao.pacienteId]?.nome}</strong> a
               importância de <strong>{moeda(reciboSessao.valor)}</strong>{" "}
               referente à sessão de psicoterapia realizada em{" "}
-              {new Date(reciboSessao.data + "T00:00").toLocaleDateString("pt-BR")},
-              dando plena quitação.
+              {fmtData(reciboSessao.data)}, dando plena quitação.
             </div>
             <div className="recibo-assinatura">
               <div className="recibo-linha-assinatura" />
