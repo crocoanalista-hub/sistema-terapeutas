@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { listarPacientes } from "../../services/pacientesService";
 import { buscarAnamnese } from "../../services/anamneseService";
 import { salvarTemplatesDoc, buscarTemplatesDoc } from "../../services/documentosService";
+import {
+  criarDocumentoParaAssinar,
+  listarDocumentosParaAssinar,
+} from "../../services/assinaturaService";
 import { useAuth } from "../../hooks/useAuth";
 import "../../styles/documentos.css";
+import "../../styles/assinatura.css";
 
 // ─── Tipos de bloco ───────────────────────────────────────
 const TIPOS_BLOCO = [
@@ -95,6 +100,7 @@ const DOCS = [
   { key: "consentimento",  label: "Termo de Consentimento" },
   { key: "comparecimento", label: "Declaração de Comparecimento" },
   { key: "anamnese",       label: "Anamnese (Impressão)" },
+  { key: "assinaturas",    label: "✍️ Assinaturas" },
 ];
 
 // ─── Interpolação de variáveis ────────────────────────────
@@ -103,7 +109,7 @@ const interp = (texto, vars) =>
 
 // ═══════════════════════════════════════════════════════════
 const Documentos = () => {
-  const { workspaceId, terapeuta } = useAuth();
+  const { workspaceId, terapeuta, slug } = useAuth();
 
   const [docAtivo, setDocAtivo] = useState("contrato");
   const [pacientes, setPacientes] = useState([]);
@@ -114,6 +120,19 @@ const Documentos = () => {
   const [blocos, setBlocos] = useState([]);
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
+
+  // ─── Estado: Assinaturas ─────────────────────────────────
+  const [docsSolicitados, setDocsSolicitados] = useState([]);
+  const [carregandoAssins, setCarregandoAssins] = useState(false);
+  const [modalSolicitar, setModalSolicitar] = useState(false);
+  const [criando, setCriando] = useState(false);
+  const [formAssin, setFormAssin] = useState({
+    nomePaciente: "",
+    telefone: "",
+    tipoDoc: "contrato",
+    pacienteId: "",
+  });
+  const [modalVerAssin, setModalVerAssin] = useState(null); // { base64, nomePaciente }
 
   const [dados, setDados] = useState({
     valorSessao: "",
@@ -137,6 +156,25 @@ const Documentos = () => {
       }).catch(() => {});
     }
   }, [workspaceId]);
+
+  const carregarAssinaturas = useCallback(async () => {
+    if (!workspaceId) return;
+    setCarregandoAssins(true);
+    try {
+      const lista = await listarDocumentosParaAssinar(workspaceId);
+      lista.sort((a, b) => {
+        const ta = a.criadoEm?.toDate?.() || new Date(a.criadoEm || 0);
+        const tb = b.criadoEm?.toDate?.() || new Date(b.criadoEm || 0);
+        return tb - ta;
+      });
+      setDocsSolicitados(lista);
+    } catch (_) {}
+    finally { setCarregandoAssins(false); }
+  }, [workspaceId]);
+
+  useEffect(() => {
+    if (docAtivo === "assinaturas") carregarAssinaturas();
+  }, [docAtivo, carregarAssinaturas]);
 
   useEffect(() => {
     if (pacienteSelecionado && docAtivo === "anamnese") {
@@ -399,6 +437,218 @@ const Documentos = () => {
     </div>
   );
 
+  // ─── Gerar HTML do documento para assinatura ─────────────
+  const gerarHTMLDocumento = (tipoDoc, nomePac, nomeTer) => {
+    const varsDoc = {
+      "{terapeuta}":           nomeTer || "[Terapeuta]",
+      "{paciente}":            nomePac || "[Paciente]",
+      "{valorSessao}":         dados.valorSessao || "___",
+      "{frequencia}":          dados.frequencia,
+      "{duracaoSessao}":       dados.duracaoSessao,
+      "{modalidade}":          dados.localAtendimento,
+      "{dataContrato}":        new Date().toLocaleDateString("pt-BR"),
+      "{dataComparecimento}":  new Date().toLocaleDateString("pt-BR"),
+      "{horaComparecimento}":  "___",
+      "{motivoComparecimento}": dados.motivoComparecimento,
+      "{data}":                new Date().toLocaleDateString("pt-BR"),
+    };
+    const bArr = templates[tipoDoc] || TEMPLATES_PADRAO[tipoDoc] || [];
+    let html = '<div style="font-family:Georgia,serif;font-size:14px;line-height:1.7;color:#222;">';
+    bArr.forEach(bloco => {
+      const t = Object.entries(varsDoc).reduce((s, [k, v]) => s.replaceAll(k, v || k), bloco.texto || "");
+      if (bloco.tipo === "h2")  html += `<h2 style="text-align:center;font-size:16px;">${t}</h2>`;
+      else if (bloco.tipo === "h4") html += `<h4 style="margin-top:16px;font-size:14px;">${t}</h4>`;
+      else if (bloco.tipo === "p")  html += `<p style="margin:8px 0;">${t}</p>`;
+      else if (bloco.tipo === "lista") {
+        const itens = bloco.texto.split("\n").filter(Boolean).map(i =>
+          `<li>${Object.entries(varsDoc).reduce((s,[k,v]) => s.replaceAll(k, v||k), i)}</li>`
+        ).join("");
+        html += `<ul style="padding-left:20px;">${itens}</ul>`;
+      } else if (bloco.tipo === "assinaturas") {
+        html += `<div style="display:flex;gap:60px;margin-top:30px;">
+          <div><div style="border-top:1px solid #333;width:200px;margin-bottom:4px;"></div>
+          <p style="margin:0;font-size:12px;">${nomeTer}</p>
+          <p style="margin:0;font-size:12px;">${bloco.parteA || ""}</p></div>
+          ${bloco.parteB ? `<div><div style="border-top:1px solid #333;width:200px;margin-bottom:4px;"></div>
+          <p style="margin:0;font-size:12px;">${nomePac}</p>
+          <p style="margin:0;font-size:12px;">${bloco.parteB}</p></div>` : ""}
+        </div>`;
+      } else if (bloco.tipo === "data") {
+        html += `<p style="margin-top:20px;font-size:13px;">${t}</p>`;
+      }
+    });
+    html += "</div>";
+    return html;
+  };
+
+  // ─── Handlers: Assinaturas ───────────────────────────────
+  const handleCriarAssinatura = async () => {
+    if (!formAssin.nomePaciente.trim()) { alert("Informe o nome do paciente."); return; }
+    if (!slug) { alert("Slug do workspace não disponível."); return; }
+    setCriando(true);
+    try {
+      const nomeTer = terapeuta?.nome || "[Terapeuta]";
+      const labelDoc = DOCS.find(d => d.key === formAssin.tipoDoc)?.label || formAssin.tipoDoc;
+      const conteudo = gerarHTMLDocumento(formAssin.tipoDoc, formAssin.nomePaciente.trim(), nomeTer);
+      const docId = await criarDocumentoParaAssinar(workspaceId, {
+        nomePaciente: formAssin.nomePaciente.trim(),
+        telefone: formAssin.telefone.trim(),
+        titulo: labelDoc,
+        tipoDoc: formAssin.tipoDoc,
+        conteudo,
+      });
+      const link = `${window.location.origin}/${slug}/assinar/${docId}`;
+      setModalSolicitar(false);
+      setFormAssin({ nomePaciente: "", telefone: "", tipoDoc: "contrato", pacienteId: "" });
+      await carregarAssinaturas();
+      // Oferecer envio via WhatsApp se tiver telefone
+      if (formAssin.telefone.trim()) {
+        const tel = formAssin.telefone.replace(/\D/g, "");
+        const msg = encodeURIComponent(`Olá, ${formAssin.nomePaciente.trim()}! Segue o link para assinar o documento "${labelDoc}": ${link}`);
+        window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
+      } else {
+        navigator.clipboard.writeText(link).catch(() => {});
+        alert(`Link gerado e copiado para a área de transferência:\n${link}`);
+      }
+    } catch (e) {
+      alert("Erro ao criar o documento: " + e.message);
+    } finally {
+      setCriando(false);
+    }
+  };
+
+  const copiarLink = (docId) => {
+    const link = `${window.location.origin}/${slug}/assinar/${docId}`;
+    navigator.clipboard.writeText(link).catch(() => {});
+    alert("Link copiado!");
+  };
+
+  // ─── Render aba Assinaturas ──────────────────────────────
+  const renderAssinaturas = () => (
+    <div className="doc-main" style={{ width: "100%" }}>
+      <div className="assin-header">
+        <h3>Documentos enviados para assinatura</h3>
+        <button className="assin-btn-solicitar" onClick={() => setModalSolicitar(true)}>
+          + Solicitar assinatura
+        </button>
+      </div>
+
+      {carregandoAssins ? (
+        <p className="assin-vazio">Carregando...</p>
+      ) : docsSolicitados.length === 0 ? (
+        <p className="assin-vazio">Nenhum documento enviado para assinatura ainda.</p>
+      ) : (
+        <div className="assin-lista">
+          {docsSolicitados.map(d => {
+            const data = d.criadoEm?.toDate?.() || (d.criadoEm ? new Date(d.criadoEm) : null);
+            const dataStr = data ? data.toLocaleDateString("pt-BR") : "—";
+            return (
+              <div key={d.id} className="assin-item">
+                <div className="assin-item-info">
+                  <strong>{d.nomePaciente}</strong>
+                  <span>{d.titulo} · {dataStr}</span>
+                </div>
+                <div className="assin-item-btns">
+                  <span className={`assin-badge ${d.status}`}>{d.status === "assinado" ? "Assinado" : "Pendente"}</span>
+                  {d.status !== "assinado" && (
+                    <button className="assin-btn-link" onClick={() => copiarLink(d.id)}>
+                      🔗 Copiar link
+                    </button>
+                  )}
+                  {d.status === "assinado" && d.assinaturaBase64 && (
+                    <button className="assin-btn-ver" onClick={() => setModalVerAssin({ base64: d.assinaturaBase64, nomePaciente: d.nomePaciente })}>
+                      Ver assinatura
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Modal solicitar */}
+      {modalSolicitar && (
+        <div className="modal-assin-overlay" onClick={() => setModalSolicitar(false)}>
+          <div className="modal-assin" onClick={e => e.stopPropagation()}>
+            <div className="modal-assin-header">
+              <h3>Solicitar assinatura</h3>
+              <button className="modal-assin-fechar" onClick={() => setModalSolicitar(false)}>✕</button>
+            </div>
+            <div className="modal-assin-body">
+              <div className="modal-assin-grupo">
+                <label>Paciente (da lista)</label>
+                <select
+                  value={formAssin.pacienteId}
+                  onChange={e => {
+                    const pac = pacientes.find(p => p.id === e.target.value);
+                    setFormAssin(f => ({
+                      ...f,
+                      pacienteId: e.target.value,
+                      nomePaciente: pac?.nome || f.nomePaciente,
+                      telefone: pac?.telefone || f.telefone,
+                    }));
+                  }}
+                >
+                  <option value="">-- Selecionar --</option>
+                  {pacientes.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                </select>
+              </div>
+              <div className="modal-assin-grupo">
+                <label>Nome do paciente *</label>
+                <input
+                  placeholder="Nome completo"
+                  value={formAssin.nomePaciente}
+                  onChange={e => setFormAssin(f => ({ ...f, nomePaciente: e.target.value }))}
+                />
+              </div>
+              <div className="modal-assin-grupo">
+                <label>Telefone (WhatsApp)</label>
+                <input
+                  placeholder="(11) 99999-9999"
+                  value={formAssin.telefone}
+                  onChange={e => setFormAssin(f => ({ ...f, telefone: e.target.value }))}
+                />
+              </div>
+              <div className="modal-assin-grupo">
+                <label>Documento</label>
+                <select
+                  value={formAssin.tipoDoc}
+                  onChange={e => setFormAssin(f => ({ ...f, tipoDoc: e.target.value }))}
+                >
+                  {DOCS.filter(d => d.key !== "anamnese" && d.key !== "assinaturas").map(d => (
+                    <option key={d.key} value={d.key}>{d.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="modal-assin-footer">
+              <button className="btn-cancelar" onClick={() => setModalSolicitar(false)}>Cancelar</button>
+              <button className="btn-criar" onClick={handleCriarAssinatura} disabled={criando}>
+                {criando ? "Gerando..." : "Gerar link"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal ver assinatura */}
+      {modalVerAssin && (
+        <div className="modal-assin-overlay" onClick={() => setModalVerAssin(null)}>
+          <div className="modal-assin modal-ver-assin" onClick={e => e.stopPropagation()}>
+            <div className="modal-assin-header">
+              <h3>Assinatura de {modalVerAssin.nomePaciente}</h3>
+              <button className="modal-assin-fechar" onClick={() => setModalVerAssin(null)}>✕</button>
+            </div>
+            <div className="modal-assin-body">
+              <img src={modalVerAssin.base64} alt="Assinatura" />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   // ─── Render principal ─────────────────────────────────────
   const bArr = templates[docAtivo] || [];
 
@@ -418,6 +668,7 @@ const Documentos = () => {
         </div>
 
         {/* Área principal */}
+        {docAtivo === "assinaturas" ? renderAssinaturas() : (
         <div className="doc-main">
           {/* Formulário */}
           <div className="doc-form-area">
@@ -445,6 +696,7 @@ const Documentos = () => {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

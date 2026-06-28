@@ -150,12 +150,17 @@ export const editarSessaoConcluida = async (agendamentoId, dados) => {
 };
 
 // Marcar falta
-export const marcarFalta = async (agendamentoId) => {
+export const marcarFalta = async (agendamentoId, opcoes = {}) => {
   try {
-    await updateDoc(doc(db, "agendamentos", agendamentoId), {
+    const update = {
       status: "falta",
       dataFalta: new Date(),
-    });
+    };
+    if (opcoes.cobrarTaxa) {
+      update.cobrarTaxa = true;
+      if (opcoes.valorTaxa != null) update.valorTaxa = opcoes.valorTaxa;
+    }
+    await updateDoc(doc(db, "agendamentos", agendamentoId), update);
   } catch (erro) {
     throw new Error("Erro ao marcar falta: " + erro.message);
   }
@@ -204,6 +209,66 @@ export const marcarSessoesEmLote = async (terapeutaId, pacienteId, sessoes, info
     );
   } catch (erro) {
     throw new Error("Erro ao criar sessões do pacote: " + erro.message);
+  }
+};
+
+// Criar múltiplas sessões de recorrência
+export const marcarSessoesRecorrentes = async (terapeutaId, pacienteId, sessoes, recorrenciaId, infoExtra = {}) => {
+  try {
+    await Promise.all(
+      sessoes.map((s) =>
+        addDoc(collection(db, "agendamentos"), {
+          terapeutaId,
+          pacienteId,
+          data: s.data,
+          hora: s.hora,
+          duracao: s.duracao || 60,
+          valor: infoExtra.valor || null,
+          linkAtendimento: s.linkAtendimento || null,
+          observacoes: s.observacoes || "",
+          salaId: s.salaId || null,
+          salaNome: s.salaNome || null,
+          salaCor: s.salaCor || null,
+          profissionalId: s.profissionalId || null,
+          profissionalNome: s.profissionalNome || null,
+          recorrenciaId,
+          status: "confirmado",
+          pago: false,
+          dataCriacao: new Date(),
+        })
+      )
+    );
+  } catch (erro) {
+    throw new Error("Erro ao criar sessões recorrentes: " + erro.message);
+  }
+};
+
+// Cancelar todos os agendamentos futuros de uma recorrência
+export const cancelarRecorrencia = async (terapeutaId, recorrenciaId) => {
+  try {
+    const hoje = new Date();
+    const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,"0")}-${String(hoje.getDate()).padStart(2,"0")}`;
+    const q = query(
+      collection(db, "agendamentos"),
+      where("terapeutaId", "==", terapeutaId),
+      where("recorrenciaId", "==", recorrenciaId)
+    );
+    const snap = await getDocs(q);
+    const futuros = snap.docs.filter(d => {
+      const dado = d.data();
+      return dado.data >= hojeStr && dado.status !== "cancelado";
+    });
+    await Promise.all(
+      futuros.map(d =>
+        updateDoc(doc(db, "agendamentos", d.id), {
+          status: "cancelado",
+          motivoCancelamento: "Recorrência cancelada",
+          dataCancelamento: new Date(),
+        })
+      )
+    );
+  } catch (erro) {
+    throw new Error("Erro ao cancelar recorrência: " + erro.message);
   }
 };
 

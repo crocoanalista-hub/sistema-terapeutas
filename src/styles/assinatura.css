@@ -1,0 +1,430 @@
+/* ─── Página pública de assinatura ─────────────────────────── */
+.assinar-page {
+  min-height: 100vh;
+  background: #f5f7fa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 0 40px;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.assinar-header {
+  width: 100%;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+
+.assinar-header-logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+.assinar-header-nome {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.assinar-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,.08);
+  width: 100%;
+  max-width: 780px;
+  margin: 32px 16px 0;
+  overflow: hidden;
+}
+
+.assinar-doc-titulo {
+  background: #f0f4ff;
+  padding: 18px 28px;
+  border-bottom: 1px solid #dde3f7;
+}
+
+.assinar-doc-titulo h2 {
+  margin: 0;
+  font-size: 17px;
+  color: #1a1a2e;
+}
+
+.assinar-doc-titulo p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.assinar-doc-conteudo {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 24px 28px;
+  border-bottom: 1px solid #eee;
+  line-height: 1.7;
+  font-size: 14px;
+  color: #333;
+}
+
+.assinar-secao-canvas {
+  padding: 24px 28px;
+}
+
+.assinar-instrucao {
+  font-size: 14px;
+  color: #555;
+  margin: 0 0 12px;
+  font-weight: 500;
+}
+
+.assinar-canvas-wrap {
+  position: relative;
+  border: 2px dashed #8b9de7;
+  border-radius: 10px;
+  background: #fafbff;
+  overflow: hidden;
+}
+
+.assinar-canvas-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #c0c8e8;
+  font-size: 15px;
+  pointer-events: none;
+  user-select: none;
+  font-style: italic;
+  transition: opacity .2s;
+}
+
+.assinar-canvas-label.hidden {
+  opacity: 0;
+}
+
+.assinar-canvas {
+  display: block;
+  width: 100%;
+  height: 180px;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.assinar-canvas-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.assinar-btn-limpar {
+  background: #f2f2f2;
+  color: #555;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 9px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.assinar-btn-limpar:hover {
+  background: #e5e5e5;
+}
+
+.assinar-btn-assinar {
+  background: #4a6cf7;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 28px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.assinar-btn-assinar:hover {
+  background: #3759e0;
+}
+
+.assinar-btn-assinar:disabled {
+  background: #a0aae8;
+  cursor: not-allowed;
+}
+
+/* ─── Tela de sucesso ───────────────────────────────────────── */
+.assinar-sucesso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 28px;
+  text-align: center;
+}
+
+.assinar-sucesso-icone {
+  font-size: 58px;
+  margin-bottom: 18px;
+}
+
+.assinar-sucesso h3 {
+  font-size: 22px;
+  color: #1a1a2e;
+  margin: 0 0 10px;
+}
+
+.assinar-sucesso p {
+  color: #666;
+  font-size: 14px;
+  max-width: 340px;
+  line-height: 1.6;
+}
+
+/* ─── Carregando / erro ─────────────────────────────────────── */
+.assinar-loading,
+.assinar-erro {
+  margin-top: 80px;
+  text-align: center;
+  color: #666;
+  font-size: 15px;
+}
+
+/* ─── Aba Assinaturas em Documentos.jsx ─────────────────────── */
+.assin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.assin-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #1a1a2e;
+}
+
+.assin-btn-solicitar {
+  background: #4a6cf7;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.assin-btn-solicitar:hover {
+  background: #3759e0;
+}
+
+.assin-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.assin-item {
+  background: #f8f9ff;
+  border: 1px solid #e2e5f5;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.assin-item-info strong {
+  font-size: 14px;
+  color: #1a1a2e;
+  display: block;
+}
+
+.assin-item-info span {
+  font-size: 12px;
+  color: #777;
+}
+
+.assin-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.assin-badge.pendente {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.assin-badge.assinado {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.assin-item-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.assin-btn-link {
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.assin-btn-link:hover {
+  background: #e4e4e4;
+}
+
+.assin-btn-ver {
+  background: #4a6cf7;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.assin-btn-ver:hover {
+  background: #3759e0;
+}
+
+.assin-vazio {
+  text-align: center;
+  color: #999;
+  padding: 40px 0;
+  font-size: 14px;
+}
+
+/* ─── Modal assinatura ──────────────────────────────────────── */
+.modal-assin-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-assin {
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.18);
+  overflow: hidden;
+}
+
+.modal-assin-header {
+  background: #f0f4ff;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #dde3f7;
+}
+
+.modal-assin-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #1a1a2e;
+}
+
+.modal-assin-fechar {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #888;
+  line-height: 1;
+}
+
+.modal-assin-body {
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-assin-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.modal-assin-grupo label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+}
+
+.modal-assin-grupo input,
+.modal-assin-grupo select {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 14px;
+  outline: none;
+}
+
+.modal-assin-grupo input:focus,
+.modal-assin-grupo select:focus {
+  border-color: #4a6cf7;
+}
+
+.modal-assin-footer {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid #eee;
+}
+
+.modal-assin-footer button {
+  border-radius: 8px;
+  padding: 9px 22px;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.modal-assin-footer .btn-cancelar {
+  background: #f2f2f2;
+  border: 1px solid #ddd;
+  color: #555;
+}
+
+.modal-assin-footer .btn-criar {
+  background: #4a6cf7;
+  color: #fff;
+  border: none;
+}
+
+.modal-assin-footer .btn-criar:disabled {
+  background: #a0aae8;
+  cursor: not-allowed;
+}
+
+/* Modal ver assinatura */
+.modal-ver-assin img {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-top: 10px;
+}

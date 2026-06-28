@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { marcarSessao, marcarSessoesEmLote, listarAgendamentos } from "../../services/agendamentosService";
+import { marcarSessao, marcarSessoesEmLote, marcarSessoesRecorrentes, listarAgendamentos } from "../../services/agendamentosService";
 import { listarPacientes, adicionarPaciente } from "../../services/pacientesService";
 import { listarSalas, criarSala } from "../../services/salasService";
 import { listarProfissionais } from "../../services/profissionaisService";
@@ -49,6 +49,26 @@ const gerarDatas = (dataInicio, diasSelecionados, horariosPorDia, numSessoes) =>
   return resultado;
 };
 
+const gerarDatasRecorrencia = (dataInicio, diasSelecionados, horariosPorDia, meses) => {
+  if (!dataInicio || diasSelecionados.length === 0 || meses < 1) return [];
+  const [y, mo, d] = dataInicio.split("-").map(Number);
+  const cur = new Date(y, mo - 1, d);
+  const fim = new Date(y, mo - 1 + meses, d);
+  const resultado = [];
+  while (cur < fim) {
+    const diaSemana = cur.getDay();
+    if (diasSelecionados.includes(diaSemana)) {
+      resultado.push({
+        data: fmtData(cur),
+        hora: horariosPorDia[diaSemana] || "09:00",
+        diaSemana,
+      });
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  return resultado;
+};
+
 const MarcarSessao = () => {
   const { user, workspaceId, role } = useAuth();
   const { checar } = usePlano(workspaceId);
@@ -68,7 +88,10 @@ const MarcarSessao = () => {
   const [salvandoPac, setSalvandoPac] = useState(false);
   const [erroPac, setErroPac] = useState("");
 
-  const [emPacote, setEmPacote] = useState(false);
+  // modoSessao: "unica" | "pacote" | "recorrencia"
+  const [modoSessao, setModoSessao] = useState("unica");
+  const emPacote = modoSessao === "pacote";
+  const emRecorrencia = modoSessao === "recorrencia";
   const [pacote, setPacote] = useState({
     diasSelecionados: [],
     horariosPorDia: {},
@@ -76,7 +99,14 @@ const MarcarSessao = () => {
     valorTotal: "",
     quitado: false,
   });
+  const [recorrencia, setRecorrencia] = useState({
+    diasSelecionados: [],
+    horariosPorDia: {},
+    meses: 3,
+    valor: "",
+  });
   const [previewSessoes, setPreviewSessoes] = useState([]);
+  const [previewRecorrencia, setPreviewRecorrencia] = useState([]);
   // Criar sala inline
   const [criandoSala, setCriandoSala] = useState(false);
   const [novaSalaNome, setNovaSalaNome] = useState("");
@@ -134,6 +164,17 @@ const MarcarSessao = () => {
     );
     setPreviewSessoes(sessoes);
   }, [emPacote, dados.data, pacote.diasSelecionados, pacote.horariosPorDia, pacote.numSessoes]);
+
+  useEffect(() => {
+    if (!emRecorrencia) return;
+    const sessoes = gerarDatasRecorrencia(
+      dados.data,
+      recorrencia.diasSelecionados,
+      recorrencia.horariosPorDia,
+      recorrencia.meses
+    );
+    setPreviewRecorrencia(sessoes);
+  }, [emRecorrencia, dados.data, recorrencia.diasSelecionados, recorrencia.horariosPorDia, recorrencia.meses]);
 
   const carregarPacientes = async () => {
     try {
@@ -217,6 +258,22 @@ const MarcarSessao = () => {
     setPacote((p) => ({ ...p, horariosPorDia: { ...p.horariosPorDia, [idx]: hora } }));
   };
 
+  const toggleDiaRec = (idx) => {
+    setRecorrencia((r) => {
+      const dias = r.diasSelecionados.includes(idx)
+        ? r.diasSelecionados.filter((d) => d !== idx)
+        : [...r.diasSelecionados, idx];
+      const horarios = { ...r.horariosPorDia };
+      if (!dias.includes(idx)) delete horarios[idx];
+      if (dias.includes(idx) && !horarios[idx]) horarios[idx] = dados.hora || "09:00";
+      return { ...r, diasSelecionados: dias, horariosPorDia: horarios };
+    });
+  };
+
+  const setHorarioDiaRec = (idx, hora) => {
+    setRecorrencia((r) => ({ ...r, horariosPorDia: { ...r.horariosPorDia, [idx]: hora } }));
+  };
+
   const handleCriarSala = async () => {
     if (!novaSalaNome.trim()) return;
     setSalvandoSala(true);
@@ -288,6 +345,31 @@ const MarcarSessao = () => {
       } finally {
         setCarregando(false);
       }
+    } else if (emRecorrencia) {
+      if (recorrencia.diasSelecionados.length === 0) { setErro("Selecione ao menos um dia da semana para a recorrência."); return; }
+      if (previewRecorrencia.length === 0) { setErro("Não foi possível gerar as datas da recorrência."); return; }
+      setCarregando(true);
+      try {
+        const recorrenciaId = `rec_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        await marcarSessoesRecorrentes(
+          workspaceId,
+          dados.pacienteId,
+          previewRecorrencia.map((s) => ({
+            ...s,
+            duracao: parseInt(dados.duracao),
+            linkAtendimento: dados.linkAtendimento || null,
+            observacoes: dados.observacoes,
+            ...extraCampos,
+          })),
+          recorrenciaId,
+          { valor: recorrencia.valor ? parseFloat(recorrencia.valor) : null }
+        );
+        navigate("/agenda");
+      } catch (err) {
+        setErro("Erro ao criar recorrência: " + err.message);
+      } finally {
+        setCarregando(false);
+      }
     } else {
       if (!dados.hora) { setErro("Selecione o horário."); return; }
       setCarregando(true);
@@ -311,10 +393,11 @@ const MarcarSessao = () => {
   };
 
   const conflitosCount = previewSessoes.filter(s => temConflito(s.data, s.hora)).length;
+  const conflitosRecCount = previewRecorrencia.filter(s => temConflito(s.data, s.hora)).length;
 
   return (
     <div className="form-container">
-      <div className="form-box" style={{ maxWidth: emPacote ? 700 : 580 }}>
+      <div className="form-box" style={{ maxWidth: (emPacote || emRecorrencia) ? 700 : 580 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
           <button type="button" onClick={() => navigate("/agenda")}
             style={{ background: "none", border: "none", cursor: "pointer", color: "#666", fontSize: "20px" }}>←</button>
@@ -458,30 +541,34 @@ const MarcarSessao = () => {
             )}
           </div>
 
-          {/* ── Toggle: Sessão em Pacote ── */}
-          <div className="ms-pacote-toggle">
-            <label className="ms-pacote-toggle-label">
-              <input
-                type="checkbox"
-                checked={emPacote}
-                onChange={(e) => setEmPacote(e.target.checked)}
-              />
-              <span className="ms-pacote-toggle-texto">
-                📦 Sessão em Pacote
-                <span className="ms-pacote-toggle-dica">Cria múltiplas sessões de uma vez</span>
-              </span>
-            </label>
+          {/* ── Toggle: modo de sessão ── */}
+          <div className="ms-modo-toggle">
+            <button
+              type="button"
+              className={`ms-modo-btn${modoSessao === "unica" ? " ativo" : ""}`}
+              onClick={() => setModoSessao("unica")}
+            >Sessão única</button>
+            <button
+              type="button"
+              className={`ms-modo-btn${modoSessao === "pacote" ? " ativo" : ""}`}
+              onClick={() => setModoSessao("pacote")}
+            >📦 Pacote</button>
+            <button
+              type="button"
+              className={`ms-modo-btn${modoSessao === "recorrencia" ? " ativo" : ""}`}
+              onClick={() => setModoSessao("recorrencia")}
+            >🔁 Recorrência</button>
           </div>
 
           {/* ── Campos comuns ── */}
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="data">
-                {emPacote ? "Data de início" : "Data"} <span className="obrigatorio">*</span>
+                {emPacote ? "Data de início" : emRecorrencia ? "Data de início" : "Data"} <span className="obrigatorio">*</span>
               </label>
               <input type="date" id="data" name="data" value={dados.data} onChange={handleChange} required />
             </div>
-            {!emPacote && (
+            {!emPacote && !emRecorrencia && (
               <div className="form-group">
                 <label htmlFor="hora">Hora <span className="obrigatorio">*</span></label>
                 <input type="time" id="hora" name="hora" value={dados.hora} onChange={handleChange} />
@@ -665,7 +752,7 @@ const MarcarSessao = () => {
             </div>
           )}
 
-          {!emPacote && (
+          {!emPacote && !emRecorrencia && (
             <div className="form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>
               <div className="form-group">
                 <label htmlFor="valor">Valor da sessão (R$)</label>
@@ -678,10 +765,117 @@ const MarcarSessao = () => {
             </div>
           )}
 
-          {emPacote && (
+          {(emPacote || emRecorrencia) && (
             <div className="form-group">
               <label htmlFor="linkAtendimento">Link de atendimento online (opcional)</label>
               <input type="url" id="linkAtendimento" name="linkAtendimento" placeholder="https://meet.google.com/..." value={dados.linkAtendimento} onChange={handleChange} />
+            </div>
+          )}
+
+          {/* ── Painel de Recorrência ── */}
+          {emRecorrencia && (
+            <div className="ms-pacote-panel">
+              <h4 className="ms-pacote-titulo">🔁 Configurar Recorrência</h4>
+
+              <div className="form-group">
+                <label>Dias da semana <span className="obrigatorio">*</span></label>
+                <div className="ms-dias-grid">
+                  {DIAS_SEMANA.map((d) => (
+                    <button
+                      key={d.idx}
+                      type="button"
+                      className={`ms-dia-btn${recorrencia.diasSelecionados.includes(d.idx) ? " ativo" : ""}`}
+                      onClick={() => toggleDiaRec(d.idx)}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {recorrencia.diasSelecionados.length > 0 && (
+                <div className="form-group">
+                  <label>Horários por dia</label>
+                  <div className="ms-horarios-grid">
+                    {DIAS_SEMANA
+                      .filter(d => recorrencia.diasSelecionados.includes(d.idx))
+                      .map(d => (
+                        <div key={d.idx} className="ms-horario-row">
+                          <span className="ms-horario-dia">{d.abrev}</span>
+                          <input
+                            type="time"
+                            className="ms-horario-input"
+                            value={recorrencia.horariosPorDia[d.idx] || "09:00"}
+                            onChange={(e) => setHorarioDiaRec(d.idx, e.target.value)}
+                          />
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>
+                <div className="form-group">
+                  <label>Gerar para os próximos (meses) <span className="obrigatorio">*</span></label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="24"
+                    value={recorrencia.meses}
+                    onChange={(e) => setRecorrencia(r => ({ ...r, meses: parseInt(e.target.value) || 1 }))}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Valor por sessão (R$)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Ex: 150,00"
+                    value={recorrencia.valor}
+                    onChange={(e) => setRecorrencia(r => ({ ...r, valor: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {previewRecorrencia.length > 0 && (
+                <div className="ms-preview">
+                  <div className="ms-preview-header">
+                    <span>📅 {previewRecorrencia.length} sessões geradas ({recorrencia.meses} {recorrencia.meses === 1 ? "mês" : "meses"})</span>
+                    {previewRecorrencia.filter(s => temConflito(s.data, s.hora)).length > 0 && (
+                      <span className="ms-conflito-badge">
+                        ⚠️ {previewRecorrencia.filter(s => temConflito(s.data, s.hora)).length} conflito(s)
+                      </span>
+                    )}
+                  </div>
+                  <div className="ms-preview-lista">
+                    {previewRecorrencia.slice(0, 8).map((s, i) => {
+                      const conflito = temConflito(s.data, s.hora);
+                      const [y, m, d] = s.data.split("-").map(Number);
+                      const dataFmt = new Date(y, m - 1, d).toLocaleDateString("pt-BR", {
+                        weekday: "short", day: "numeric", month: "short"
+                      });
+                      return (
+                        <div key={i} className={`ms-preview-item${conflito ? " conflito" : ""}`}>
+                          <span className="ms-preview-num">{i + 1}</span>
+                          <span className="ms-preview-data">{dataFmt}</span>
+                          <span className="ms-preview-hora">{s.hora}</span>
+                          {conflito && <span className="ms-preview-conflito">⚠️ Horário ocupado</span>}
+                        </div>
+                      );
+                    })}
+                    {previewRecorrencia.length > 8 && (
+                      <div className="ms-preview-item" style={{ justifyContent: "center", color: "#666", fontStyle: "italic" }}>
+                        ... e mais {previewRecorrencia.length - 8} sessão(ões)
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {emRecorrencia && recorrencia.diasSelecionados.length === 0 && (
+                <p className="ms-pacote-hint">👆 Selecione os dias da semana para ver a prévia das sessões.</p>
+              )}
             </div>
           )}
 
@@ -694,10 +888,12 @@ const MarcarSessao = () => {
             <button type="button" className="btn-cancelar" onClick={() => navigate("/agenda")}>Cancelar</button>
             <button type="submit" disabled={carregando || criandoPaciente} className="btn-salvar">
               {carregando
-                ? (emPacote ? "Criando pacote..." : "Marcando...")
+                ? (emPacote ? "Criando pacote..." : emRecorrencia ? "Criando recorrência..." : "Marcando...")
                 : emPacote
                   ? `Criar ${previewSessoes.length || pacote.numSessoes} sessões`
-                  : "Marcar Sessão"}
+                  : emRecorrencia
+                    ? `Criar ${previewRecorrencia.length} sessões recorrentes`
+                    : "Marcar Sessão"}
             </button>
           </div>
         </form>

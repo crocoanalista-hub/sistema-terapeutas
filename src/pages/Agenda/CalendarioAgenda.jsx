@@ -8,6 +8,7 @@ import {
   marcarFalta,
   marcarComoPago,
   editarSessaoConcluida,
+  cancelarRecorrencia,
 } from "../../services/agendamentosService";
 import { listarPacientes } from "../../services/pacientesService";
 import { listarSalas } from "../../services/salasService";
@@ -128,6 +129,10 @@ const CalendarioAgenda = () => {
   const [modalCancelar, setModalCancelar] = useState(null);
   const [modalConcluir, setModalConcluir] = useState(null);
   const [modalEditar, setModalEditar] = useState(null);
+  const [modalFalta, setModalFalta] = useState(null);
+  const [faltaCobrarTaxa, setFaltaCobrarTaxa] = useState(false);
+  const [faltaValorTaxa, setFaltaValorTaxa] = useState("");
+  const [modalCancelarRecorrencia, setModalCancelarRecorrencia] = useState(null);
   const [solicitacoes, setSolicitacoes] = useState([]);
   const [mostrarSolicitacoes, setMostrarSolicitacoes] = useState(false);
   const [novaData, setNovaData] = useState("");
@@ -270,12 +275,41 @@ const CalendarioAgenda = () => {
     setModalEditar(agend);
   };
 
-  const handleFalta = async (agend) => {
-    if (!window.confirm("Marcar falta para esta sessão?")) return;
+  const handleFalta = (agend) => {
+    setFaltaCobrarTaxa(false);
+    setFaltaValorTaxa("");
+    setModalFalta(agend);
+  };
+
+  const handleConfirmarFalta = async () => {
+    setSalvando(true);
     try {
-      await marcarFalta(agend.id);
-      setEventoAtivo(null); await carregar();
+      await marcarFalta(modalFalta.id, {
+        cobrarTaxa: faltaCobrarTaxa,
+        valorTaxa: faltaCobrarTaxa && faltaValorTaxa ? parseFloat(faltaValorTaxa) : null,
+      });
+      setModalFalta(null);
+      setEventoAtivo(null);
+      await carregar();
     } catch (err) { alert(err.message); }
+    finally { setSalvando(false); }
+  };
+
+  const handleCancelarComRecorrencia = async (somenteEsta) => {
+    setSalvando(true);
+    try {
+      if (somenteEsta) {
+        await cancelarSessao(modalCancelarRecorrencia.id, motivo);
+      } else {
+        await cancelarRecorrencia(workspaceId, modalCancelarRecorrencia.recorrenciaId);
+        await cancelarSessao(modalCancelarRecorrencia.id, motivo);
+      }
+      setModalCancelarRecorrencia(null);
+      setMotivo("");
+      setEventoAtivo(null);
+      await carregar();
+    } catch (err) { alert(err.message); }
+    finally { setSalvando(false); }
   };
 
   const handleMarcarPago = async (agend) => {
@@ -610,7 +644,14 @@ const CalendarioAgenda = () => {
                 setModalConcluir(a);
               }}>Concluir</button>
               <button className="gc-act-btn falta" onClick={() => handleFalta(a)}>Falta</button>
-              <button className="gc-act-btn cancelar" onClick={() => setModalCancelar(a)}>Cancelar</button>
+              <button className="gc-act-btn cancelar" onClick={() => {
+                setMotivo("");
+                if (a.recorrenciaId) {
+                  setModalCancelarRecorrencia(a);
+                } else {
+                  setModalCancelar(a);
+                }
+              }}>Cancelar</button>
             </div>
           )}
           {concluido && (
@@ -790,6 +831,105 @@ const CalendarioAgenda = () => {
             <button className="btn-modal-cancelar" onClick={() => { setModalConcluir(null); setPagarNaConclusao(false); }}>Cancelar</button>
             <button className="btn-modal-confirmar" onClick={handleConcluir} disabled={salvando}>
               {salvando ? "Salvando..." : pagarNaConclusao ? "Concluir e Registrar Pagamento" : "Marcar como Concluída"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal Falta */}
+      {modalFalta && (() => {
+        const pac = mapaPac[modalFalta.pacienteId];
+        const dataFmt = parseLocal(modalFalta.data).toLocaleDateString("pt-BR");
+        const wppMsg = encodeURIComponent(
+          `Olá ${pac?.nome || ""}! Sentimos sua falta hoje (${dataFmt} às ${modalFalta.hora}). Gostaria de reagendar?`
+        );
+        const wppLink = pac?.telefone
+          ? `https://wa.me/55${pac.telefone.replace(/\D/g, "")}?text=${wppMsg}`
+          : null;
+        return (
+          <Modal titulo="Registrar Falta" onClose={() => setModalFalta(null)}>
+            <p style={{ color: "#666", fontSize: "14px", marginBottom: "16px" }}>
+              Confirmar falta de <strong>{pac?.nome || "Paciente"}</strong> em <strong>{dataFmt} às {modalFalta.hora}</strong>?
+            </p>
+            <div className="gc-concluir-pagar" style={{ marginBottom: "16px" }}>
+              <label className="gc-concluir-pagar-toggle">
+                <input
+                  type="checkbox"
+                  checked={faltaCobrarTaxa}
+                  onChange={(e) => setFaltaCobrarTaxa(e.target.checked)}
+                />
+                <span>💸 Cobrar taxa de falta</span>
+              </label>
+              {faltaCobrarTaxa && (
+                <div className="gc-concluir-valor-row" style={{ marginTop: "8px" }}>
+                  <input
+                    type="number"
+                    className="gc-pagar-input"
+                    value={faltaValorTaxa}
+                    onChange={(e) => setFaltaValorTaxa(e.target.value)}
+                    placeholder="Valor da taxa (R$)"
+                    min="0"
+                    step="0.01"
+                    autoFocus
+                  />
+                </div>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "16px" }}>
+              {wppLink && (
+                <a
+                  href={wppLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="gc-act-btn whatsapp"
+                  style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+                >
+                  📱 WhatsApp
+                </a>
+              )}
+              <button
+                type="button"
+                className="gc-act-btn reagendar"
+                onClick={() => {
+                  setModalFalta(null);
+                  setEventoAtivo(null);
+                  navigate(`/agenda/marcar?pacienteId=${modalFalta.pacienteId}`);
+                }}
+              >
+                📅 Reagendar agora
+              </button>
+            </div>
+            <div className="modal-buttons">
+              <button className="btn-modal-cancelar" onClick={() => setModalFalta(null)}>Voltar</button>
+              <button className="btn-modal-deletar" onClick={handleConfirmarFalta} disabled={salvando}>
+                {salvando ? "Salvando..." : "Confirmar falta"}
+              </button>
+            </div>
+          </Modal>
+        );
+      })()}
+
+      {/* Modal Cancelar Recorrência */}
+      {modalCancelarRecorrencia && (
+        <Modal titulo="Cancelar Sessão Recorrente" onClose={() => setModalCancelarRecorrencia(null)}>
+          <p style={{ color: "#666", fontSize: "14px", marginBottom: "8px" }}>
+            Paciente: <strong>{mapaPac[modalCancelarRecorrencia.pacienteId]?.nome}</strong><br />
+            <strong>{parseLocal(modalCancelarRecorrencia.data).toLocaleDateString("pt-BR")} às {modalCancelarRecorrencia.hora}</strong>
+          </p>
+          <p style={{ color: "#444", fontSize: "14px", marginBottom: "16px" }}>
+            🔁 Esta sessão faz parte de uma recorrência. O que deseja fazer?
+          </p>
+          <div className="form-group">
+            <label>Motivo (opcional)</label>
+            <textarea rows="2" value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Motivo do cancelamento..." />
+          </div>
+          <div className="modal-buttons" style={{ flexDirection: "column", gap: "8px" }}>
+            <button className="btn-modal-cancelar" onClick={() => setModalCancelarRecorrencia(null)}>Voltar</button>
+            <button className="btn-modal-deletar" onClick={() => handleCancelarComRecorrencia(true)} disabled={salvando}>
+              {salvando ? "Cancelando..." : "Cancelar só esta sessão"}
+            </button>
+            <button className="btn-modal-deletar" style={{ background: "#c62828" }} onClick={() => handleCancelarComRecorrencia(false)} disabled={salvando}>
+              {salvando ? "Cancelando..." : "Cancelar esta e todas as futuras"}
             </button>
           </div>
         </Modal>
