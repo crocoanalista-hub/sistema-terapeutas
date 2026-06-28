@@ -1,3 +1,9 @@
+:root {
+  --cor-sidebar: #1a2535;
+  --cor-primaria: #1a73e8;
+  --cor-primaria-bg: #1a73e818;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -11,7 +17,7 @@
 .sidebar {
   width: 220px;
   min-height: 100vh;
-  background-color: #1a2535;
+  background-color: var(--cor-sidebar);
   color: white;
   display: flex;
   flex-direction: column;
@@ -77,9 +83,9 @@
 }
 
 .nav-item.ativo {
-  background-color: rgba(52, 152, 219, 0.15);
+  background-color: var(--cor-primaria-bg);
   color: white;
-  border-left-color: #3498db;
+  border-left-color: var(--cor-primaria);
 }
 
 .nav-icon {
@@ -138,4 +144,14 @@
     margin-left: 60px;
     padding: 20px;
   }
+}
+
+/* ─── Logo da clínica ─────────────────────────────────────── */
+.sidebar-logo-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  object-fit: cover;
+  margin-bottom: 8px;
+  border: 2px solid rgba(255,255,255,0.2);
 }

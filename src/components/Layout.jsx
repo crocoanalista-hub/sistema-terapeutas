@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useConfiguracoes } from "../hooks/useConfiguracoes";
 import { logout } from "../services/authService";
 import "../styles/layout.css";
 
@@ -15,7 +16,8 @@ const NAV = [
 ];
 
 const Layout = ({ children }) => {
-  const { terapeuta } = useAuth();
+  const { terapeuta, workspaceId } = useAuth();
+  const { config } = useConfiguracoes(workspaceId);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,10 +33,14 @@ const Layout = ({ children }) => {
 
   return (
     <div className="layout">
-      <aside className="sidebar">
+      <aside className="sidebar" style={{ background: config.corSidebar }}>
         <div className="sidebar-header">
-          <div className="sidebar-logo">🧠</div>
-          <h2>Consultório</h2>
+          {config.logoUrl ? (
+            <img src={config.logoUrl} alt="Logo" className="sidebar-logo-img" />
+          ) : (
+            <div className="sidebar-logo">🧠</div>
+          )}
+          <h2>{config.nomeClinica || "Consultório"}</h2>
           <p>{terapeuta?.nome || "Terapeuta"}</p>
         </div>
 

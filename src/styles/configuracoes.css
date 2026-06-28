@@ -324,3 +324,95 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ─── Aba Aparência ──────────────────────────────────────── */
+
+/* Preview da sidebar */
+.cfg-preview-sidebar {
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 160px;
+  max-width: 200px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.25);
+  transition: background .3s;
+}
+.cfg-preview-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+}
+.cfg-preview-logo-img {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,.25);
+}
+.cfg-preview-nome {
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+}
+.cfg-preview-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.cfg-preview-nav-item {
+  font-size: 11px;
+  color: rgba(255,255,255,.7);
+  padding: 6px 10px;
+  border-left: 3px solid;
+  background: rgba(255,255,255,.07);
+  border-radius: 0 4px 4px 0;
+}
+
+/* Logo upload */
+.cfg-logo-area {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.cfg-logo-atual {
+  flex-shrink: 0;
+}
+.cfg-logo-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 2px solid #e8eaed;
+}
+.cfg-logo-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  border: 2px dashed #dadce0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 24px;
+  color: #9aa0a6;
+  background: #f8f9fa;
+}
+.cfg-logo-placeholder span {
+  font-size: 10px;
+  font-weight: 600;
+}
+.cfg-logo-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}

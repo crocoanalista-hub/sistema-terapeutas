@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import {
   criarSala, listarSalas, atualizarSala, excluirSala,
@@ -7,6 +7,10 @@ import {
   convidarProfissional, listarProfissionais, listarConvitesPendentes,
   desativarProfissional, deletarConvite, atualizarProfissional,
 } from "../../services/profissionaisService";
+import {
+  buscarConfiguracoes, salvarConfiguracoes, uploadLogo,
+} from "../../services/configuracoesService";
+import { useConfiguracoes } from "../../hooks/useConfiguracoes";
 import "../../styles/configuracoes.css";
 
 const CORES_PRESET = [
@@ -14,9 +18,22 @@ const CORES_PRESET = [
   "#00bcd4","#ff5722","#795548","#607d8b","#e91e63",
 ];
 
+const CORES_SIDEBAR = [
+  "#1a2535","#1e3a5f","#2d4a22","#4a1942","#1a3535",
+  "#2c2c2c","#3d2b1f","#1f2d3d","#1a1a2e","#2d1a35",
+];
+
 export default function Configuracoes() {
   const { workspaceId, role } = useAuth();
+  const { config: configAtual, atualizarConfig } = useConfiguracoes(workspaceId);
   const [aba, setAba] = useState("salas");
+
+  // ── Aparência ──
+  const [aparencia, setAparencia] = useState({ corSidebar: "#1a2535", corPrimaria: "#1a73e8", nomeClinica: "Consultório", logoUrl: null });
+  const [uploadandoLogo, setUploadandoLogo] = useState(false);
+  const [salvandoAparencia, setSalvandoAparencia] = useState(false);
+  const [previewLogo, setPreviewLogo] = useState(null);
+  const logoInputRef = useRef(null);
 
   // ── Salas ──
   const [salas, setSalas] = useState([]);
@@ -39,7 +56,15 @@ export default function Configuracoes() {
     if (!workspaceId) return;
     carregarSalas();
     carregarProfissionais();
+    buscarConfiguracoes(workspaceId).then(cfg => {
+      setAparencia(a => ({ ...a, ...cfg }));
+    }).catch(() => {});
   }, [workspaceId]);
+
+  // Sincroniza estado local quando config global muda
+  useEffect(() => {
+    if (configAtual) setAparencia(a => ({ ...a, ...configAtual }));
+  }, [configAtual]);
 
   const carregarSalas = async () => {
     setLoadingSalas(true);
@@ -128,6 +153,49 @@ export default function Configuracoes() {
     setSalvandoProf(false);
   };
 
+  // ── Aparência handlers ──
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setPreviewLogo(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleSalvarAparencia = async () => {
+    setSalvandoAparencia(true);
+    try {
+      let logoUrl = aparencia.logoUrl;
+      const file = logoInputRef.current?.files[0];
+      if (file) {
+        setUploadandoLogo(true);
+        logoUrl = await uploadLogo(workspaceId, file);
+        setUploadandoLogo(false);
+      }
+      const novosDados = { ...aparencia, logoUrl };
+      await salvarConfiguracoes(workspaceId, novosDados);
+      atualizarConfig(novosDados);
+      setAparencia(novosDados);
+      setPreviewLogo(null);
+      if (logoInputRef.current) logoInputRef.current.value = "";
+      alert("Aparência salva com sucesso!");
+    } catch (e) {
+      alert("Erro ao salvar: " + e.message);
+    } finally {
+      setSalvandoAparencia(false);
+      setUploadandoLogo(false);
+    }
+  };
+
+  const handleRemoverLogo = async () => {
+    if (!window.confirm("Remover o logo?")) return;
+    const novosDados = { ...aparencia, logoUrl: null };
+    await salvarConfiguracoes(workspaceId, novosDados);
+    atualizarConfig(novosDados);
+    setAparencia(novosDados);
+    setPreviewLogo(null);
+  };
+
   const copiarLink = () => {
     navigator.clipboard.writeText(linkRegistro);
     alert("Link copiado!");
@@ -158,6 +226,12 @@ export default function Configuracoes() {
           onClick={() => setAba("profissionais")}
         >
           👥 Profissionais
+        </button>
+        <button
+          className={`cfg-aba ${aba === "aparencia" ? "ativa" : ""}`}
+          onClick={() => setAba("aparencia")}
+        >
+          🎨 Aparência
         </button>
       </div>
 
@@ -423,6 +497,132 @@ export default function Configuracoes() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ═══ ABA APARÊNCIA ═══ */}
+      {aba === "aparencia" && (
+        <div className="cfg-conteudo">
+          <p className="cfg-descricao">
+            Personalize a identidade visual do sistema — cor da barra lateral, cor de destaque e logo da clínica.
+          </p>
+
+          {/* Preview ao vivo */}
+          <div className="cfg-preview-sidebar" style={{ background: aparencia.corSidebar }}>
+            <div className="cfg-preview-logo">
+              {(previewLogo || aparencia.logoUrl) ? (
+                <img src={previewLogo || aparencia.logoUrl} alt="Logo" className="cfg-preview-logo-img" />
+              ) : <span style={{ fontSize: 28 }}>🧠</span>}
+            </div>
+            <span className="cfg-preview-nome">{aparencia.nomeClinica || "Consultório"}</span>
+            <div className="cfg-preview-nav">
+              {["Dashboard","Pacientes","Agenda"].map(l => (
+                <div key={l} className="cfg-preview-nav-item" style={{ borderLeftColor: aparencia.corPrimaria }}>
+                  {l}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Nome da clínica */}
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Nome do sistema / clínica</h3>
+            <input
+              className="cfg-input"
+              placeholder="Ex: Clínica Vida, Consultório Dr. João…"
+              value={aparencia.nomeClinica}
+              onChange={(e) => setAparencia(a => ({ ...a, nomeClinica: e.target.value }))}
+            />
+          </div>
+
+          {/* Logo */}
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Logo</h3>
+            <div className="cfg-logo-area">
+              <div className="cfg-logo-atual">
+                {(previewLogo || aparencia.logoUrl) ? (
+                  <img src={previewLogo || aparencia.logoUrl} alt="Logo atual" className="cfg-logo-preview" />
+                ) : (
+                  <div className="cfg-logo-placeholder">🧠<span>Sem logo</span></div>
+                )}
+              </div>
+              <div className="cfg-logo-acoes">
+                <button className="cfg-btn-primary" onClick={() => logoInputRef.current?.click()}>
+                  📁 Escolher imagem
+                </button>
+                {(previewLogo || aparencia.logoUrl) && (
+                  <button className="cfg-btn-sm cfg-btn-danger" onClick={handleRemoverLogo}>
+                    Remover logo
+                  </button>
+                )}
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={handleLogoChange}
+                />
+                <p className="cfg-descricao cfg-descricao-sm">PNG, JPG ou SVG. Recomendado: 200×200px.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Cor da sidebar */}
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Cor da barra lateral</h3>
+            <div className="cfg-cor-selector">
+              <div className="cfg-cores-grid">
+                {CORES_SIDEBAR.map((c) => (
+                  <button
+                    key={c}
+                    className={`cfg-cor-btn ${aparencia.corSidebar === c ? "ativa" : ""}`}
+                    style={{ background: c }}
+                    onClick={() => setAparencia(a => ({ ...a, corSidebar: c }))}
+                  />
+                ))}
+              </div>
+              <input
+                type="color"
+                className="cfg-cor-custom"
+                value={aparencia.corSidebar}
+                onChange={(e) => setAparencia(a => ({ ...a, corSidebar: e.target.value }))}
+                title="Cor personalizada"
+              />
+            </div>
+          </div>
+
+          {/* Cor primária */}
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Cor de destaque (botões e menus ativos)</h3>
+            <div className="cfg-cor-selector">
+              <div className="cfg-cores-grid">
+                {CORES_PRESET.map((c) => (
+                  <button
+                    key={c}
+                    className={`cfg-cor-btn ${aparencia.corPrimaria === c ? "ativa" : ""}`}
+                    style={{ background: c }}
+                    onClick={() => setAparencia(a => ({ ...a, corPrimaria: c }))}
+                  />
+                ))}
+              </div>
+              <input
+                type="color"
+                className="cfg-cor-custom"
+                value={aparencia.corPrimaria}
+                onChange={(e) => setAparencia(a => ({ ...a, corPrimaria: e.target.value }))}
+                title="Cor personalizada"
+              />
+            </div>
+          </div>
+
+          <button
+            className="cfg-btn-primary"
+            onClick={handleSalvarAparencia}
+            disabled={salvandoAparencia}
+            style={{ alignSelf: "flex-start" }}
+          >
+            {uploadandoLogo ? "Enviando logo…" : salvandoAparencia ? "Salvando…" : "💾 Salvar aparência"}
+          </button>
         </div>
       )}
     </div>
