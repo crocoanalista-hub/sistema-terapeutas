@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { adicionarPaciente } from "../../services/pacientesService";
 import { useAuth } from "../../hooks/useAuth";
+import { usePlano } from "../../hooks/usePlano";
 import "../../styles/forms.css";
 
 const CadastrarPaciente = () => {
   const { workspaceId } = useAuth();
+  const { checar } = usePlano(workspaceId);
   const navigate = useNavigate();
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
@@ -33,6 +35,12 @@ const CadastrarPaciente = () => {
     // Validação básica
     if (!dados.nome || !dados.email || !dados.telefone) {
       setErro("Por favor, preencha todos os campos obrigatórios");
+      return;
+    }
+
+    const permissao = checar("pacientes");
+    if (!permissao.permitido) {
+      setErro(permissao.motivo);
       return;
     }
 

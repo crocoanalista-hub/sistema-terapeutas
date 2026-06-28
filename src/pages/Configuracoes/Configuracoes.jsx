@@ -10,7 +10,10 @@ import {
 import {
   buscarConfiguracoes, salvarConfiguracoes, uploadLogo,
 } from "../../services/configuracoesService";
+import { verificarSlugDisponivel, slugValido } from "../../services/slugService";
 import { useConfiguracoes } from "../../hooks/useConfiguracoes";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../../services/firebaseConfig";
 import "../../styles/configuracoes.css";
 
 const CORES_PRESET = [
@@ -34,6 +37,9 @@ export default function Configuracoes() {
   const [salvandoAparencia, setSalvandoAparencia] = useState(false);
   const [previewLogo, setPreviewLogo] = useState(null);
   const logoInputRef = useRef(null);
+  const [slug, setSlug] = useState("");
+  const [slugOriginal, setSlugOriginal] = useState("");
+  const [slugErro, setSlugErro] = useState("");
 
   // ── Salas ──
   const [salas, setSalas] = useState([]);
@@ -59,12 +65,27 @@ export default function Configuracoes() {
     buscarConfiguracoes(workspaceId).then(cfg => {
       setAparencia(a => ({ ...a, ...cfg }));
     }).catch(() => {});
+    // Carrega slug atual do terapeuta
+    carregarSlug();
   }, [workspaceId]);
 
   // Sincroniza estado local quando config global muda
   useEffect(() => {
     if (configAtual) setAparencia(a => ({ ...a, ...configAtual }));
   }, [configAtual]);
+
+  const carregarSlug = async () => {
+    if (!workspaceId) return;
+    try {
+      const { getDoc } = await import("firebase/firestore");
+      const snap = await getDoc(doc(db, "terapeutas", workspaceId));
+      if (snap.exists()) {
+        const s = snap.data().slug || "";
+        setSlug(s);
+        setSlugOriginal(s);
+      }
+    } catch {}
+  };
 
   const carregarSalas = async () => {
     setLoadingSalas(true);
@@ -163,6 +184,19 @@ export default function Configuracoes() {
   };
 
   const handleSalvarAparencia = async () => {
+    // Valida slug
+    if (slug && !slugValido(slug)) {
+      setSlugErro("Use apenas letras minúsculas, números e hífen (3–30 caracteres).");
+      return;
+    }
+    if (slug && slug !== slugOriginal) {
+      const disponivel = await verificarSlugDisponivel(slug, workspaceId);
+      if (!disponivel) {
+        setSlugErro("Essa URL já está em uso. Escolha outra.");
+        return;
+      }
+    }
+
     setSalvandoAparencia(true);
     try {
       let logoUrl = aparencia.logoUrl;
@@ -176,6 +210,9 @@ export default function Configuracoes() {
       await salvarConfiguracoes(workspaceId, novosDados);
       atualizarConfig(novosDados);
       setAparencia(novosDados);
+      // Salva slug no documento do terapeuta
+      await updateDoc(doc(db, "terapeutas", workspaceId), { slug: slug || null });
+      setSlugOriginal(slug);
       setPreviewLogo(null);
       if (logoInputRef.current) logoInputRef.current.value = "";
       alert("Aparência salva com sucesso!");
@@ -533,6 +570,41 @@ export default function Configuracoes() {
               value={aparencia.nomeClinica}
               onChange={(e) => setAparencia(a => ({ ...a, nomeClinica: e.target.value }))}
             />
+          </div>
+
+          {/* URL do consultório */}
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">URL de acesso</h3>
+            <p className="cfg-descricao cfg-descricao-sm">
+              Seu link personalizado de acesso ao sistema. Compartilhe com sua equipe.
+            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+              <span style={{ color: "#9aa0a6", fontSize: 13, whiteSpace: "nowrap" }}>
+                {window.location.origin}/
+              </span>
+              <input
+                className="cfg-input cfg-input-inline"
+                placeholder="meu-consultorio"
+                value={slug}
+                onChange={(e) => {
+                  const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
+                  setSlug(val);
+                  setSlugErro(val && !slugValido(val) ? "Use apenas letras minúsculas, números e hífen (3–30 caracteres)." : "");
+                }}
+              />
+            </div>
+            {slugErro && <p style={{ fontSize: 12, color: "#d93025", margin: "6px 0 0" }}>{slugErro}</p>}
+            {slug && !slugErro && (
+              <p style={{ fontSize: 12, color: "#137333", margin: "6px 0 0" }}>
+                ✓ Link: <strong>{window.location.origin}/{slug}</strong>
+                <button
+                  onClick={() => navigator.clipboard.writeText(`${window.location.origin}/${slug}`)}
+                  style={{ marginLeft: 8, fontSize: 11, padding: "2px 8px", cursor: "pointer", border: "1px solid #dadce0", borderRadius: 4, background: "white" }}
+                >
+                  Copiar
+                </button>
+              </p>
+            )}
           </div>
 
           {/* Logo */}

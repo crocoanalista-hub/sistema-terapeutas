@@ -1,0 +1,123 @@
+.we-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── Sidebar colorida ── */
+.we-sidebar {
+  width: 340px;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.we-sidebar-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 32px;
+  text-align: center;
+}
+
+.we-logo-img {
+  width: 90px;
+  height: 90px;
+  border-radius: 18px;
+  object-fit: cover;
+  border: 3px solid rgba(255,255,255,.25);
+  box-shadow: 0 8px 24px rgba(0,0,0,.2);
+}
+
+.we-logo-emoji {
+  font-size: 64px;
+  line-height: 1;
+}
+
+.we-clinica-nome {
+  font-size: 24px;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+  letter-spacing: -.3px;
+}
+
+.we-clinica-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,.55);
+  margin: 0;
+}
+
+/* ── Área do formulário ── */
+.we-form-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f6f9;
+  padding: 40px 24px;
+}
+
+.we-form-box {
+  width: 100%;
+  max-width: 400px;
+  background: white;
+  border-radius: 16px;
+  padding: 40px 36px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+}
+
+.we-form-titulo {
+  font-size: 26px;
+  font-weight: 800;
+  color: #1a2535;
+  margin: 0 0 6px;
+}
+
+.we-form-sub {
+  font-size: 14px;
+  color: #5f6368;
+  margin: 0 0 28px;
+}
+
+/* ── Not found ── */
+.we-not-found {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f6f9;
+}
+
+.we-not-found-box {
+  background: white;
+  border-radius: 16px;
+  padding: 48px 40px;
+  text-align: center;
+  max-width: 420px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+}
+
+.we-not-found-icon { font-size: 48px; margin-bottom: 16px; }
+.we-not-found-box h2 { font-size: 22px; color: #1a2535; margin: 0 0 8px; }
+.we-not-found-box p { font-size: 14px; color: #5f6368; margin: 0 0 24px; }
+
+.we-btn-voltar {
+  padding: 10px 24px;
+  background: #1a73e8;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .we-container { flex-direction: column; }
+  .we-sidebar { width: 100%; min-height: auto; padding: 32px 0; }
+  .we-sidebar-inner { padding: 24px; }
+  .we-clinica-nome { font-size: 20px; }
+}

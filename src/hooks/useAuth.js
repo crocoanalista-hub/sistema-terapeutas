@@ -7,6 +7,7 @@ export const useAuth = () => {
   const [user, setUser] = useState(null);
   const [terapeuta, setTerapeuta] = useState(null);
   const [workspaceId, setWorkspaceId] = useState(null);
+  const [slug, setSlug] = useState(null);
   // "owner" | "profissional"
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,8 +21,10 @@ export const useAuth = () => {
           // Check if owner first
           const terapeutaSnap = await getDoc(doc(db, "terapeutas", usuarioAtual.uid));
           if (terapeutaSnap.exists()) {
-            setTerapeuta(terapeutaSnap.data());
+            const data = terapeutaSnap.data();
+            setTerapeuta(data);
             setWorkspaceId(usuarioAtual.uid);
+            setSlug(data.slug || null);
             setRole("owner");
           } else {
             // Check if professional
@@ -30,6 +33,7 @@ export const useAuth = () => {
               const profData = profSnap.data();
               setTerapeuta(profData);
               setWorkspaceId(profData.workspaceId);
+              setSlug(null);
               setRole("profissional");
             }
           }
@@ -40,6 +44,7 @@ export const useAuth = () => {
         setUser(null);
         setTerapeuta(null);
         setWorkspaceId(null);
+        setSlug(null);
         setRole(null);
       }
       setLoading(false);
@@ -48,5 +53,5 @@ export const useAuth = () => {
     return unsubscribe;
   }, []);
 
-  return { user, terapeuta, workspaceId, role, loading, erro };
+  return { user, terapeuta, workspaceId, slug, role, loading, erro };
 };

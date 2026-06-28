@@ -5,6 +5,7 @@ import { listarPacientes, adicionarPaciente } from "../../services/pacientesServ
 import { listarSalas, criarSala } from "../../services/salasService";
 import { listarProfissionais } from "../../services/profissionaisService";
 import { useAuth } from "../../hooks/useAuth";
+import { usePlano } from "../../hooks/usePlano";
 import "../../styles/forms.css";
 import "../../styles/marcar-sessao.css";
 
@@ -50,6 +51,7 @@ const gerarDatas = (dataInicio, diasSelecionados, horariosPorDia, numSessoes) =>
 
 const MarcarSessao = () => {
   const { user, workspaceId, role } = useAuth();
+  const { checar } = usePlano(workspaceId);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const buscaRef = useRef(null);
@@ -244,6 +246,9 @@ const MarcarSessao = () => {
 
     if (!dados.pacienteId) { setErro("Selecione ou crie um paciente."); return; }
     if (!dados.data) { setErro("Selecione a data de início."); return; }
+
+    const permissao = checar("agendamentos");
+    if (!permissao.permitido) { setErro(permissao.motivo); return; }
 
     const extraCampos = {
       salaId: dados.salaId || null,

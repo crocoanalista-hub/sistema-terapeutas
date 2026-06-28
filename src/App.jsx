@@ -4,6 +4,8 @@ import { useAuth } from "./hooks/useAuth";
 
 import Login from "./pages/Login";
 import Registro from "./pages/Registro";
+import WorkspaceEntrada from "./pages/WorkspaceEntrada";
+import Admin from "./pages/Admin/Admin";
 import Layout from "./components/Layout";
 
 import Dashboard from "./pages/Dashboard";
@@ -65,6 +67,12 @@ function App() {
 
         {/* Configurações */}
         <Route path="/configuracoes" element={<RotaProtegida element={<Configuracoes />} loading={loading} user={user} />} />
+
+        {/* Admin — sem Layout (página própria) */}
+        <Route path="/admin" element={<Admin />} />
+
+        {/* Entrada brandada por workspace */}
+        <Route path="/:slug" element={<WorkspaceEntrada />} />
 
         <Route path="/" element={<Navigate to="/dashboard" />} />
       </Routes>

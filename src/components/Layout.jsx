@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useConfiguracoes } from "../hooks/useConfiguracoes";
 import { logout } from "../services/authService";
+import TrialBanner from "./TrialBanner";
 import "../styles/layout.css";
 
 const NAV = [
@@ -62,7 +63,10 @@ const Layout = ({ children }) => {
         </button>
       </aside>
 
-      <main className="conteudo">{children}</main>
+      <main className="conteudo">
+        <TrialBanner />
+        {children}
+      </main>
     </div>
   );
 };

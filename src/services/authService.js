@@ -8,7 +8,7 @@ import {
 import { doc, setDoc, getDoc, deleteDoc } from "firebase/firestore";
 
 // Registrar novo terapeuta (ou profissional, se houver convite)
-export const registrarTerapeuta = async (email, senha, nome) => {
+export const registrarTerapeuta = async (email, senha, nome, slug = "") => {
   try {
     const resultado = await createUserWithEmailAndPassword(auth, email, senha);
     const user = resultado.user;
@@ -30,12 +30,21 @@ export const registrarTerapeuta = async (email, senha, nome) => {
       });
       await deleteDoc(doc(db, "convites", emailNorm));
     } else {
+      const trialInicio = new Date();
+      const trialExpira = new Date(trialInicio);
+      trialExpira.setDate(trialExpira.getDate() + 10);
       await setDoc(doc(db, "terapeutas", user.uid), {
         uid: user.uid,
         nome,
         email: emailNorm,
-        dataCriacao: new Date(),
+        slug: slug.toLowerCase() || null,
+        dataCriacao: trialInicio,
         perfil: "terapeuta",
+        plano: "trial",
+        trialInicio,
+        trialExpira,
+        limites: { pacientes: 5, agendamentos: 10, documentos: 2 },
+        documentosGerados: 0,
       });
     }
 
