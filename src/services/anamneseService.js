@@ -1,5 +1,5 @@
 import { db } from "./firebaseConfig";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, addDoc, collection, query, where, getDocs } from "firebase/firestore";
 
 // ─── Template do formulário (salvo por terapeuta) ──────────
 export const salvarTemplateAnamnese = async (terapeutaId, secoes) => {
@@ -42,4 +42,34 @@ export const salvarAnamnese = async (pacienteId, dados) => {
 export const buscarAnamnese = async (pacienteId) => {
   const snap = await getDoc(doc(db, "anamneses", pacienteId));
   return snap.exists() ? snap.data() : null;
+};
+
+// ─── Links públicos de preenchimento ──────────────────────
+export const criarLinkAnamnese = async (workspaceId, pacienteId, pacienteNome) => {
+  const ref = await addDoc(collection(db, "anamneseLinks"), {
+    workspaceId,
+    pacienteId,
+    pacienteNome,
+    status: "pendente",
+    criadoEm: new Date(),
+  });
+  return ref.id;
+};
+
+export const buscarLinkAnamnese = async (token) => {
+  const snap = await getDoc(doc(db, "anamneseLinks", token));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+};
+
+export const marcarLinkPreenchido = async (token) => {
+  await setDoc(doc(db, "anamneseLinks", token), { status: "preenchido", preenchidoEm: new Date() }, { merge: true });
+};
+
+export const buscarLinkPorPaciente = async (pacienteId) => {
+  const q = query(collection(db, "anamneseLinks"), where("pacienteId", "==", pacienteId));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  docs.sort((a, b) => (b.criadoEm?.toDate?.() || 0) - (a.criadoEm?.toDate?.() || 0));
+  return docs[0];
 };

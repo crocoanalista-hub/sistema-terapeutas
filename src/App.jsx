@@ -22,6 +22,7 @@ import ListaEspera from "./pages/Agenda/ListaEspera";
 import HistoricoAtendimentos from "./pages/Agenda/HistoricoAtendimentos";
 import AgendamentoPublico from "./pages/Agenda/AgendamentoPublico";
 import AssinarDocumento from "./pages/Documentos/AssinarDocumento";
+import AnamnesePublica from "./pages/Pacientes/AnamnesePublica";
 
 import Financeiro from "./pages/Financeiro/Financeiro";
 import Documentos from "./pages/Documentos/Documentos";
@@ -78,6 +79,9 @@ function App() {
 
         {/* Assinatura digital pública */}
         <Route path="/:slug/assinar/:docId" element={<AssinarDocumento />} />
+
+        {/* Anamnese pública */}
+        <Route path="/:slug/anamnese/:token" element={<AnamnesePublica />} />
 
         {/* Entrada brandada por workspace */}
         <Route path="/:slug" element={<WorkspaceEntrada />} />

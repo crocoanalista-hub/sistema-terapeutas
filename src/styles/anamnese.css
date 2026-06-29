@@ -30,7 +30,31 @@
 .af-page-titulo { margin: 0; font-size: 22px; color: #1a2535; }
 .af-page-sub { margin: 2px 0 0; font-size: 14px; color: #888; }
 
-.af-page-acoes { margin-left: auto; }
+.af-page-acoes { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.af-btn-whatsapp {
+  padding: 8px 14px;
+  background: #25d366;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: background .15s;
+}
+.af-btn-whatsapp:hover { background: #1ebd5a; }
+.af-btn-whatsapp:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.af-link-badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.af-link-badge.preenchido { background: #e6f4ea; color: #2e7d32; }
+.af-link-badge.pendente   { background: #fff8e1; color: #f57c00; }
 
 .af-btn-config {
   padding: 8px 16px;

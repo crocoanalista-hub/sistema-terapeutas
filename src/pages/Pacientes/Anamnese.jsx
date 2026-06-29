@@ -6,6 +6,8 @@ import {
   buscarTemplateAnamnese,
   salvarRespostasAnamnese,
   buscarRespostasAnamnese,
+  criarLinkAnamnese,
+  buscarLinkPorPaciente,
 } from "../../services/anamneseService";
 import { buscarPaciente } from "../../services/pacientesService";
 import "../../styles/anamnese.css";
@@ -69,7 +71,7 @@ const TEMPLATE_PADRAO = [
 // ═══════════════════════════════════════════════════════════
 const Anamnese = () => {
   const { id: pacienteId } = useParams();
-  const { user, workspaceId } = useAuth();
+  const { user, workspaceId, slug: slugAtual } = useAuth();
   const navigate = useNavigate();
 
   const [paciente, setPaciente] = useState(null);
@@ -79,6 +81,9 @@ const Anamnese = () => {
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
+  const [linkStatus, setLinkStatus] = useState(null); // null | "pendente" | "preenchido"
+  const [linkToken, setLinkToken] = useState(null);
+  const [criandoLink, setCriandoLink] = useState(false);
 
   useEffect(() => {
     if (user && pacienteId) carregar();
@@ -87,14 +92,16 @@ const Anamnese = () => {
   const carregar = async () => {
     try {
       setCarregando(true);
-      const [pac, tmpl, resps] = await Promise.all([
+      const [pac, tmpl, resps, linkDoc] = await Promise.all([
         buscarPaciente(pacienteId),
         buscarTemplateAnamnese(workspaceId),
         buscarRespostasAnamnese(pacienteId),
+        buscarLinkPorPaciente(pacienteId).catch(() => null),
       ]);
       setPaciente(pac);
       if (tmpl?.secoes?.length) setTemplate(tmpl.secoes);
       setRespostas(resps || {});
+      if (linkDoc) { setLinkStatus(linkDoc.status); setLinkToken(linkDoc.id); }
     } catch (err) {
       console.error(err);
     } finally {
@@ -200,6 +207,28 @@ const Anamnese = () => {
       feedback();
     } catch (err) { alert(err.message); }
     finally { setSalvando(false); }
+  };
+
+  // ─── ENVIAR LINK ANAMNESE ────────────────────────────────
+  const enviarAnamnese = async () => {
+    if (!paciente?.telefone) {
+      alert("Paciente sem número de WhatsApp cadastrado.");
+      return;
+    }
+    setCriandoLink(true);
+    try {
+      const token = await criarLinkAnamnese(workspaceId, pacienteId, paciente.nome);
+      setLinkToken(token);
+      setLinkStatus("pendente");
+      const link = `${window.location.origin}/${slugAtual}/anamnese/${token}`;
+      const msg = encodeURIComponent(`Olá, ${paciente.nome}! Segue o link para preencher a ficha de anamnese antes da nossa sessão:\n\n${link}`);
+      const tel = paciente.telefone.replace(/\D/g, "");
+      window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
+    } catch (err) {
+      alert("Erro ao gerar link: " + err.message);
+    } finally {
+      setCriandoLink(false);
+    }
   };
 
   // ─── RENDER CAMPO (modo preencher) ───────────────────────
@@ -393,11 +422,27 @@ const Anamnese = () => {
           {paciente && <p className="af-page-sub">{paciente.nome}</p>}
         </div>
         <div className="af-page-acoes">
-          {modo === "preencher" ? (
-            <button className="af-btn-config" onClick={() => setModo("configurar")}>
-              ⚙️ Configurar Formulário
-            </button>
-          ) : (
+          {modo === "preencher" && (
+            <>
+              {linkStatus === "preenchido" ? (
+                <span className="af-link-badge preenchido">✅ Anamnese recebida</span>
+              ) : linkStatus === "pendente" ? (
+                <span className="af-link-badge pendente">⏳ Aguardando paciente</span>
+              ) : null}
+              <button
+                className="af-btn-whatsapp"
+                onClick={enviarAnamnese}
+                disabled={criandoLink}
+                title="Enviar link de anamnese via WhatsApp"
+              >
+                {criandoLink ? "Gerando..." : "📤 Enviar para paciente"}
+              </button>
+              <button className="af-btn-config" onClick={() => setModo("configurar")}>
+                ⚙️ Configurar
+              </button>
+            </>
+          )}
+          {modo === "configurar" && (
             <span className="af-badge-config">Modo de configuração</span>
           )}
         </div>
