@@ -393,7 +393,6 @@ const MarcarSessao = () => {
   };
 
   const conflitosCount = previewSessoes.filter(s => temConflito(s.data, s.hora)).length;
-  const conflitosRecCount = previewRecorrencia.filter(s => temConflito(s.data, s.hora)).length;
 
   return (
     <div className="form-container">
