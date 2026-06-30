@@ -58,12 +58,35 @@ export default function Configuracoes() {
   const [salvandoProf, setSalvandoProf] = useState(false);
   const [linkRegistro] = useState(`${window.location.origin}/registro`);
 
+  // ── Horários de funcionamento ──
+  const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const HORAS_DISPONIVEIS = [
+    "06:00","06:30","07:00","07:30","08:00","08:30","09:00","09:30",
+    "10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30",
+    "14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30",
+    "18:00","18:30","19:00","19:30","20:00","20:30","21:00","21:30","22:00",
+  ];
+  const [horarios, setHorarios] = useState({
+    0: { ativo: false, inicio: "08:00", fim: "18:00" },
+    1: { ativo: true,  inicio: "08:00", fim: "18:00" },
+    2: { ativo: true,  inicio: "08:00", fim: "18:00" },
+    3: { ativo: true,  inicio: "08:00", fim: "18:00" },
+    4: { ativo: true,  inicio: "08:00", fim: "18:00" },
+    5: { ativo: true,  inicio: "08:00", fim: "18:00" },
+    6: { ativo: false, inicio: "08:00", fim: "13:00" },
+  });
+  const [intervalo, setIntervalo] = useState(60); // minutos
+  const [salvandoHorarios, setSalvandoHorarios] = useState(false);
+  const [horariosSalvos, setHorariosSalvos] = useState(false);
+
   useEffect(() => {
     if (!workspaceId) return;
     carregarSalas();
     carregarProfissionais();
     buscarConfiguracoes(workspaceId).then(cfg => {
       setAparencia(a => ({ ...a, ...cfg }));
+      if (cfg.horariosFuncionamento) setHorarios(cfg.horariosFuncionamento);
+      if (cfg.intervaloAgenda)       setIntervalo(cfg.intervaloAgenda);
     }).catch(() => {});
     // Carrega slug atual do terapeuta
     carregarSlug();
@@ -238,6 +261,31 @@ export default function Configuracoes() {
     alert("Link copiado!");
   };
 
+  const handleSalvarHorarios = async () => {
+    setSalvandoHorarios(true);
+    try {
+      await salvarConfiguracoes(workspaceId, { horariosFuncionamento: horarios, intervaloAgenda: intervalo });
+      setHorariosSalvos(true);
+      setTimeout(() => setHorariosSalvos(false), 3000);
+    } catch (e) { alert("Erro ao salvar: " + e.message); }
+    setSalvandoHorarios(false);
+  };
+
+  const gerarHorasIntervalo = (inicio, fim, intervaloMin) => {
+    const horas = [];
+    const [hI, mI] = inicio.split(":").map(Number);
+    const [hF, mF] = fim.split(":").map(Number);
+    let total = hI * 60 + mI;
+    const totalFim = hF * 60 + mF;
+    while (total < totalFim) {
+      const h = String(Math.floor(total / 60)).padStart(2, "0");
+      const m = String(total % 60).padStart(2, "0");
+      horas.push(`${h}:${m}`);
+      total += intervaloMin;
+    }
+    return horas;
+  };
+
   if (role && role !== "owner") {
     return (
       <div className="cfg-page">
@@ -269,6 +317,12 @@ export default function Configuracoes() {
           onClick={() => setAba("aparencia")}
         >
           🎨 Aparência
+        </button>
+        <button
+          className={`cfg-aba ${aba === "horarios" ? "ativa" : ""}`}
+          onClick={() => setAba("horarios")}
+        >
+          🕐 Horários
         </button>
       </div>
 
@@ -703,6 +757,90 @@ export default function Configuracoes() {
             style={{ alignSelf: "flex-start" }}
           >
             {uploadandoLogo ? "Enviando logo…" : salvandoAparencia ? "Salvando…" : "💾 Salvar aparência"}
+          </button>
+        </div>
+      )}
+
+      {/* ═══ ABA HORÁRIOS ═══ */}
+      {aba === "horarios" && (
+        <div className="cfg-conteudo">
+          <p className="cfg-descricao">
+            Defina os dias e horários em que seu consultório aceita agendamentos. Apenas esses horários aparecerão na página pública de agendamento.
+          </p>
+
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Intervalo entre sessões</h3>
+            <p className="cfg-descricao-sm">Define os slots de horário disponíveis para agendamento.</p>
+            <div className="cfg-intervalo-row">
+              {[30, 45, 60, 90].map(min => (
+                <button
+                  key={min}
+                  className={`cfg-intervalo-btn${intervalo === min ? " ativo" : ""}`}
+                  onClick={() => setIntervalo(min)}
+                >
+                  {min} min
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Dias e horários de atendimento</h3>
+            <div className="cfg-horarios-lista">
+              {DIAS_SEMANA.map((dia, idx) => {
+                const h = horarios[idx] || { ativo: false, inicio: "08:00", fim: "18:00" };
+                const preview = h.ativo ? gerarHorasIntervalo(h.inicio, h.fim, intervalo) : [];
+                return (
+                  <div key={idx} className={`cfg-dia-row${h.ativo ? " ativo" : ""}`}>
+                    <label className="cfg-dia-toggle">
+                      <input
+                        type="checkbox"
+                        checked={h.ativo}
+                        onChange={e => setHorarios(prev => ({ ...prev, [idx]: { ...h, ativo: e.target.checked } }))}
+                      />
+                      <span className="cfg-dia-nome">{dia}</span>
+                    </label>
+                    {h.ativo ? (
+                      <div className="cfg-dia-horarios">
+                        <div className="cfg-dia-range">
+                          <label>Das</label>
+                          <select
+                            value={h.inicio}
+                            onChange={e => setHorarios(prev => ({ ...prev, [idx]: { ...h, inicio: e.target.value } }))}
+                          >
+                            {HORAS_DISPONIVEIS.map(hr => <option key={hr} value={hr}>{hr}</option>)}
+                          </select>
+                          <label>às</label>
+                          <select
+                            value={h.fim}
+                            onChange={e => setHorarios(prev => ({ ...prev, [idx]: { ...h, fim: e.target.value } }))}
+                          >
+                            {HORAS_DISPONIVEIS.filter(hr => hr > h.inicio).map(hr => <option key={hr} value={hr}>{hr}</option>)}
+                          </select>
+                        </div>
+                        {preview.length > 0 && (
+                          <div className="cfg-dia-slots">
+                            {preview.map(sl => <span key={sl} className="cfg-slot">{sl}</span>)}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="cfg-dia-fechado">Fechado</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {horariosSalvos && <div className="cfg-success">✅ Horários salvos!</div>}
+          <button
+            className="cfg-btn-primary"
+            onClick={handleSalvarHorarios}
+            disabled={salvandoHorarios}
+            style={{ alignSelf: "flex-start" }}
+          >
+            {salvandoHorarios ? "Salvando…" : "💾 Salvar horários"}
           </button>
         </div>
       )}

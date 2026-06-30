@@ -119,13 +119,15 @@ const MarcarSessao = () => {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
 
-  const dataParam = searchParams.get("data") || "";
+  const dataParam      = searchParams.get("data")       || "";
+  const horaParam      = searchParams.get("hora")       || "";
+  const pacienteIdParam = searchParams.get("pacienteId") || "";
 
   const [dados, setDados] = useState({
-    pacienteId: "",
+    pacienteId: pacienteIdParam,
     pacienteNome: "",
     data: dataParam,
-    hora: "",
+    hora: horaParam,
     duracao: "60",
     valor: "",
     linkAtendimento: "",
@@ -178,16 +180,43 @@ const MarcarSessao = () => {
 
   const carregarPacientes = async () => {
     try {
-      setPacientes(await listarPacientes(workspaceId));
+      const lista = await listarPacientes(workspaceId);
+      setPacientes(lista);
+      // Pré-selecionar cliente vindo da solicitação
+      if (pacienteIdParam) {
+        const pac = lista.find(p => p.id === pacienteIdParam);
+        if (pac) {
+          setDados(d => ({ ...d, pacienteId: pac.id, pacienteNome: pac.nome }));
+          setBusca(pac.nome);
+        }
+      }
     } catch (err) {
-      setErro("Erro ao carregar pacientes: " + err.message);
+      setErro("Erro ao carregar clientes: " + err.message);
     }
   };
 
-  const temConflito = (data, hora) =>
-    agendamentosExistentes.some(
-      (a) => a.data === data && a.hora === hora && a.status !== "cancelado"
+  // Conflito existe se: mesma sala OU mesmo profissional estiverem ocupados no horário
+  // Se não há sala/profissional selecionado, bloqueia qualquer sobreposição
+  const temConflito = (data, hora) => {
+    const ativos = agendamentosExistentes.filter(
+      a => a.data === data && a.hora === hora && a.status !== "cancelado"
     );
+    if (ativos.length === 0) return false;
+
+    const salaId       = dados.salaId;
+    const profId       = dados.profissionalId;
+
+    // Se profissional selecionado já tem agendamento nesse horário → conflito
+    if (profId && ativos.some(a => a.profissionalId === profId)) return true;
+
+    // Se sala selecionada já tem agendamento nesse horário → conflito
+    if (salaId && ativos.some(a => a.salaId === salaId)) return true;
+
+    // Sem sala nem profissional selecionado: conflito se há qualquer agendamento
+    if (!salaId && !profId) return true;
+
+    return false;
+  };
 
   const pacientesFiltrados = pacientes.filter((p) =>
     p.nome.toLowerCase().includes(busca.toLowerCase())
@@ -236,7 +265,7 @@ const MarcarSessao = () => {
       setBusca(novoPac.nome.trim());
       setCriandoPaciente(false);
     } catch (err) {
-      setErroPac("Erro ao criar paciente: " + err.message);
+      setErroPac("Erro ao criar cliente: " + err.message);
     } finally {
       setSalvandoPac(false);
     }
@@ -301,8 +330,12 @@ const MarcarSessao = () => {
     e.preventDefault();
     setErro("");
 
-    if (!dados.pacienteId) { setErro("Selecione ou crie um paciente."); return; }
+    if (!dados.pacienteId) { setErro("Selecione ou crie um cliente."); return; }
     if (!dados.data) { setErro("Selecione a data de início."); return; }
+    if (dados.hora && temConflito(dados.data, dados.hora)) {
+      setErro("Este horário já está ocupado. Escolha outro horário ou sala.");
+      return;
+    }
 
     const permissao = checar("agendamentos");
     if (!permissao.permitido) { setErro(permissao.motivo); return; }
@@ -409,13 +442,13 @@ const MarcarSessao = () => {
 
           {/* ── Seletor de paciente ── */}
           <div className="form-group">
-            <label>Paciente <span className="obrigatorio">*</span></label>
+            <label>Cliente <span className="obrigatorio">*</span></label>
             <div className="ms-pac-wrapper" ref={buscaRef}>
               <div className={`ms-pac-field${dados.pacienteId ? " selecionado" : ""}`}>
                 <span className="ms-pac-icone">👤</span>
                 <input
                   className="ms-pac-input"
-                  placeholder="Buscar paciente..."
+                  placeholder="Buscar cliente..."
                   value={busca}
                   onChange={(e) => {
                     setBusca(e.target.value);
@@ -431,11 +464,12 @@ const MarcarSessao = () => {
               </div>
               {dados.pacienteId && !dropdownAberto && (
                 <div className="ms-pac-tag">✅ <strong>{dados.pacienteNome}</strong> selecionado(a)</div>
+
               )}
               {dropdownAberto && !criandoPaciente && (
                 <div className="ms-pac-dropdown">
                   {pacientesFiltrados.length === 0 && busca && (
-                    <div className="ms-pac-vazio">Nenhum paciente encontrado para "{busca}"</div>
+                    <div className="ms-pac-vazio">Nenhum cliente encontrado para "{busca}"</div>
                   )}
                   {pacientesFiltrados.map((p) => (
                     <button key={p.id} type="button" className="ms-pac-item" onClick={() => selecionarPaciente(p)}>
@@ -444,7 +478,7 @@ const MarcarSessao = () => {
                     </button>
                   ))}
                   <button type="button" className="ms-pac-novo-btn" onClick={abrirCriacao}>
-                    <span className="ms-pac-novo-icone">+</span>Criar novo paciente
+                    <span className="ms-pac-novo-icone">+</span>Criar novo cliente
                   </button>
                 </div>
               )}
@@ -455,14 +489,14 @@ const MarcarSessao = () => {
           {criandoPaciente && (
             <div className="ms-novo-pac-panel">
               <div className="ms-novo-pac-header">
-                <h4 className="ms-novo-pac-titulo">Novo Paciente</h4>
+                <h4 className="ms-novo-pac-titulo">Novo Cliente</h4>
                 <button type="button" className="ms-novo-pac-fechar" onClick={() => setCriandoPaciente(false)}>✕</button>
               </div>
               {erroPac && <div className="erro-message" style={{ margin: "0 0 12px" }}>{erroPac}</div>}
               <div className="ms-novo-pac-form">
                 <div className="form-group">
                   <label>Nome completo <span className="obrigatorio">*</span></label>
-                  <input type="text" name="nome" value={novoPac.nome} onChange={handleNovoPac} placeholder="Nome do paciente" autoFocus />
+                  <input type="text" name="nome" value={novoPac.nome} onChange={handleNovoPac} placeholder="Nome do cliente" autoFocus />
                 </div>
                 <div className="form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>
                   <div className="form-group"><label>Telefone</label>

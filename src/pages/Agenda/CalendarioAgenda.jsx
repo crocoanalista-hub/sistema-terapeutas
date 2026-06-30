@@ -10,7 +10,7 @@ import {
   editarSessaoConcluida,
   cancelarRecorrencia,
 } from "../../services/agendamentosService";
-import { listarPacientes } from "../../services/pacientesService";
+import { listarPacientes, adicionarPaciente } from "../../services/pacientesService";
 import { listarSalas } from "../../services/salasService";
 import { listarProfissionais } from "../../services/profissionaisService";
 import { listarSolicitacoes, atualizarStatusSolicitacao } from "../../services/solicitacoesService";
@@ -726,9 +726,29 @@ const CalendarioAgenda = () => {
                 <button
                   className="gc-sol-btn gc-sol-btn--confirm"
                   onClick={async () => {
-                    await atualizarStatusSolicitacao(s.id, "confirmado");
-                    setSolicitacoes(prev => prev.filter(x => x.id !== s.id));
-                    navigate(`/agenda/marcar?nome=${encodeURIComponent(s.nome)}&telefone=${encodeURIComponent(s.telefone)}&data=${s.dataPreferida}&hora=${s.horaPreferida}`);
+                    try {
+                      // Verifica se já existe cliente com esse telefone
+                      const tel = s.telefone.replace(/\D/g, "");
+                      const pacExistente = Object.values(mapaPac).find(p => p.telefone?.replace(/\D/g, "") === tel);
+                      let pacienteId;
+                      if (pacExistente) {
+                        pacienteId = pacExistente.id;
+                      } else {
+                        pacienteId = await adicionarPaciente(workspaceId, {
+                          nome: s.nome.trim(),
+                          telefone: s.telefone.trim(),
+                          email: s.email || "",
+                          observacoes: s.mensagem || "",
+                        });
+                        // Atualiza mapa local
+                        setMapaPac(prev => ({ ...prev, [pacienteId]: { id: pacienteId, nome: s.nome, telefone: s.telefone } }));
+                      }
+                      await atualizarStatusSolicitacao(s.id, "confirmado");
+                      setSolicitacoes(prev => prev.filter(x => x.id !== s.id));
+                      navigate(`/agenda/marcar?pacienteId=${pacienteId}&data=${s.dataPreferida || ""}&hora=${s.horaPreferida || ""}`);
+                    } catch (err) {
+                      alert("Erro ao aceitar solicitação: " + err.message);
+                    }
                   }}
                 >Agendar</button>
                 <button

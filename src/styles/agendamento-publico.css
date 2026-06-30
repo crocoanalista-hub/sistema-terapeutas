@@ -104,20 +104,39 @@
 /* ── Seletor visual de horário ──────────────────────────────── */
 .ap-horas-grid { display: flex; flex-direction: column; gap: 8px; }
 .ap-horas-label { font-size: 12px; font-weight: 600; color: #9aa0a6; margin: 0; }
-.ap-horas { display: flex; flex-wrap: wrap; gap: 6px; }
+.ap-horas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .ap-hora-btn {
-  padding: 5px 10px;
-  border: 1px solid #dadce0;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 7px 12px;
+  border: 1.5px solid #dadce0;
+  border-radius: 7px;
+  font-size: 13px;
   font-weight: 600;
   color: #5f6368;
   background: white;
   cursor: pointer;
   transition: all .12s;
+  min-width: 60px;
+  text-align: center;
 }
-.ap-hora-btn:hover { background: #f1f3f4; }
+.ap-hora-btn:not(:disabled):hover { background: #f1f3f4; border-color: #bbb; }
 .ap-hora-btn.ativa { color: white; }
+.ap-hora-btn.ocupado {
+  background: #f5f5f5;
+  color: #ccc;
+  border-color: #e0e0e0;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+.ap-hora-selecionada { margin: 8px 0 0; font-size: 13px; color: #555; }
+.ap-dia-fechado {
+  background: #fff3e0;
+  border: 1px solid #ffcc80;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #e65100;
+  margin-bottom: 12px;
+}
 
 /* ── Botão submit ───────────────────────────────────────────── */
 .ap-submit {
