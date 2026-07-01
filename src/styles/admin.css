@@ -250,3 +250,41 @@
 .admin-btn--bloquear:hover{ background: #fcd0cd; }
 .admin-btn--reverter{ background: #e8f0fe; color: #1558b0; border-color: #c5d8fb; }
 .admin-btn--reverter:hover{ background: #c5d8fb; }
+
+/* ── Seed / Demo ─────────────────────────────────────────── */
+.admin-btn-seed {
+  padding: 8px 16px;
+  background: #6f42c1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s;
+  white-space: nowrap;
+}
+.admin-btn-seed:hover:not(:disabled) { background: #5a32a3; }
+.admin-btn-seed:disabled { opacity: 0.65; cursor: not-allowed; }
+
+.admin-seed-resultado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: 14px;
+  color: #2e7d32;
+  margin-bottom: 16px;
+}
+.admin-seed-resultado button {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #555;
+  padding: 0 4px;
+}

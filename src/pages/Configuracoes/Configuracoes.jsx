@@ -4,7 +4,7 @@ import {
   criarSala, listarSalas, atualizarSala, excluirSala,
 } from "../../services/salasService";
 import {
-  convidarProfissional, listarProfissionais, listarConvitesPendentes,
+  criarLinkProfissional, listarProfissionais, listarConvitesPendentes,
   desativarProfissional, deletarConvite, atualizarProfissional,
 } from "../../services/profissionaisService";
 import {
@@ -52,11 +52,11 @@ export default function Configuracoes() {
   const [profissionais, setProfissionais] = useState([]);
   const [convitesPendentes, setConvitesPendentes] = useState([]);
   const [loadingProf, setLoadingProf] = useState(true);
-  const [novoProf, setNovoProf] = useState({ nome: "", email: "", especialidade: "", cor: "#9c27b0" });
+  const [novoProf, setNovoProf] = useState({ nome: "", especialidade: "", cor: "#9c27b0" });
   const [mostrarFormProf, setMostrarFormProf] = useState(false);
   const [editandoProf, setEditandoProf] = useState(null);
   const [salvandoProf, setSalvandoProf] = useState(false);
-  const [linkRegistro] = useState(`${window.location.origin}/registro`);
+  const [linkGerado, setLinkGerado] = useState(null); // { token, url, nome }
 
   // ── Horários de funcionamento ──
   const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -162,14 +162,16 @@ export default function Configuracoes() {
 
   // ── Profissional handlers ──
   const handleConvidar = async () => {
-    if (!novoProf.nome.trim() || !novoProf.email.trim()) return;
+    if (!novoProf.nome.trim()) return;
     setSalvandoProf(true);
     try {
-      await convidarProfissional(workspaceId, novoProf);
-      setNovoProf({ nome: "", email: "", especialidade: "", cor: "#9c27b0" });
+      const token = await criarLinkProfissional(workspaceId, novoProf);
+      const url = `${window.location.origin}/registro?convite=${token}`;
+      setLinkGerado({ token, url, nome: novoProf.nome.trim() });
+      setNovoProf({ nome: "", especialidade: "", cor: "#9c27b0" });
       setMostrarFormProf(false);
       await carregarProfissionais();
-    } catch (e) { alert("Erro ao convidar: " + e.message); }
+    } catch (e) { alert("Erro ao gerar link: " + e.message); }
     setSalvandoProf(false);
   };
 
@@ -179,9 +181,9 @@ export default function Configuracoes() {
     await carregarProfissionais();
   };
 
-  const handleCancelarConvite = async (email) => {
-    if (!window.confirm("Cancelar convite para " + email + "?")) return;
-    await deletarConvite(email);
+  const handleCancelarConvite = async (token, nome) => {
+    if (!window.confirm(`Cancelar link de ${nome}? O link deixará de funcionar.`)) return;
+    await deletarConvite(token);
     await carregarProfissionais();
   };
 
@@ -258,10 +260,6 @@ export default function Configuracoes() {
     setPreviewLogo(null);
   };
 
-  const copiarLink = () => {
-    navigator.clipboard.writeText(linkRegistro);
-    alert("Link copiado!");
-  };
 
   const handleSalvarHorarios = async () => {
     setSalvandoHorarios(true);
@@ -440,21 +438,37 @@ export default function Configuracoes() {
             sessões que aparecem para todos os usuários do espaço.
           </p>
 
-          {/* Link de registro */}
-          <div className="cfg-link-box">
-            <span className="cfg-link-label">Link de cadastro:</span>
-            <code className="cfg-link-url">{linkRegistro}</code>
-            <button className="cfg-btn-sm" onClick={copiarLink}>Copiar</button>
-          </div>
+          {/* Link gerado — exibido após criar */}
+          {linkGerado && (
+            <div className="cfg-link-gerado">
+              <div className="cfg-link-gerado-header">
+                <span>🔗 Link de cadastro gerado para <strong>{linkGerado.nome}</strong></span>
+                <button onClick={() => setLinkGerado(null)}>✕</button>
+              </div>
+              <p className="cfg-link-gerado-desc">Envie este link para o profissional. Ao acessar, ele cria a própria senha e entra automaticamente no seu espaço.</p>
+              <div className="cfg-link-gerado-url">
+                <code>{linkGerado.url}</code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(linkGerado.url);
+                    alert("Link copiado!");
+                  }}
+                >
+                  📋 Copiar
+                </button>
+              </div>
+            </div>
+          )}
 
-          {/* Form convidar */}
+          {/* Form novo profissional */}
           {!mostrarFormProf ? (
             <button className="cfg-btn-primary" onClick={() => setMostrarFormProf(true)}>
-              + Convidar Profissional
+              + Gerar link de acesso
             </button>
           ) : (
             <div className="cfg-card">
               <h3 className="cfg-card-titulo">Novo profissional</h3>
+              <p className="cfg-descricao-sm">Preencha o nome e gere um link. O profissional acessa o link e cria sua própria senha — sem precisar de e-mail pré-cadastrado.</p>
               <div className="cfg-prof-form">
                 <div className="cfg-form-row">
                   <div className="cfg-form-group">
@@ -467,18 +481,6 @@ export default function Configuracoes() {
                     />
                   </div>
                   <div className="cfg-form-group">
-                    <label className="cfg-label">E-mail *</label>
-                    <input
-                      className="cfg-input"
-                      type="email"
-                      placeholder="email@exemplo.com"
-                      value={novoProf.email}
-                      onChange={(e) => setNovoProf({ ...novoProf, email: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="cfg-form-row">
-                  <div className="cfg-form-group">
                     <label className="cfg-label">Especialidade</label>
                     <input
                       className="cfg-input"
@@ -487,27 +489,27 @@ export default function Configuracoes() {
                       onChange={(e) => setNovoProf({ ...novoProf, especialidade: e.target.value })}
                     />
                   </div>
-                  <div className="cfg-form-group">
-                    <label className="cfg-label">Cor na agenda</label>
-                    <div className="cfg-cores-grid">
-                      {CORES_PRESET.map((c) => (
-                        <button
-                          key={c}
-                          className={`cfg-cor-btn ${novoProf.cor === c ? "ativa" : ""}`}
-                          style={{ background: c }}
-                          onClick={() => setNovoProf({ ...novoProf, cor: c })}
-                        />
-                      ))}
-                    </div>
+                </div>
+                <div className="cfg-form-group">
+                  <label className="cfg-label">Cor na agenda</label>
+                  <div className="cfg-cores-grid">
+                    {CORES_PRESET.map((c) => (
+                      <button
+                        key={c}
+                        className={`cfg-cor-btn ${novoProf.cor === c ? "ativa" : ""}`}
+                        style={{ background: c }}
+                        onClick={() => setNovoProf({ ...novoProf, cor: c })}
+                      />
+                    ))}
                   </div>
                 </div>
                 <div className="cfg-form-acoes">
                   <button
                     className="cfg-btn-primary"
                     onClick={handleConvidar}
-                    disabled={!novoProf.nome.trim() || !novoProf.email.trim() || salvandoProf}
+                    disabled={!novoProf.nome.trim() || salvandoProf}
                   >
-                    {salvandoProf ? "Salvando…" : "Salvar convite"}
+                    {salvandoProf ? "Gerando…" : "🔗 Gerar link"}
                   </button>
                   <button className="cfg-btn-sm" onClick={() => setMostrarFormProf(false)}>Cancelar</button>
                 </div>
@@ -571,27 +573,36 @@ export default function Configuracoes() {
             ))}
           </div>
 
-          {/* Convites pendentes */}
+          {/* Links pendentes */}
           {convitesPendentes.length > 0 && (
             <div className="cfg-lista">
-              <h3 className="cfg-lista-titulo">Convites pendentes</h3>
+              <h3 className="cfg-lista-titulo">Links de acesso pendentes</h3>
               <p className="cfg-descricao cfg-descricao-sm">
-                Aguardando que o profissional crie uma conta com o e-mail abaixo.
+                Aguardando o profissional usar o link para criar a conta.
               </p>
-              {convitesPendentes.map((c) => (
-                <div key={c.id} className="cfg-item cfg-item-pendente">
-                  <div className="cfg-item-cor" style={{ background: c.cor || "#9c27b0", opacity: 0.5 }} />
-                  <div className="cfg-item-info">
-                    <span className="cfg-item-nome">{c.nome}</span>
-                    <span className="cfg-item-sub">{c.email}</span>
-                    {c.especialidade && <span className="cfg-item-sub">{c.especialidade}</span>}
+              {convitesPendentes.map((c) => {
+                const linkUrl = `${window.location.origin}/registro?convite=${c.token || c.id}`;
+                return (
+                  <div key={c.id} className="cfg-item cfg-item-pendente">
+                    <div className="cfg-item-cor" style={{ background: c.cor || "#9c27b0", opacity: 0.5 }} />
+                    <div className="cfg-item-info" style={{ flex: 1, minWidth: 0 }}>
+                      <span className="cfg-item-nome">{c.nome}</span>
+                      {c.especialidade && <span className="cfg-item-sub">{c.especialidade}</span>}
+                      <span className="cfg-item-sub cfg-link-pendente-url">{linkUrl}</span>
+                    </div>
+                    <span className="cfg-badge-pendente">Aguardando cadastro</span>
+                    <div className="cfg-item-acoes">
+                      <button
+                        className="cfg-btn-sm"
+                        onClick={() => { navigator.clipboard.writeText(linkUrl); alert("Link copiado!"); }}
+                      >
+                        📋 Copiar
+                      </button>
+                      <button className="cfg-btn-sm cfg-btn-danger" onClick={() => handleCancelarConvite(c.token || c.id, c.nome)}>Remover</button>
+                    </div>
                   </div>
-                  <span className="cfg-badge-pendente">Aguardando cadastro</span>
-                  <div className="cfg-item-acoes">
-                    <button className="cfg-btn-sm cfg-btn-danger" onClick={() => handleCancelarConvite(c.email)}>Cancelar</button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

@@ -4,6 +4,7 @@ import { useAuth } from "../../hooks/useAuth";
 import {
   listarTodosTerapeutas, atualizarPlano, buscarUsage, PLANOS, LIMITES_TRIAL, TRIAL_DIAS,
 } from "../../services/planoService";
+import { seedDadosDemo } from "../../services/seedService";
 import "../../styles/admin.css";
 
 const ADMIN_EMAILS = [
@@ -37,6 +38,9 @@ export default function Admin() {
   const [filtroPlano, setFiltroPlano] = useState("todos");
   const [expandido, setExpandido] = useState(null);
   const [salvando, setSalvando] = useState(null);
+  const [seedando, setSeedando] = useState(false);
+  const [seedProgresso, setSeedProgresso] = useState("");
+  const [seedResultado, setSeedResultado] = useState(null);
 
   // Acesso restrito
   useEffect(() => {
@@ -128,8 +132,37 @@ export default function Admin() {
           <h1 className="admin-titulo">Painel Administrativo</h1>
           <p className="admin-sub">Gestão de contas e planos</p>
         </div>
-        <button className="admin-btn-refresh" onClick={carregar}>↻ Atualizar</button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button className="admin-btn-refresh" onClick={carregar}>↻ Atualizar</button>
+          <button
+            className="admin-btn-seed"
+            onClick={async () => {
+              if (!window.confirm("Isso vai APAGAR todos os pacientes, sessões e evoluções atuais e criar dados de demonstração. Continuar?")) return;
+              setSeedando(true);
+              setSeedResultado(null);
+              try {
+                const resultado = await seedDadosDemo(user.uid, setSeedProgresso);
+                setSeedResultado(resultado);
+              } catch (e) {
+                alert("Erro ao criar dados: " + e.message);
+              } finally {
+                setSeedando(false);
+                setSeedProgresso("");
+              }
+            }}
+            disabled={seedando}
+          >
+            {seedando ? `⏳ ${seedProgresso || "Carregando…"}` : "🎭 Carregar dados demo"}
+          </button>
+        </div>
       </div>
+
+      {seedResultado && (
+        <div className="admin-seed-resultado">
+          ✅ Dados criados: <strong>{seedResultado.pacientes} clientes</strong> · <strong>{seedResultado.sessoes} sessões</strong> · <strong>{seedResultado.solicitacoes} solicitações pendentes</strong>
+          <button onClick={() => setSeedResultado(null)}>✕</button>
+        </div>
+      )}
 
       {/* Cards de stats */}
       <div className="admin-stats">

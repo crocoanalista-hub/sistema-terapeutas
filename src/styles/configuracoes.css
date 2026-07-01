@@ -513,3 +513,56 @@
   font-weight: 600;
   margin-bottom: 8px;
 }
+
+/* ── Link gerado para profissional ───────────────────────── */
+.cfg-link-gerado {
+  background: #e8f5e9;
+  border: 1.5px solid #a5d6a7;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+.cfg-link-gerado-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #2e7d32;
+  margin-bottom: 6px;
+}
+.cfg-link-gerado-header button {
+  background: none; border: none; cursor: pointer; font-size: 16px; color: #555;
+}
+.cfg-link-gerado-desc { font-size: 12px; color: #555; margin: 0 0 10px; }
+.cfg-link-gerado-url {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #c8e6c9;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.cfg-link-gerado-url code {
+  flex: 1;
+  font-size: 12px;
+  color: #333;
+  word-break: break-all;
+}
+.cfg-link-gerado-url button {
+  white-space: nowrap;
+  padding: 5px 10px;
+  background: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cfg-link-pendente-url {
+  font-size: 11px !important;
+  color: #888 !important;
+  word-break: break-all;
+  font-family: monospace;
+}
