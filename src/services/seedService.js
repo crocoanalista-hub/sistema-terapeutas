@@ -219,22 +219,30 @@ export const seedDadosDemo = async (workspaceId, onProgresso) => {
     { sessoes: 3,  valorSessao: 170 }, // Lucas
   ];
 
-  // Distribui pacientes entre o titular e os profissionais demo
-  // titular: pacientes 0-4, profissional 0: pac 5-6, prof 1: pac 7-8, prof 2: pac 9
+  // Distribui pacientes entre os 3 profissionais demo
+  // Camila: 0,1,2,3 | Rafael: 4,5,6 | Patrícia: 7,8,9
   const profPorPaciente = [
-    workspaceId, workspaceId, workspaceId, workspaceId, workspaceId,
-    idsProfissionais[0]?.id || workspaceId,
-    idsProfissionais[0]?.id || workspaceId,
-    idsProfissionais[1]?.id || workspaceId,
-    idsProfissionais[1]?.id || workspaceId,
-    idsProfissionais[2]?.id || workspaceId,
-  ];
+    idsProfissionais[0]?.id, // Ana → Camila
+    idsProfissionais[0]?.id, // Carlos → Camila
+    idsProfissionais[0]?.id, // Marina → Camila
+    idsProfissionais[0]?.id, // Pedro → Camila
+    idsProfissionais[1]?.id, // Juliana → Rafael
+    idsProfissionais[1]?.id, // Roberto → Rafael
+    idsProfissionais[1]?.id, // Camila Rocha → Rafael
+    idsProfissionais[2]?.id, // Thiago → Patrícia
+    idsProfissionais[2]?.id, // Fernanda → Patrícia
+    idsProfissionais[2]?.id, // Lucas → Patrícia
+  ].map(id => id || workspaceId);
   const nomeProfPorPaciente = [
-    null, null, null, null, null,
+    idsProfissionais[0]?.nome || null,
+    idsProfissionais[0]?.nome || null,
     idsProfissionais[0]?.nome || null,
     idsProfissionais[0]?.nome || null,
     idsProfissionais[1]?.nome || null,
     idsProfissionais[1]?.nome || null,
+    idsProfissionais[1]?.nome || null,
+    idsProfissionais[2]?.nome || null,
+    idsProfissionais[2]?.nome || null,
     idsProfissionais[2]?.nome || null,
   ];
 
