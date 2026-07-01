@@ -128,21 +128,36 @@ const limparColecao = async (workspaceId, nomeColecao, campo = "terapeutaId") =>
 const PROFISSIONAIS_DEMO = [
   {
     nome: "Dra. Camila Borges",
-    especialidade: "Psicóloga Clínica",
+    especialidade: "Massoterapeuta",
     cor: "#e91e63",
     email: "camila.borges@demo.com",
+    procedimentos: [
+      { id: "proc_camila_1", nome: "Massoterapia Relaxante", duracao: 60, valor: 150 },
+      { id: "proc_camila_2", nome: "Massoterapia Terapêutica", duracao: 90, valor: 200 },
+      { id: "proc_camila_3", nome: "Reflexologia", duracao: 45, valor: 120 },
+    ],
   },
   {
     nome: "Dr. Rafael Mendonça",
-    especialidade: "Psicólogo Cognitivo-Comportamental",
+    especialidade: "Psicanalista",
     cor: "#2196f3",
     email: "rafael.mendonca@demo.com",
+    procedimentos: [
+      { id: "proc_rafael_1", nome: "Sessão de Psicanálise", duracao: 50, valor: 200 },
+      { id: "proc_rafael_2", nome: "Avaliação Psicológica", duracao: 90, valor: 350 },
+      { id: "proc_rafael_3", nome: "Psicoterapia de Apoio", duracao: 60, valor: 180 },
+    ],
   },
   {
     nome: "Dra. Patrícia Leal",
     especialidade: "Terapeuta Familiar",
     cor: "#4caf50",
     email: "patricia.leal@demo.com",
+    procedimentos: [
+      { id: "proc_patricia_1", nome: "Terapia Familiar", duracao: 90, valor: 280 },
+      { id: "proc_patricia_2", nome: "Mediação de Conflitos", duracao: 60, valor: 220 },
+      { id: "proc_patricia_3", nome: "Orientação Parental", duracao: 60, valor: 200 },
+    ],
   },
 ];
 

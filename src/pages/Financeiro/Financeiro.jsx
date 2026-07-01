@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import {
   listarSessoesConcluidas,
   marcarComoPago,
@@ -145,6 +147,7 @@ const Financeiro = () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
   const [reciboSessao, setReciboSessao] = useState(null);
+  const reciboRef = useRef(null);
 
   // Aba 3 — Por Paciente ordenação
   const [ordemPac, setOrdemPac] = useState({ col: "totalAberto", dir: "desc" });
@@ -188,7 +191,21 @@ const Financeiro = () => {
 
   const imprimirRecibo = (sessao) => {
     setReciboSessao(sessao);
-    setTimeout(() => window.print(), 300);
+    setTimeout(async () => {
+      const el = reciboRef.current;
+      if (!el) return;
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgW = pageW - 20;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      pdf.addImage(imgData, "PNG", 10, 10, imgW, Math.min(imgH, pageH - 20));
+      const pacNome = (mapaPacientes[sessao.pacienteId]?.nome || "recibo").replace(/\s+/g, "_");
+      pdf.save(`recibo_${pacNome}_${sessao.data || "sessao"}.pdf`);
+      setReciboSessao(null);
+    }, 300);
   };
 
   // ---- Dados derivados ----
@@ -619,7 +636,7 @@ const Financeiro = () => {
       {/* Recibo para impressão */}
       {reciboSessao && (
         <div className="recibo-print">
-          <div className="recibo-box">
+          <div className="recibo-box" ref={reciboRef}>
             <h2>RECIBO DE PAGAMENTO</h2>
             <div className="recibo-linha">
               <strong>Terapeuta:</strong> {terapeuta?.nome || ""}

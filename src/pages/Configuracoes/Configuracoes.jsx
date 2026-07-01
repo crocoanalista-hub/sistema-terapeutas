@@ -6,6 +6,7 @@ import {
 import {
   criarLinkProfissional, listarProfissionais, listarConvitesPendentes,
   desativarProfissional, deletarConvite, atualizarProfissional,
+  adicionarProcedimento, removerProcedimento, editarProcedimento,
 } from "../../services/profissionaisService";
 import {
   buscarConfiguracoes, salvarConfiguracoes, uploadLogo,
@@ -57,6 +58,10 @@ export default function Configuracoes() {
   const [editandoProf, setEditandoProf] = useState(null);
   const [salvandoProf, setSalvandoProf] = useState(false);
   const [linkGerado, setLinkGerado] = useState(null); // { token, url, nome }
+  const [expandidoProc, setExpandidoProc] = useState(null); // id do prof com painel aberto
+  const [novoProcPorProf, setNovoProcPorProf] = useState({}); // { [profId]: { nome, duracao, valor } }
+  const [editandoProc, setEditandoProc] = useState(null); // { profId, proc }
+  const PROC_VAZIO = { nome: "", duracao: 60, valor: "" };
 
   // ── Horários de funcionamento ──
   const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -557,17 +562,125 @@ export default function Configuracoes() {
                   </div>
                 </div>
               ) : (
-                <div key={p.id} className="cfg-item">
-                  <div className="cfg-item-cor" style={{ background: p.cor || "#9c27b0" }} />
-                  <div className="cfg-item-info">
-                    <span className="cfg-item-nome">{p.nome}</span>
-                    {p.especialidade && <span className="cfg-item-sub">{p.especialidade}</span>}
-                    <span className="cfg-item-sub">{p.email}</span>
+                <div key={p.id} className="cfg-prof-bloco">
+                  {/* Header do profissional */}
+                  <div className="cfg-item cfg-item--prof" style={{ borderTopColor: p.cor || "#9c27b0" }}>
+                    <div className="cfg-prof-header" style={{ background: p.cor || "#9c27b0" }}>
+                      <span className="cfg-prof-header-inicial">{p.nome.charAt(0)}</span>
+                    </div>
+                    <div className="cfg-item-info">
+                      <span className="cfg-item-nome">{p.nome}</span>
+                      {p.especialidade && <span className="cfg-item-sub">{p.especialidade}</span>}
+                      {p.email && <span className="cfg-item-sub">{p.email}</span>}
+                      <span className="cfg-item-sub cfg-proc-count">
+                        🩺 {(p.procedimentos || []).length} procedimento{(p.procedimentos || []).length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <div className="cfg-item-acoes">
+                      <button
+                        className={`cfg-btn-sm${expandidoProc === p.id ? " cfg-btn-ativo" : ""}`}
+                        onClick={() => setExpandidoProc(expandidoProc === p.id ? null : p.id)}
+                      >
+                        🩺 Procedimentos
+                      </button>
+                      <button className="cfg-btn-sm" onClick={() => setEditandoProf({ ...p })}>Editar</button>
+                      <button className="cfg-btn-sm cfg-btn-danger" onClick={() => handleDesativar(p.id, p.nome)}>Desativar</button>
+                    </div>
                   </div>
-                  <div className="cfg-item-acoes">
-                    <button className="cfg-btn-sm" onClick={() => setEditandoProf({ ...p })}>Editar</button>
-                    <button className="cfg-btn-sm cfg-btn-danger" onClick={() => handleDesativar(p.id, p.nome)}>Desativar</button>
-                  </div>
+
+                  {/* Painel de procedimentos */}
+                  {expandidoProc === p.id && (
+                    <div className="cfg-proc-painel">
+                      <p className="cfg-proc-titulo">Tipos de procedimento — <em>{p.nome}</em></p>
+
+                      {/* Lista */}
+                      {(p.procedimentos || []).length === 0 ? (
+                        <p className="cfg-proc-vazio">Nenhum procedimento cadastrado ainda.</p>
+                      ) : (
+                        <div className="cfg-proc-lista">
+                          {(p.procedimentos || []).map(proc => (
+                            editandoProc?.proc?.id === proc.id && editandoProc?.profId === p.id ? (
+                              <div key={proc.id} className="cfg-proc-item cfg-proc-editando">
+                                <input
+                                  className="cfg-input cfg-input-sm"
+                                  value={editandoProc.proc.nome}
+                                  onChange={e => setEditandoProc(ep => ({ ...ep, proc: { ...ep.proc, nome: e.target.value } }))}
+                                  placeholder="Nome do procedimento"
+                                />
+                                <input
+                                  className="cfg-input cfg-input-sm cfg-input-num"
+                                  type="number" min={15}
+                                  value={editandoProc.proc.duracao}
+                                  onChange={e => setEditandoProc(ep => ({ ...ep, proc: { ...ep.proc, duracao: Number(e.target.value) } }))}
+                                  placeholder="Min"
+                                />
+                                <input
+                                  className="cfg-input cfg-input-sm cfg-input-num"
+                                  type="number" min={0}
+                                  value={editandoProc.proc.valor}
+                                  onChange={e => setEditandoProc(ep => ({ ...ep, proc: { ...ep.proc, valor: Number(e.target.value) } }))}
+                                  placeholder="R$"
+                                />
+                                <button className="cfg-btn-sm cfg-btn-save" onClick={async () => {
+                                  await editarProcedimento(p.id, editandoProc.proc, p.procedimentos || []);
+                                  setEditandoProc(null);
+                                  await carregarProfissionais();
+                                }}>✓</button>
+                                <button className="cfg-btn-sm" onClick={() => setEditandoProc(null)}>✕</button>
+                              </div>
+                            ) : (
+                              <div key={proc.id} className="cfg-proc-item">
+                                <span className="cfg-proc-nome">{proc.nome}</span>
+                                <span className="cfg-proc-meta">{proc.duracao}min</span>
+                                {proc.valor ? <span className="cfg-proc-meta">R$ {Number(proc.valor).toFixed(2).replace(".", ",")}</span> : null}
+                                <button className="cfg-btn-sm" onClick={() => setEditandoProc({ profId: p.id, proc: { ...proc } })}>✏️</button>
+                                <button className="cfg-btn-sm cfg-btn-danger" onClick={async () => {
+                                  if (!window.confirm(`Remover "${proc.nome}"?`)) return;
+                                  await removerProcedimento(p.id, proc.id, p.procedimentos || []);
+                                  await carregarProfissionais();
+                                }}>🗑</button>
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Adicionar novo */}
+                      <div className="cfg-proc-novo">
+                        <input
+                          className="cfg-input cfg-input-sm"
+                          placeholder="Nome do procedimento"
+                          value={(novoProcPorProf[p.id] || PROC_VAZIO).nome}
+                          onChange={e => setNovoProcPorProf(prev => ({ ...prev, [p.id]: { ...(prev[p.id] || PROC_VAZIO), nome: e.target.value } }))}
+                        />
+                        <input
+                          className="cfg-input cfg-input-sm cfg-input-num"
+                          type="number" min={15}
+                          placeholder="Duração (min)"
+                          value={(novoProcPorProf[p.id] || PROC_VAZIO).duracao}
+                          onChange={e => setNovoProcPorProf(prev => ({ ...prev, [p.id]: { ...(prev[p.id] || PROC_VAZIO), duracao: Number(e.target.value) } }))}
+                        />
+                        <input
+                          className="cfg-input cfg-input-sm cfg-input-num"
+                          type="number" min={0}
+                          placeholder="Valor (R$)"
+                          value={(novoProcPorProf[p.id] || PROC_VAZIO).valor}
+                          onChange={e => setNovoProcPorProf(prev => ({ ...prev, [p.id]: { ...(prev[p.id] || PROC_VAZIO), valor: Number(e.target.value) } }))}
+                        />
+                        <button
+                          className="cfg-btn-sm cfg-btn-save"
+                          disabled={!(novoProcPorProf[p.id]?.nome || "").trim()}
+                          onClick={async () => {
+                            const dados = novoProcPorProf[p.id] || PROC_VAZIO;
+                            if (!dados.nome.trim()) return;
+                            await adicionarProcedimento(p.id, dados, p.procedimentos || []);
+                            setNovoProcPorProf(prev => ({ ...prev, [p.id]: PROC_VAZIO }));
+                            await carregarProfissionais();
+                          }}
+                        >+ Adicionar</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             ))}

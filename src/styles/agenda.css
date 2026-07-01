@@ -880,3 +880,24 @@
 .gc-sol-btn--wpp  { background: #e6f4ea; color: #137333; border-color: #ceead6; }
 .gc-sol-btn--confirm { background: #e8f0fe; color: #1558b0; border-color: #c5d8fb; }
 .gc-sol-btn--recusar { background: #fce8e6; color: #7a1c14; border-color: #fcd0cd; }
+
+/* ─── Visão Dia ──────────────────────────────────────────── */
+.gc-dia-wrapper .gc-semana-header {
+  grid-template-columns: 52px 1fr;
+}
+.gc-dia-col-header {
+  flex: 1;
+  text-align: center;
+}
+.gc-dia-area {
+  display: block !important;
+  position: relative;
+}
+.gc-dia-single-col {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border-right: none;
+}

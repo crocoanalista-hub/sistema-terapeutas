@@ -252,9 +252,32 @@
   flex-shrink: 0;
 }
 
+/* Professional card with full color header */
+.cfg-item--prof {
+  padding-left: 0;
+  overflow: hidden;
+  border-top: 3px solid;
+}
+.cfg-prof-header {
+  width: 56px;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: stretch;
+  border-radius: 0;
+}
+.cfg-prof-header-inicial {
+  font-size: 24px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  text-transform: uppercase;
+}
+
 .cfg-item-nome {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   color: #1a2535;
   flex: 1;
 }
@@ -566,3 +589,108 @@
   word-break: break-all;
   font-family: monospace;
 }
+
+/* ─── Procedimentos ──────────────────────────────────────────── */
+.cfg-proc-toggle {
+  background: none;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+  margin-top: 6px;
+}
+.cfg-proc-toggle:hover { background: #f5f5f5; }
+
+.cfg-proc-painel {
+  margin-top: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  background: #fafafa;
+  padding: 14px;
+}
+
+.cfg-proc-lista { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+
+.cfg-proc-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.cfg-proc-item-nome { flex: 1; font-weight: 600; color: #1a2535; }
+.cfg-proc-item-meta { color: #777; font-size: 12px; white-space: nowrap; }
+.cfg-proc-item-acoes { display: flex; gap: 4px; }
+.cfg-proc-item-acoes button {
+  background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 4px; border-radius: 4px;
+}
+.cfg-proc-item-acoes button:hover { background: #f0f0f0; }
+
+.cfg-proc-edit-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  background: #fff;
+  border: 1px dashed #bbb;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.cfg-proc-edit-form input {
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+.cfg-proc-edit-form input[type="text"] { flex: 1; min-width: 120px; }
+.cfg-proc-edit-form input[type="number"] { width: 80px; }
+.cfg-proc-edit-form button {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.cfg-proc-btn-salvar { background: #1a73e8; color: #fff; }
+.cfg-proc-btn-cancelar { background: #e0e0e0; color: #333; }
+
+.cfg-proc-novo {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cfg-proc-novo-titulo { font-size: 12px; font-weight: 700; color: #444; margin-bottom: 2px; }
+.cfg-proc-novo-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.cfg-proc-novo-form input {
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  padding: 6px 9px;
+  font-size: 12px;
+}
+.cfg-proc-novo-form input[type="text"] { flex: 1; min-width: 120px; }
+.cfg-proc-novo-form input[type="number"] { width: 80px; }
+.cfg-proc-btn-add {
+  padding: 6px 14px;
+  background: #34a853;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cfg-proc-btn-add:disabled { opacity: 0.6; cursor: not-allowed; }
+.cfg-proc-vazio { font-size: 12px; color: #aaa; font-style: italic; margin-bottom: 8px; }

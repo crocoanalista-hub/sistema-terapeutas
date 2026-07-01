@@ -63,3 +63,28 @@ export const desativarProfissional = async (id) =>
 
 export const atualizarProfissional = async (id, dados) =>
   updateDoc(doc(db, "profissionais", id), dados);
+
+// ─── Procedimentos (array dentro do doc do profissional) ──────────────────────
+
+const uidProc = () => `proc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+export const salvarProcedimentos = async (profissionalId, procedimentos) =>
+  updateDoc(doc(db, "profissionais", profissionalId), { procedimentos });
+
+export const adicionarProcedimento = async (profissionalId, proc, listAtual = []) => {
+  const novo = { id: uidProc(), ...proc };
+  await updateDoc(doc(db, "profissionais", profissionalId), {
+    procedimentos: [...listAtual, novo],
+  });
+  return novo;
+};
+
+export const removerProcedimento = async (profissionalId, procId, listAtual = []) =>
+  updateDoc(doc(db, "profissionais", profissionalId), {
+    procedimentos: listAtual.filter(p => p.id !== procId),
+  });
+
+export const editarProcedimento = async (profissionalId, proc, listAtual = []) =>
+  updateDoc(doc(db, "profissionais", profissionalId), {
+    procedimentos: listAtual.map(p => p.id === proc.id ? proc : p),
+  });

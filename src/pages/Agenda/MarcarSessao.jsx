@@ -136,6 +136,8 @@ const MarcarSessao = () => {
     observacoes: "",
     salaId: "",
     profissionalId: "",
+    procedimentoId: "",
+    procedimentoNome: "",
   });
 
   useEffect(() => {
@@ -363,6 +365,8 @@ const MarcarSessao = () => {
       salaCor: salas.find(s => s.id === dados.salaId)?.cor || null,
       profissionalId: dados.profissionalId || user.uid,
       profissionalNome: profissionais.find(p => p.id === dados.profissionalId)?.nome || null,
+      procedimentoId: dados.procedimentoId || null,
+      procedimentoNome: dados.procedimentoNome || null,
     };
 
     if (emPacote) {
@@ -581,7 +585,16 @@ const MarcarSessao = () => {
             {profissionais.length > 0 && role === "owner" && (
               <div className="form-group">
                 <label htmlFor="profissionalId">👤 Profissional</label>
-                <select id="profissionalId" name="profissionalId" value={dados.profissionalId} onChange={handleChange}>
+                <select
+                  id="profissionalId"
+                  name="profissionalId"
+                  value={dados.profissionalId}
+                  onChange={e => {
+                    handleChange(e);
+                    // Limpa procedimento ao trocar profissional
+                    setDados(d => ({ ...d, procedimentoId: "", procedimentoNome: "" }));
+                  }}
+                >
                   <option value="">Eu mesmo</option>
                   {profissionais.map((p) => (
                     <option key={p.id} value={p.id}>{p.nome}</option>
@@ -590,6 +603,38 @@ const MarcarSessao = () => {
               </div>
             )}
           </div>
+
+          {/* ── Procedimento (se profissional selecionado tem procedimentos) ── */}
+          {(() => {
+            const profSel = profissionais.find(p => p.id === dados.profissionalId);
+            const procs = profSel?.procedimentos || [];
+            if (!profSel || procs.length === 0) return null;
+            return (
+              <div className="form-group">
+                <label>🩺 Tipo de procedimento</label>
+                <select
+                  value={dados.procedimentoId || ""}
+                  onChange={e => {
+                    const proc = procs.find(p => p.id === e.target.value);
+                    setDados(d => ({
+                      ...d,
+                      procedimentoId: proc?.id || "",
+                      procedimentoNome: proc?.nome || "",
+                      duracao: proc ? String(proc.duracao) : d.duracao,
+                      valor: proc?.valor ? String(proc.valor) : d.valor,
+                    }));
+                  }}
+                >
+                  <option value="">Selecione o procedimento</option>
+                  {procs.map(proc => (
+                    <option key={proc.id} value={proc.id}>
+                      {proc.nome}{proc.duracao ? ` — ${proc.duracao}min` : ""}{proc.valor ? ` — R$ ${Number(proc.valor).toFixed(2).replace(".",",")}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            );
+          })()}
 
           {/* ── Toggle: modo de sessão ── */}
           <div className="ms-modo-toggle">

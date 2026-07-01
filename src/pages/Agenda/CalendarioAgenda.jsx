@@ -331,6 +331,11 @@ const CalendarioAgenda = () => {
         }
         return `${ini.getDate()} ${MESES[ini.getMonth()].slice(0,3)} – ${fim.getDate()} ${MESES[fim.getMonth()].slice(0,3)} ${fim.getFullYear()}`;
       })()
+    : vista === "dia"
+    ? (() => {
+        const d = dataRef;
+        return `${DIAS_LABEL[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} ${d.getFullYear()}`;
+      })()
     : `${MESES[dataRef.getMonth()]} ${dataRef.getFullYear()}`;
 
   // ─── FILTROS ─────────────────────────────────────────────
@@ -535,6 +540,59 @@ const CalendarioAgenda = () => {
     );
   };
 
+  // ─── VISÃO DIA ────────────────────────────────────────────
+  const renderDia = () => {
+    const ds = fmt(dataRef);
+    const hoje = fmt(new Date());
+    const isHoje = ds === hoje;
+    const events = (porData[ds] || []).sort((a, b) => a.hora.localeCompare(b.hora));
+
+    return (
+      <div className="gc-semana-wrapper gc-dia-wrapper">
+        <div className="gc-semana-header gc-dia-header">
+          <div className="gc-corner" />
+          <div className="gc-day-header-col gc-dia-col-header">
+            <span className="gc-day-header-nome">{DIAS_LABEL[dataRef.getDay()]}</span>
+            <span className={`gc-day-header-num${isHoje ? " hoje" : ""}`}>{dataRef.getDate()}</span>
+          </div>
+        </div>
+
+        <div className="gc-semana-body" ref={scrollRef}>
+          <div className="gc-time-col">
+            {HOURS.map((h) => (
+              <div key={h} className="gc-time-label" style={{ height: HOUR_HEIGHT }}>
+                <span>{String(h).padStart(2, "0")}:00</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="gc-days-area gc-dia-area" style={{ height: TOTAL_HEIGHT }}>
+            {HOURS.map((_, i) => (
+              <div key={i} className="gc-hline" style={{ top: i * HOUR_HEIGHT }} />
+            ))}
+
+            <div
+              className={`gc-day-col gc-dia-single-col${isHoje ? " hoje" : ""}`}
+              onClick={() => navigate(`/agenda/marcar?data=${ds}`)}
+            >
+              {isHoje && nowY !== null && (
+                <div className="gc-now-line" style={{ top: nowY }}>
+                  <div className="gc-now-dot" />
+                </div>
+              )}
+              {events.map((agend) => {
+                const top = horaParaPx(agend.hora);
+                const height = Math.max(((agend.duracao || 60) / 60) * HOUR_HEIGHT - 2, 20);
+                const curto = height < 48;
+                return renderEvento(agend, { top, height, curto });
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ─── MODAL DO EVENTO ──────────────────────────────────────
   const renderModalEvento = () => {
     if (!eventoAtivo) return null;
@@ -672,17 +730,26 @@ const CalendarioAgenda = () => {
         <div className="gc-toolbar-left">
           <button className="gc-btn-hoje" onClick={() => setDataRef(new Date())}>Hoje</button>
           <div className="gc-nav-group">
-            <button className="gc-nav-btn" onClick={() => vista === "semana"
-              ? setDataRef(d => { const n = new Date(d); n.setDate(n.getDate()-7); return n; })
-              : setDataRef(d => { const n = new Date(d); n.setMonth(n.getMonth()-1); return n; })}>‹</button>
-            <button className="gc-nav-btn" onClick={() => vista === "semana"
-              ? setDataRef(d => { const n = new Date(d); n.setDate(n.getDate()+7); return n; })
-              : setDataRef(d => { const n = new Date(d); n.setMonth(n.getMonth()+1); return n; })}>›</button>
+            <button className="gc-nav-btn" onClick={() => setDataRef(d => {
+              const n = new Date(d);
+              if (vista === "semana") n.setDate(n.getDate() - 7);
+              else if (vista === "dia") n.setDate(n.getDate() - 1);
+              else n.setMonth(n.getMonth() - 1);
+              return n;
+            })}>‹</button>
+            <button className="gc-nav-btn" onClick={() => setDataRef(d => {
+              const n = new Date(d);
+              if (vista === "semana") n.setDate(n.getDate() + 7);
+              else if (vista === "dia") n.setDate(n.getDate() + 1);
+              else n.setMonth(n.getMonth() + 1);
+              return n;
+            })}>›</button>
           </div>
           <h2 className="gc-periodo">{labelPeriodo}</h2>
         </div>
         <div className="gc-toolbar-right">
           <div className="gc-toggle">
+            <button className={`gc-toggle-btn${vista === "dia" ? " ativo" : ""}`} onClick={() => setVista("dia")}>Dia</button>
             <button className={`gc-toggle-btn${vista === "semana" ? " ativo" : ""}`} onClick={() => setVista("semana")}>Semana</button>
             <button className={`gc-toggle-btn${vista === "mes" ? " ativo" : ""}`} onClick={() => setVista("mes")}>Mês</button>
           </div>
@@ -769,7 +836,7 @@ const CalendarioAgenda = () => {
 
       {carregando
         ? <div className="gc-loading">Carregando agenda...</div>
-        : vista === "semana" ? renderSemana() : renderMes()
+        : vista === "dia" ? renderDia() : vista === "semana" ? renderSemana() : renderMes()
       }
 
       {renderModalEvento()}
