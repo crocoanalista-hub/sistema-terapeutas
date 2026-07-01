@@ -159,7 +159,7 @@ export default function Admin() {
 
       {seedResultado && (
         <div className="admin-seed-resultado">
-          ✅ Dados criados: <strong>{seedResultado.pacientes} clientes</strong> · <strong>{seedResultado.sessoes} sessões</strong> · <strong>{seedResultado.solicitacoes} solicitações pendentes</strong>
+          ✅ Dados criados: <strong>{seedResultado.pacientes} clientes</strong> · <strong>{seedResultado.profissionais} profissionais</strong> · <strong>{seedResultado.sessoes} sessões</strong> · <strong>{seedResultado.solicitacoes} solicitações pendentes</strong>
           <button onClick={() => setSeedResultado(null)}>✕</button>
         </div>
       )}
