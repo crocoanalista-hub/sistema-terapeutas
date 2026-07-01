@@ -94,30 +94,37 @@ export default function AgendamentoPublico() {
 
   // Calcula horas disponíveis para a data selecionada (deve ficar antes dos early returns)
   const horasDisponiveis = useMemo(() => {
-    if (!form.dataPreferida) return HORAS_PADRAO;
-    const horariosFuncionamento = config.horariosFuncionamento;
-    const intervaloAgenda = config.intervaloAgenda || 60;
+    if (!form.dataPreferida) return [];
+    const horariosFuncionamento  = config.horariosFuncionamento;
+    const duracaoSessao          = config.duracaoSessao          || 60;
+    const intervaloEntreSessoes  = config.intervaloEntreSessoes  ?? 0;
+    const blocoTotal             = duracaoSessao + intervaloEntreSessoes; // minutos que cada sessão bloqueia
 
     let horas;
     if (horariosFuncionamento) {
       const diaSemana = new Date(form.dataPreferida + "T12:00").getDay();
       const diaConfig = horariosFuncionamento[diaSemana];
       if (!diaConfig || !diaConfig.ativo) return []; // dia fechado
-      horas = gerarHorasIntervalo(diaConfig.inicio, diaConfig.fim, intervaloAgenda);
+      horas = gerarHorasIntervalo(diaConfig.inicio, diaConfig.fim, duracaoSessao);
     } else {
       horas = HORAS_PADRAO;
     }
 
-    // Remove horários já ocupados (todas as salas)
-    const ocupados = new Set(
-      agendamentosExistentes
-        .filter(a => a.data === form.dataPreferida)
-        .map(a => a.hora)
-    );
+    // Para cada horário agendado, calcula quais slots ele bloqueia (sessão + intervalo)
+    const agendsDia = agendamentosExistentes.filter(a => a.data === form.dataPreferida);
 
-    // Considera "ocupado" apenas se TODAS as salas estiverem tomadas
-    // Para agendamento público (sem sala), bloqueia se há qualquer agendamento naquele horário
-    return horas.map(h => ({ hora: h, ocupado: ocupados.has(h) }));
+    const horaParaMin = (h) => { const [hh, mm] = h.split(":").map(Number); return hh * 60 + mm; };
+
+    return horas.map(hora => {
+      const slotMin = horaParaMin(hora);
+      const ocupado = agendsDia.some(a => {
+        const inicioAgend = horaParaMin(a.hora);
+        const fimAgend    = inicioAgend + blocoTotal;
+        // Slot está bloqueado se cai dentro do período da sessão + intervalo
+        return slotMin >= inicioAgend && slotMin < fimAgend;
+      });
+      return { hora, ocupado };
+    });
   }, [form.dataPreferida, config, agendamentosExistentes]);
 
   if (carregando) return <div className="ap-loading">Carregando...</div>;

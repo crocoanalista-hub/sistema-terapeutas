@@ -6,6 +6,7 @@ import { listarSalas, criarSala } from "../../services/salasService";
 import { listarProfissionais } from "../../services/profissionaisService";
 import { useAuth } from "../../hooks/useAuth";
 import { usePlano } from "../../hooks/usePlano";
+import { buscarConfiguracoes } from "../../services/configuracoesService";
 import "../../styles/forms.css";
 import "../../styles/marcar-sessao.css";
 
@@ -80,6 +81,7 @@ const MarcarSessao = () => {
   const [agendamentosExistentes, setAgendamentosExistentes] = useState([]);
   const [salas, setSalas] = useState([]);
   const [profissionais, setProfissionais] = useState([]);
+  const [cfgAgenda, setCfgAgenda] = useState({ duracaoSessao: 60, intervaloEntreSessoes: 0 });
 
   const [busca, setBusca] = useState("");
   const [dropdownAberto, setDropdownAberto] = useState(false);
@@ -140,6 +142,12 @@ const MarcarSessao = () => {
     if (!workspaceId) return;
     carregarPacientes();
     listarAgendamentos(workspaceId).then(setAgendamentosExistentes).catch(() => {});
+    buscarConfiguracoes(workspaceId).then(cfg => {
+      setCfgAgenda({
+        duracaoSessao:         cfg.duracaoSessao         || 60,
+        intervaloEntreSessoes: cfg.intervaloEntreSessoes  ?? 0,
+      });
+    }).catch(() => {});
     listarSalas(workspaceId).then(setSalas).catch(() => {});
     if (role === "owner") {
       listarProfissionais(workspaceId).then(setProfissionais).catch(() => {});
@@ -195,27 +203,36 @@ const MarcarSessao = () => {
     }
   };
 
-  // Conflito existe se: mesma sala OU mesmo profissional estiverem ocupados no horário
-  // Se não há sala/profissional selecionado, bloqueia qualquer sobreposição
+  // Verifica conflito considerando duração da sessão + intervalo entre sessões
   const temConflito = (data, hora) => {
+    const { duracaoSessao, intervaloEntreSessoes } = cfgAgenda;
+    const blocoTotal = duracaoSessao + intervaloEntreSessoes;
+    const horaParaMin = (h) => { const [hh, mm] = h.split(":").map(Number); return hh * 60 + mm; };
+
+    const slotMin = horaParaMin(hora);
+    const slotFim = slotMin + duracaoSessao; // final da nova sessão sendo marcada
+
+    const salaId = dados.salaId;
+    const profId = dados.profissionalId;
+
     const ativos = agendamentosExistentes.filter(
-      a => a.data === data && a.hora === hora && a.status !== "cancelado"
+      a => a.data === data && a.status !== "cancelado"
     );
-    if (ativos.length === 0) return false;
 
-    const salaId       = dados.salaId;
-    const profId       = dados.profissionalId;
+    return ativos.some(a => {
+      const inicioExist = horaParaMin(a.hora);
+      const fimExist    = inicioExist + blocoTotal; // a sessão existente bloqueia até fim + intervalo
 
-    // Se profissional selecionado já tem agendamento nesse horário → conflito
-    if (profId && ativos.some(a => a.profissionalId === profId)) return true;
+      // Sobreposição: nova sessão começa antes do fim da existente E termina depois do início
+      const sobrepoe = slotMin < fimExist && slotFim > inicioExist;
+      if (!sobrepoe) return false;
 
-    // Se sala selecionada já tem agendamento nesse horário → conflito
-    if (salaId && ativos.some(a => a.salaId === salaId)) return true;
+      // Filtrar por sala ou profissional se selecionados
+      if (profId && a.profissionalId !== profId && a.profissionalId) return false;
+      if (salaId && a.salaId !== salaId && a.salaId) return false;
 
-    // Sem sala nem profissional selecionado: conflito se há qualquer agendamento
-    if (!salaId && !profId) return true;
-
-    return false;
+      return true;
+    });
   };
 
   const pacientesFiltrados = pacientes.filter((p) =>

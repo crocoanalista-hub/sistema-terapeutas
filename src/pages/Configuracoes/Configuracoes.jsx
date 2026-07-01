@@ -75,7 +75,8 @@ export default function Configuracoes() {
     5: { ativo: true,  inicio: "08:00", fim: "18:00" },
     6: { ativo: false, inicio: "08:00", fim: "13:00" },
   });
-  const [intervalo, setIntervalo] = useState(60); // minutos
+  const [duracaoSessao, setDuracaoSessao] = useState(60);       // duração de cada sessão (slot)
+  const [intervaloEntreSessoes, setIntervaloEntreSessoes] = useState(0); // buffer entre sessões
   const [salvandoHorarios, setSalvandoHorarios] = useState(false);
   const [horariosSalvos, setHorariosSalvos] = useState(false);
 
@@ -85,8 +86,9 @@ export default function Configuracoes() {
     carregarProfissionais();
     buscarConfiguracoes(workspaceId).then(cfg => {
       setAparencia(a => ({ ...a, ...cfg }));
-      if (cfg.horariosFuncionamento) setHorarios(cfg.horariosFuncionamento);
-      if (cfg.intervaloAgenda)       setIntervalo(cfg.intervaloAgenda);
+      if (cfg.horariosFuncionamento)    setHorarios(cfg.horariosFuncionamento);
+      if (cfg.duracaoSessao)            setDuracaoSessao(cfg.duracaoSessao);
+      if (cfg.intervaloEntreSessoes != null) setIntervaloEntreSessoes(cfg.intervaloEntreSessoes);
     }).catch(() => {});
     // Carrega slug atual do terapeuta
     carregarSlug();
@@ -264,14 +266,18 @@ export default function Configuracoes() {
   const handleSalvarHorarios = async () => {
     setSalvandoHorarios(true);
     try {
-      await salvarConfiguracoes(workspaceId, { horariosFuncionamento: horarios, intervaloAgenda: intervalo });
+      await salvarConfiguracoes(workspaceId, {
+        horariosFuncionamento: horarios,
+        duracaoSessao,
+        intervaloEntreSessoes,
+      });
       setHorariosSalvos(true);
       setTimeout(() => setHorariosSalvos(false), 3000);
     } catch (e) { alert("Erro ao salvar: " + e.message); }
     setSalvandoHorarios(false);
   };
 
-  const gerarHorasIntervalo = (inicio, fim, intervaloMin) => {
+  const gerarHorasIntervalo = (inicio, fim, slotMin) => {
     const horas = [];
     const [hI, mI] = inicio.split(":").map(Number);
     const [hF, mF] = fim.split(":").map(Number);
@@ -281,7 +287,7 @@ export default function Configuracoes() {
       const h = String(Math.floor(total / 60)).padStart(2, "0");
       const m = String(total % 60).padStart(2, "0");
       horas.push(`${h}:${m}`);
-      total += intervaloMin;
+      total += slotMin;
     }
     return horas;
   };
@@ -769,16 +775,32 @@ export default function Configuracoes() {
           </p>
 
           <div className="cfg-card">
-            <h3 className="cfg-card-titulo">Intervalo entre sessões</h3>
-            <p className="cfg-descricao-sm">Define os slots de horário disponíveis para agendamento.</p>
+            <h3 className="cfg-card-titulo">Duração padrão da sessão</h3>
+            <p className="cfg-descricao-sm">Define o intervalo entre os horários disponíveis para agendamento (cada slot ocupa esse tempo).</p>
             <div className="cfg-intervalo-row">
-              {[30, 45, 60, 90].map(min => (
+              {[30, 45, 60, 90, 120].map(min => (
                 <button
                   key={min}
-                  className={`cfg-intervalo-btn${intervalo === min ? " ativo" : ""}`}
-                  onClick={() => setIntervalo(min)}
+                  className={`cfg-intervalo-btn${duracaoSessao === min ? " ativo" : ""}`}
+                  onClick={() => setDuracaoSessao(min)}
                 >
-                  {min} min
+                  {min >= 60 ? `${min / 60}h` : `${min}min`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Intervalo entre sessões</h3>
+            <p className="cfg-descricao-sm">Tempo de descanso / preparação reservado automaticamente após cada sessão.</p>
+            <div className="cfg-intervalo-row">
+              {[0, 10, 15, 20, 30].map(min => (
+                <button
+                  key={min}
+                  className={`cfg-intervalo-btn${intervaloEntreSessoes === min ? " ativo" : ""}`}
+                  onClick={() => setIntervaloEntreSessoes(min)}
+                >
+                  {min === 0 ? "Sem intervalo" : `${min}min`}
                 </button>
               ))}
             </div>
@@ -789,7 +811,7 @@ export default function Configuracoes() {
             <div className="cfg-horarios-lista">
               {DIAS_SEMANA.map((dia, idx) => {
                 const h = horarios[idx] || { ativo: false, inicio: "08:00", fim: "18:00" };
-                const preview = h.ativo ? gerarHorasIntervalo(h.inicio, h.fim, intervalo) : [];
+                const preview = h.ativo ? gerarHorasIntervalo(h.inicio, h.fim, duracaoSessao) : [];
                 return (
                   <div key={idx} className={`cfg-dia-row${h.ativo ? " ativo" : ""}`}>
                     <label className="cfg-dia-toggle">
