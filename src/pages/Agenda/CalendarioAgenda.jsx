@@ -397,10 +397,14 @@ const CalendarioAgenda = () => {
   const renderEvento = (agend, extra = {}) => {
     const cor = CORES_STATUS[agend.status] || CORES_STATUS.confirmado;
     const pac = mapaPac[agend.pacienteId];
-    // Se tiver profissional associado, usa a cor dele na borda esquerda
+    // Fundo = cor do profissional; borda esquerda fina = cor do status
     const profCor = agend.profissionalId && mapaProfCor[agend.profissionalId]
       ? mapaProfCor[agend.profissionalId]
-      : cor.border;
+      : null;
+    const bgColor = profCor
+      ? profCor + "22"   // cor do profissional bem clara (14% opacidade)
+      : cor.bg;
+    const borderColor = profCor ? profCor : cor.border;
 
     return (
       <div
@@ -409,9 +413,9 @@ const CalendarioAgenda = () => {
         style={{
           top: extra.top,
           height: extra.height,
-          background: cor.bg,
-          borderLeftColor: profCor,
-          color: cor.text,
+          background: bgColor,
+          borderLeftColor: borderColor,
+          color: "#1a2535",
           ...extra.style,
         }}
         onClick={(e) => { e.stopPropagation(); setEventoAtivo(agend); }}
@@ -419,9 +423,10 @@ const CalendarioAgenda = () => {
         {extra.curto
           ? <span className="gc-event-curto">{agend.hora} {pac?.nome}</span>
           : <>
-              <span className="gc-event-nome">{pac?.nome || "Paciente"}</span>
+              <span className="gc-event-nome">{pac?.nome || "Cliente"}</span>
               <span className="gc-event-hora">{agend.hora} · {agend.duracao || 60}min</span>
               {agend.salaNome && <span className="gc-event-sala">🚪 {agend.salaNome}</span>}
+              <span className="gc-event-status-dot" style={{ background: cor.border }} title={agend.status} />
             </>
         }
       </div>

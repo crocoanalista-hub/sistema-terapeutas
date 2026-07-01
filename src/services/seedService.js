@@ -173,6 +173,24 @@ export const seedDadosDemo = async (workspaceId, onProgresso) => {
   await limparColecao(workspaceId, "evolucoes");
   await limparColecao(workspaceId, "solicitacoes", "workspaceId");
   await limparColecao(workspaceId, "profissionais", "workspaceId");
+  await limparColecao(workspaceId, "salas", "workspaceId");
+
+  prog("Criando salas…");
+  const SALAS_DEMO = [
+    { nome: "Sala 1", cor: "#4285f4" },
+    { nome: "Sala 2", cor: "#fbbc04" },
+    { nome: "Sala 3", cor: "#34a853" },
+  ];
+  const idsSalas = [];
+  for (const s of SALAS_DEMO) {
+    const ref = await addDoc(collection(db, "salas"), {
+      ...s,
+      workspaceId,
+      ativo: true,
+      criadoEm: new Date(),
+    });
+    idsSalas.push({ id: ref.id, ...s });
+  }
 
   prog("Criando profissionais…");
   const idsProfissionais = [];
@@ -246,12 +264,16 @@ export const seedDadosDemo = async (workspaceId, onProgresso) => {
     idsProfissionais[2]?.nome || null,
   ];
 
+  // Sala por profissional: Camila→Sala1, Rafael→Sala2, Patrícia→Sala3
+  const salaPorProfIdx = [0, 0, 0, 0, 1, 1, 1, 2, 2, 2];
+
   for (let pi = 0; pi < idsPacientes.length; pi++) {
     const pac = idsPacientes[pi];
     const { sessoes, valorSessao } = planos[pi];
     const hora = HORAS[pi % HORAS.length];
     const profId = profPorPaciente[pi];
     const profNome = nomeProfPorPaciente[pi];
+    const sala = idsSalas[salaPorProfIdx[pi]];
 
     for (let s = 0; s < sessoes; s++) {
       const diasAtras = (sessoes - s) * 7 + Math.floor(Math.random() * 3);
@@ -269,8 +291,9 @@ export const seedDadosDemo = async (workspaceId, onProgresso) => {
         status,
         pago,
         observacoes: "",
-        salaId: null,
-        salaNome: null,
+        salaId: sala?.id || null,
+        salaNome: sala?.nome || null,
+        salaCor: sala?.cor || null,
         profissionalId: profId,
         profissionalNome: profNome,
         dataCriacao: new Date(),
@@ -288,6 +311,7 @@ export const seedDadosDemo = async (workspaceId, onProgresso) => {
     const diasAFrente = (pi + 1) * 2 + Math.floor(Math.random() * 3);
     const profId   = profPorPaciente[pi];
     const profNome = nomeProfPorPaciente[pi];
+    const sala = idsSalas[salaPorProfIdx[pi]];
     await addDoc(collection(db, "agendamentos"), {
       terapeutaId: workspaceId,
       pacienteId: pac.id,
@@ -298,8 +322,9 @@ export const seedDadosDemo = async (workspaceId, onProgresso) => {
       status: "confirmado",
       pago: false,
       observacoes: "",
-      salaId: null,
-      salaNome: null,
+      salaId: sala?.id || null,
+      salaNome: sala?.nome || null,
+      salaCor: sala?.cor || null,
       profissionalId: profId,
       profissionalNome: profNome,
       dataCriacao: new Date(),
