@@ -18,6 +18,14 @@ const NAV = [
   { label: "Configurações",icon: "⚙️", rota: "/configuracoes" },
 ];
 
+// Itens visíveis na bottom nav (os 4 principais + "Mais")
+const NAV_BOTTOM = [
+  { label: "Início",    icon: "🏠", rota: "/dashboard" },
+  { label: "Pacientes", icon: "👥", rota: "/pacientes" },
+  { label: "Agenda",    icon: "📅", rota: "/agenda" },
+  { label: "Financeiro",icon: "💰", rota: "/financeiro" },
+];
+
 const Layout = ({ children }) => {
   const { terapeuta, workspaceId } = useAuth();
   const { config } = useConfiguracoes(workspaceId);
@@ -26,6 +34,7 @@ const Layout = ({ children }) => {
   const location = useLocation();
 
   const [notifAberta, setNotifAberta] = useState(false);
+  const [maisAberto, setMaisAberto] = useState(false);
   const [vistas, setVistas] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem("solVistas") || "[]")); }
     catch { return new Set(); }
@@ -176,6 +185,59 @@ const Layout = ({ children }) => {
         <TrialBanner />
         {children}
       </main>
+
+      {/* ── Bottom Nav (mobile) ── */}
+      <nav className="bottom-nav">
+        {NAV_BOTTOM.map((item) => (
+          <button
+            key={item.rota}
+            className={`bottom-nav-item${isAtivo(item.rota) ? " ativo" : ""}`}
+            onClick={() => navigate(item.rota)}
+          >
+            <span className="bottom-nav-icon">{item.icon}</span>
+            <span className="bottom-nav-label">{item.label}</span>
+            {item.rota === "/agenda" && total > 0 && (
+              <span className="bottom-nav-badge">{total > 9 ? "9+" : total}</span>
+            )}
+          </button>
+        ))}
+        <button
+          className={`bottom-nav-item${maisAberto ? " ativo" : ""}`}
+          onClick={() => setMaisAberto(v => !v)}
+        >
+          <span className="bottom-nav-icon">☰</span>
+          <span className="bottom-nav-label">Mais</span>
+        </button>
+      </nav>
+
+      {/* ── More menu overlay ── */}
+      {maisAberto && (
+        <>
+          <div className="bottom-more-overlay" onClick={() => setMaisAberto(false)} />
+          <div className="bottom-more-menu">
+            {NAV.filter(item => !NAV_BOTTOM.find(b => b.rota === item.rota)).map((item) => (
+              <button
+                key={item.rota}
+                className={`bottom-more-item${isAtivo(item.rota) ? " ativo" : ""}`}
+                onClick={() => { navigate(item.rota); setMaisAberto(false); }}
+              >
+                <span className="bottom-more-icon">{item.icon}</span>
+                {item.label}
+              </button>
+            ))}
+            <button
+              className={`bottom-more-item${isAtivo("/minha-conta") ? " ativo" : ""}`}
+              onClick={() => { navigate("/minha-conta"); setMaisAberto(false); }}
+            >
+              <span className="bottom-more-icon">👤</span>
+              Minha Conta
+            </button>
+            <button className="bottom-more-logout" onClick={handleLogout}>
+              Sair
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 };

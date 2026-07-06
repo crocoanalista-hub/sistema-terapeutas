@@ -30,9 +30,16 @@ export const registrarTerapeuta = async (email, senha, nome, slug = "") => {
       });
       await deleteDoc(doc(db, "convites", emailNorm));
     } else {
+      // Busca config do trial salva pelo admin (fallback nos defaults)
+      let cfgTrial = { dias: 10, pacientes: 5, agendamentos: 10, documentos: 2 };
+      try {
+        const cfgSnap = await getDoc(doc(db, "config", "trial"));
+        if (cfgSnap.exists()) cfgTrial = { ...cfgTrial, ...cfgSnap.data() };
+      } catch {}
+
       const trialInicio = new Date();
       const trialExpira = new Date(trialInicio);
-      trialExpira.setDate(trialExpira.getDate() + 10);
+      trialExpira.setDate(trialExpira.getDate() + Number(cfgTrial.dias));
       await setDoc(doc(db, "terapeutas", user.uid), {
         uid: user.uid,
         nome,
@@ -43,7 +50,11 @@ export const registrarTerapeuta = async (email, senha, nome, slug = "") => {
         plano: "trial",
         trialInicio,
         trialExpira,
-        limites: { pacientes: 5, agendamentos: 10, documentos: 2 },
+        limites: {
+          pacientes: Number(cfgTrial.pacientes),
+          agendamentos: Number(cfgTrial.agendamentos),
+          documentos: Number(cfgTrial.documentos),
+        },
         documentosGerados: 0,
       });
     }

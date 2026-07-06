@@ -19,7 +19,16 @@ const Login = () => {
       await login(email, senha);
       navigate("/dashboard");
     } catch (err) {
-      setErro(err.message);
+      const code = err.code || "";
+      if (code === "auth/user-not-found" || code === "auth/invalid-credential" || code === "auth/wrong-password") {
+        setErro("E-mail ou senha incorretos. Verifique seus dados ou registre-se.");
+      } else if (code === "auth/invalid-email") {
+        setErro("E-mail inválido.");
+      } else if (code === "auth/too-many-requests") {
+        setErro("Muitas tentativas. Aguarde alguns minutos e tente novamente.");
+      } else {
+        setErro("Erro ao entrar. Tente novamente.");
+      }
     } finally {
       setCarregando(false);
     }

@@ -119,30 +119,165 @@
   padding: 32px;
 }
 
+/* ── Bottom nav mobile ──────────────────────────────────────── */
+.bottom-nav {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .sidebar {
-    width: 60px;
-  }
-
-  .sidebar-header h2,
-  .sidebar-header p,
-  .sidebar-logo,
-  .nav-item span:not(.nav-icon) {
     display: none;
   }
 
-  .nav-item {
-    justify-content: center;
-    padding: 14px;
-  }
-
-  .nav-icon {
-    font-size: 20px;
-  }
-
   .conteudo {
-    margin-left: 60px;
-    padding: 20px;
+    margin-left: 0;
+    padding: 16px 14px 80px;
+  }
+
+  .topbar {
+    padding: 8px 14px 0;
+  }
+
+  .notif-painel {
+    width: calc(100vw - 28px);
+    right: -8px;
+  }
+
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 62px;
+    background: #1a2535;
+    z-index: 200;
+    align-items: stretch;
+    justify-content: space-around;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 2px;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.5);
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.15s;
+    padding: 6px 4px;
+    position: relative;
+  }
+
+  .bottom-nav-item.ativo {
+    color: white;
+  }
+
+  .bottom-nav-item.ativo::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 20%;
+    right: 20%;
+    height: 2px;
+    background: #1a73e8;
+    border-radius: 0 0 3px 3px;
+  }
+
+  .bottom-nav-icon {
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .bottom-nav-label {
+    font-size: 9px;
+    letter-spacing: 0.2px;
+  }
+
+  .bottom-nav-badge {
+    position: absolute;
+    top: 4px;
+    right: calc(50% - 18px);
+    background: #e53e3e;
+    color: white;
+    font-size: 9px;
+    font-weight: 800;
+    border-radius: 10px;
+    padding: 1px 4px;
+    min-width: 14px;
+    text-align: center;
+    line-height: 12px;
+    border: 1.5px solid #1a2535;
+  }
+
+  /* ── More menu overlay ── */
+  .bottom-more-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 199;
+    background: rgba(0,0,0,0.4);
+  }
+
+  .bottom-more-menu {
+    position: fixed;
+    bottom: 62px;
+    left: 0;
+    right: 0;
+    background: #1a2535;
+    z-index: 200;
+    border-radius: 16px 16px 0 0;
+    padding: 8px 0 12px;
+  }
+
+  .bottom-more-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 14px 24px;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.8);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .bottom-more-item.ativo {
+    color: white;
+    background: rgba(255,255,255,0.07);
+  }
+
+  .bottom-more-item:active {
+    background: rgba(255,255,255,0.1);
+  }
+
+  .bottom-more-icon {
+    font-size: 20px;
+    width: 28px;
+    text-align: center;
+  }
+
+  .bottom-more-logout {
+    margin: 8px 24px 0;
+    padding: 12px;
+    background: transparent;
+    color: rgba(231,76,60,0.8);
+    border: 1px solid rgba(231,76,60,0.3);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    width: calc(100% - 48px);
+    text-align: center;
   }
 }
 
@@ -289,3 +424,39 @@
   transition: background .12s;
 }
 .notif-ver-todos:hover { background: #f8faff; }
+
+/* ── Fixes globais mobile ───────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Tabelas viram scroll horizontal */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  /* Grids de 2+ colunas viram 1 coluna */
+  .admin-stats,
+  .admin-fin-kpis {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Modais ficam full screen */
+  .admin-modal,
+  .admin-overlay + div {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 16px 16px 0 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    top: auto !important;
+    transform: none !important;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  /* Cards de stats do dashboard */
+  h1 { font-size: 20px !important; }
+}

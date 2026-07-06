@@ -1,6 +1,6 @@
 import { db } from "./firebaseConfig";
 import {
-  doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc,
+  doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc, setDoc,
 } from "firebase/firestore";
 
 export const VALORES_PLANO = {
@@ -126,6 +126,17 @@ export const listarTodosTerapeutas = async () => {
 // ── Admin: atualizar plano ───────────────────────────────────
 export const atualizarPlano = async (uid, dados) => {
   await updateDoc(doc(db, "terapeutas", uid), dados);
+};
+
+// ── Config global do trial ───────────────────────────────────
+export const buscarConfigTrial = async () => {
+  const snap = await getDoc(doc(db, "config", "trial"));
+  if (!snap.exists()) return null;
+  return snap.data();
+};
+
+export const salvarConfigTrial = async (config) => {
+  await setDoc(doc(db, "config", "trial"), config, { merge: true });
 };
 
 // ── Admin: incrementar documentos gerados ───────────────────

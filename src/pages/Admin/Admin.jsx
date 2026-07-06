@@ -4,6 +4,7 @@ import { useAuth } from "../../hooks/useAuth";
 import {
   listarTodosTerapeutas, atualizarPlano, buscarUsage, PLANOS, LIMITES_TRIAL, TRIAL_DIAS,
   listarTodasCobrancas, criarCobranca, atualizarCobranca, VALORES_PLANO, salvarAssinaturaTerapeuta,
+  buscarConfigTrial, salvarConfigTrial,
 } from "../../services/planoService";
 import { seedDadosDemo } from "../../services/seedService";
 import "../../styles/admin.css";
@@ -45,6 +46,16 @@ export default function Admin() {
   const [seedProgresso, setSeedProgresso] = useState("");
   const [seedResultado, setSeedResultado] = useState(null);
 
+  // Config trial
+  const [configTrial, setConfigTrial] = useState({
+    dias: TRIAL_DIAS,
+    pacientes: LIMITES_TRIAL.pacientes,
+    agendamentos: LIMITES_TRIAL.agendamentos,
+    documentos: LIMITES_TRIAL.documentos,
+  });
+  const [salvandoConfig, setSalvandoConfig] = useState(false);
+  const [configSalva, setConfigSalva] = useState(false);
+
   // Financeiro
   const [cobrancas, setCobrancas] = useState([]);
   const [carregandoFin, setCarregandoFin] = useState(false);
@@ -79,6 +90,26 @@ export default function Admin() {
   }, []);
 
   useEffect(() => { carregar(); }, [carregar]);
+
+  useEffect(() => {
+    buscarConfigTrial().then(cfg => {
+      if (cfg) setConfigTrial(c => ({ ...c, ...cfg }));
+    }).catch(() => {});
+  }, []);
+
+  const handleSalvarConfigTrial = async (e) => {
+    e.preventDefault();
+    setSalvandoConfig(true);
+    await salvarConfigTrial({
+      dias: Number(configTrial.dias),
+      pacientes: Number(configTrial.pacientes),
+      agendamentos: Number(configTrial.agendamentos),
+      documentos: Number(configTrial.documentos),
+    });
+    setSalvandoConfig(false);
+    setConfigSalva(true);
+    setTimeout(() => setConfigSalva(false), 2500);
+  };
 
   const carregarFinanceiro = useCallback(async () => {
     setCarregandoFin(true);
@@ -289,6 +320,9 @@ export default function Admin() {
         </button>
         <button className={`admin-aba${abaAtiva === "financeiro" ? " ativa" : ""}`} onClick={() => setAbaAtiva("financeiro")}>
           💳 Financeiro
+        </button>
+        <button className={`admin-aba${abaAtiva === "config" ? " ativa" : ""}`} onClick={() => setAbaAtiva("config")}>
+          ⚙️ Configurações
         </button>
       </div>
 
@@ -657,6 +691,63 @@ export default function Admin() {
               </button>
               <button className="admin-btn" onClick={() => setModalCobranca(null)}>Cancelar</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── ABA CONFIGURAÇÕES ─── */}
+      {abaAtiva === "config" && (
+        <div style={{ maxWidth: 560 }}>
+          <h3 style={{ margin: "0 0 6px", color: "#1a2535" }}>⚙️ Configurações do Trial</h3>
+          <p style={{ margin: "0 0 24px", color: "#888", fontSize: 13 }}>
+            Define os limites padrão aplicados a novos usuários no período gratuito.
+          </p>
+
+          <form onSubmit={handleSalvarConfigTrial} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {[
+              { key: "dias",         label: "Duração (dias)",           min: 1, max: 365 },
+              { key: "pacientes",    label: "Limite de pacientes",      min: 0 },
+              { key: "agendamentos", label: "Limite de agendamentos",   min: 0 },
+              { key: "documentos",   label: "Limite de documentos",     min: 0 },
+            ].map(({ key, label, min, max }) => (
+              <label key={key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2535" }}>{label}</span>
+                <input
+                  type="number"
+                  min={min}
+                  max={max}
+                  value={configTrial[key]}
+                  onChange={e => setConfigTrial(c => ({ ...c, [key]: e.target.value }))}
+                  style={{
+                    padding: "10px 12px", borderRadius: 8, border: "1.5px solid #e0e0e0",
+                    fontSize: 15, outline: "none", width: "100%", boxSizing: "border-box",
+                  }}
+                  required
+                />
+              </label>
+            ))}
+
+            <button
+              type="submit"
+              disabled={salvandoConfig}
+              style={{
+                marginTop: 8, padding: "12px 24px", background: "#1a73e8", color: "#fff",
+                border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14,
+                cursor: salvandoConfig ? "not-allowed" : "pointer", opacity: salvandoConfig ? 0.7 : 1,
+              }}
+            >
+              {salvandoConfig ? "Salvando..." : "💾 Salvar configurações"}
+            </button>
+
+            {configSalva && (
+              <p style={{ color: "#34a853", fontWeight: 600, fontSize: 13, margin: 0 }}>
+                ✅ Configurações salvas com sucesso!
+              </p>
+            )}
+          </form>
+
+          <div style={{ marginTop: 32, padding: 16, background: "#f8f9fa", borderRadius: 10, fontSize: 13, color: "#666" }}>
+            <strong>Atenção:</strong> as alterações aqui afetam apenas novos usuários que se registrarem. Para alterar os limites de um usuário já existente, edite diretamente na aba <strong>Contas</strong>.
           </div>
         </div>
       )}
