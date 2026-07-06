@@ -116,14 +116,7 @@ const Dashboard = () => {
       )}
 
       {/* Stats */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "16px",
-          marginBottom: "32px",
-        }}
-      >
+      <div className="dash-grid-stats">
         {cards.map((c) => (
           <div
             key={c.titulo}
@@ -162,13 +155,7 @@ const Dashboard = () => {
       <h3 style={{ margin: "0 0 16px 0", color: "#1a2535", fontSize: "16px" }}>
         Atalhos rápidos
       </h3>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-          gap: "12px",
-        }}
-      >
+      <div className="dash-grid-atalhos">
         {atalhos.map((a) => (
           <button
             key={a.label}

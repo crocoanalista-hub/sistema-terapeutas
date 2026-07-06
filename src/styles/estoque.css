@@ -111,3 +111,37 @@
   font-size: 14px; color: #856404; margin-bottom: 16px; cursor: pointer;
 }
 .dash-alerta-estoque:hover { background: #fff3cd; }
+
+@media (max-width: 768px) {
+  .dash-alerta-estoque {
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+}
+
+/* ── Dashboard grids ─────────────────────────────────────── */
+.dash-grid-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.dash-grid-atalhos {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .dash-grid-stats {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .dash-grid-atalhos {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+}
