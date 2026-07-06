@@ -1,0 +1,115 @@
+.mc-page { max-width: 760px; margin: 0 auto; padding: 24px 16px; }
+.mc-titulo { font-size: 22px; font-weight: 800; color: #1a2535; margin-bottom: 24px; }
+
+/* Hero do plano */
+.mc-plano-hero {
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  margin-bottom: 24px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.mc-plano-hero--ativo    { background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%); }
+.mc-plano-hero--trial    { background: linear-gradient(135deg, #f9ab00 0%, #e37400 100%); }
+.mc-plano-hero--bloqueado{ background: linear-gradient(135deg, #ea4335 0%, #b31412 100%); }
+
+.mc-plano-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; opacity: .8; margin-bottom: 6px; }
+.mc-plano-nome  { font-size: 28px; font-weight: 900; margin-bottom: 4px; }
+.mc-plano-desc  { font-size: 14px; opacity: .85; }
+.mc-plano-alerta {
+  margin-top: 16px;
+  background: rgba(0,0,0,.18);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Cards de status */
+.mc-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.mc-status-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  border-top: 3px solid #e8eaed;
+}
+.mc-status-card--ok      { border-top-color: #34a853; }
+.mc-status-card--aviso   { border-top-color: #f9ab00; }
+.mc-status-card--urgente { border-top-color: #ea4335; }
+.mc-status-label { font-size: 11px; font-weight: 700; color: #5f6368; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
+.mc-status-valor { font-size: 22px; font-weight: 800; color: #1a2535; }
+.mc-status-sub   { font-size: 12px; color: #9aa0a6; margin-top: 3px; }
+
+/* Próxima cobrança destaque */
+.mc-proxima-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.mc-proxima-icone {
+  font-size: 36px;
+  flex-shrink: 0;
+}
+.mc-proxima-info { flex: 1; }
+.mc-proxima-titulo { font-size: 15px; font-weight: 700; color: #1a2535; margin-bottom: 2px; }
+.mc-proxima-data  { font-size: 13px; color: #5f6368; }
+.mc-proxima-valor { font-size: 24px; font-weight: 900; white-space: nowrap; }
+.mc-proxima-valor--ok      { color: #34a853; }
+.mc-proxima-valor--aviso   { color: #f9ab00; }
+.mc-proxima-valor--urgente { color: #ea4335; }
+
+/* Histórico */
+.mc-secao-titulo { font-size: 16px; font-weight: 700; color: #1a2535; margin-bottom: 14px; }
+.mc-tabela-wrap  { overflow-x: auto; border-radius: 12px; border: 1px solid #e8eaed; margin-bottom: 24px; }
+.mc-tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mc-tabela thead { background: #f8f9fa; }
+.mc-tabela th {
+  padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 700;
+  color: #5f6368; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap;
+}
+.mc-tabela td { padding: 13px 16px; border-top: 1px solid #f1f3f4; vertical-align: middle; }
+.mc-tabela tbody tr:hover { background: #fafafa; }
+
+.mc-badge {
+  display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+}
+.mc-badge--pago     { background: #e6f4ea; color: #137333; }
+.mc-badge--pendente { background: #fff3cd; color: #856404; }
+.mc-badge--atrasado { background: #fce8e6; color: #c5221f; }
+.mc-badge--cancelado{ background: #f1f3f4; color: #9aa0a6; }
+
+.mc-vazio {
+  text-align: center; padding: 48px 24px; color: #9aa0a6;
+  background: #fafafa; border-radius: 12px; border: 1px dashed #dadce0;
+  margin-bottom: 24px;
+}
+
+/* Contato suporte */
+.mc-suporte {
+  background: #f8f9fa; border-radius: 12px; padding: 18px 22px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.mc-suporte-texto { font-size: 14px; color: #5f6368; }
+.mc-suporte-texto strong { color: #1a2535; }
+.mc-suporte-btn {
+  background: #1a73e8; color: #fff; border: none; border-radius: 8px;
+  padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer;
+  text-decoration: none; white-space: nowrap;
+}
+.mc-suporte-btn:hover { background: #1557b0; }

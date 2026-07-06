@@ -6,7 +6,7 @@ import { buscarPaciente } from "../../services/pacientesService";
 import { useAuth } from "../../hooks/useAuth";
 
 const HistoricoAtendimentos = () => {
-  const { user, workspaceId } = useAuth();
+  const { workspaceId } = useAuth();
   const navigate = useNavigate();
   const [historico, setHistorico] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -16,6 +16,7 @@ const HistoricoAtendimentos = () => {
     if (workspaceId) {
       carregarHistorico();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
 
   const carregarHistorico = async () => {

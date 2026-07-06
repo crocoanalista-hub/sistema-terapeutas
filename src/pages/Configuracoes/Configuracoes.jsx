@@ -97,6 +97,7 @@ export default function Configuracoes() {
     }).catch(() => {});
     // Carrega slug atual do terapeuta
     carregarSlug();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
 
   // Sincroniza estado local quando config global muda
@@ -199,6 +200,7 @@ export default function Configuracoes() {
         nome: editandoProf.nome,
         especialidade: editandoProf.especialidade,
         cor: editandoProf.cor,
+        percentualComissao: Number(editandoProf.percentualComissao || 0),
       });
       setEditandoProf(null);
       await carregarProfissionais();
@@ -555,6 +557,18 @@ export default function Configuracoes() {
                         />
                       ))}
                     </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+                      <label className="cfg-label-sm">% Comissão</label>
+                      <input
+                        className="cfg-input cfg-input-sm cfg-input-num"
+                        type="number" min={0} max={100} step={0.5}
+                        placeholder="0"
+                        value={editandoProf.percentualComissao ?? ""}
+                        onChange={e => setEditandoProf({ ...editandoProf, percentualComissao: e.target.value })}
+                        style={{ width: 72 }}
+                      />
+                      <span style={{ fontSize: 12, color: "#5f6368" }}>%</span>
+                    </div>
                   </div>
                   <div className="cfg-item-acoes">
                     <button className="cfg-btn-sm cfg-btn-save" onClick={handleSalvarEditProf} disabled={salvandoProf}>Salvar</button>
@@ -575,6 +589,9 @@ export default function Configuracoes() {
                       <span className="cfg-item-sub cfg-proc-count">
                         🩺 {(p.procedimentos || []).length} procedimento{(p.procedimentos || []).length !== 1 ? "s" : ""}
                       </span>
+                      {p.percentualComissao > 0 && (
+                        <span className="cfg-item-sub">💼 {p.percentualComissao}% comissão</span>
+                      )}
                     </div>
                     <div className="cfg-item-acoes">
                       <button

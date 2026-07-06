@@ -1,5 +1,5 @@
 import { db } from "./firebaseConfig";
-import { collection, addDoc, setDoc, doc, getDocs, query, where, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, deleteDoc } from "firebase/firestore";
 
 // ─── Dados de exemplo ─────────────────────────────────────────────────────────
 
@@ -111,6 +111,7 @@ const diasFuturos = (n) => {
 
 const HORAS = ["08:00","09:00","10:00","11:00","14:00","15:00","16:00","17:00","18:00","19:00"];
 
+// eslint-disable-next-line no-unused-vars
 function horaAleatoria() {
   return HORAS[Math.floor(Math.random() * HORAS.length)];
 }
@@ -195,7 +196,7 @@ export const seedDadosDemo = async (workspaceId, onProgresso) => {
   prog("Criando profissionais…");
   const idsProfissionais = [];
   for (const p of PROFISSIONAIS_DEMO) {
-    // Usa addDoc — cria doc com ID aleatório sem precisar de conta Auth
+    // Usa addDoc — cria com ID aleatório sem precisar de conta Auth
     const ref = await addDoc(collection(db, "profissionais"), {
       ...p,
       workspaceId,

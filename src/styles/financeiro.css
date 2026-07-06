@@ -406,3 +406,24 @@
     color: #666;
   }
 }
+
+/* ─── Comissões ─────────────────────────────────────────── */
+.fin-com-tabela-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #e8eaed; }
+.fin-com-tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
+.fin-com-tabela thead { background: #f8f9fa; }
+.fin-com-tabela th {
+  padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700;
+  color: #5f6368; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap;
+}
+.fin-com-tabela td { padding: 12px 14px; border-top: 1px solid #f1f3f4; vertical-align: middle; }
+.fin-com-tabela tbody tr:hover { background: #fafafa; }
+
+.fin-com-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.fin-com-badge--pago     { background: #e6f4ea; color: #137333; }
+.fin-com-badge--pendente { background: #fff3cd; color: #856404; }
+
+.fin-com-btn {
+  background: #e8f0fe; color: #1a73e8; border: none; border-radius: 8px;
+  padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.fin-com-btn:hover { background: #1a73e8; color: #fff; }

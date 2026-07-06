@@ -121,16 +121,17 @@ const MarcarSessao = () => {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
 
-  const dataParam      = searchParams.get("data")       || "";
-  const horaParam      = searchParams.get("hora")       || "";
+  const dataParam       = searchParams.get("data")       || "";
+  const horaParam       = searchParams.get("hora")       || "";
   const pacienteIdParam = searchParams.get("pacienteId") || "";
+  const duracaoParam    = searchParams.get("duracao")    || "60";
 
   const [dados, setDados] = useState({
     pacienteId: pacienteIdParam,
     pacienteNome: "",
     data: dataParam,
     hora: horaParam,
-    duracao: "60",
+    duracao: duracaoParam,
     valor: "",
     linkAtendimento: "",
     observacoes: "",
@@ -154,6 +155,7 @@ const MarcarSessao = () => {
     if (role === "owner") {
       listarProfissionais(workspaceId).then(setProfissionais).catch(() => {});
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId, role]);
 
   useEffect(() => {

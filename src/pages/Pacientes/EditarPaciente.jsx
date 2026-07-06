@@ -21,6 +21,7 @@ const EditarPaciente = () => {
 
   useEffect(() => {
     carregarPaciente();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const carregarPaciente = async () => {

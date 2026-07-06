@@ -1,0 +1,306 @@
+/* ============================================================
+   MICRO-INTERAÇÕES GLOBAIS
+   Efeitos suaves de hover, foco, entrada e feedback visual
+   ============================================================ */
+
+/* ─── Variáveis de timing ────────────────────────────────── */
+:root {
+  --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-snappy: cubic-bezier(0.16, 1, 0.3, 1);
+  --t-fast: 120ms;
+  --t-mid: 200ms;
+  --t-slow: 320ms;
+}
+
+/* ─── Botões primários ───────────────────────────────────── */
+.gc-btn-novo,
+.btn-login,
+.admin-btn-seed,
+.admin-btn--ativar,
+.gc-act-btn.concluir,
+.af-btn-primary,
+.ap-submit-btn,
+.cfg-btn-save,
+.ms-btn-salvar {
+  transition: transform var(--t-fast) var(--ease-spring),
+              box-shadow var(--t-mid) var(--ease-out),
+              filter var(--t-fast) var(--ease-out) !important;
+}
+.gc-btn-novo:hover,
+.btn-login:hover,
+.admin-btn-seed:hover,
+.admin-btn--ativar:hover,
+.gc-act-btn.concluir:hover,
+.af-btn-primary:hover,
+.ap-submit-btn:hover,
+.cfg-btn-save:hover,
+.ms-btn-salvar:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(0,0,0,.18) !important;
+  filter: brightness(1.06);
+}
+.gc-btn-novo:active,
+.btn-login:active,
+.admin-btn-seed:active,
+.gc-act-btn.concluir:active,
+.ap-submit-btn:active,
+.ms-btn-salvar:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 6px rgba(0,0,0,.12) !important;
+  transition-duration: 60ms !important;
+}
+
+/* ─── Botões secundários / outline ──────────────────────── */
+button,
+.gc-btn-hoje,
+.gc-nav-btn,
+.gc-toggle-btn,
+.gc-act-btn,
+.cfg-btn-sm,
+.admin-btn,
+.pac-btn,
+.af-btn-outline,
+.gc-filtro-btn {
+  transition: transform var(--t-fast) var(--ease-out),
+              background var(--t-fast) var(--ease-out),
+              box-shadow var(--t-fast) var(--ease-out),
+              border-color var(--t-fast) var(--ease-out),
+              color var(--t-fast) var(--ease-out) !important;
+}
+button:active:not(:disabled) {
+  transform: scale(0.96) !important;
+  transition-duration: 60ms !important;
+}
+
+/* ─── Nav items da sidebar ───────────────────────────────── */
+.nav-item {
+  transition: background var(--t-fast) var(--ease-out),
+              transform var(--t-fast) var(--ease-out),
+              padding-left var(--t-fast) var(--ease-out) !important;
+}
+.nav-item:hover {
+  transform: translateX(3px) !important;
+}
+.nav-item.active {
+  transform: translateX(4px) !important;
+}
+
+/* ─── Cards de pacientes / clientes ─────────────────────── */
+.pacientes-lista table tbody tr {
+  transition: background var(--t-fast) var(--ease-out),
+              transform var(--t-fast) var(--ease-out),
+              box-shadow var(--t-fast) var(--ease-out) !important;
+  cursor: pointer;
+}
+.pacientes-lista table tbody tr:hover {
+  transform: translateX(2px) !important;
+  box-shadow: inset 3px 0 0 var(--cor-primaria, #1a73e8) !important;
+}
+
+/* ─── Cards admin ────────────────────────────────────────── */
+.admin-card {
+  transition: box-shadow var(--t-mid) var(--ease-out),
+              transform var(--t-fast) var(--ease-out) !important;
+}
+.admin-card:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,.1) !important;
+}
+
+/* ─── Cards de configuração ──────────────────────────────── */
+.cfg-item,
+.cfg-prof-bloco {
+  transition: box-shadow var(--t-mid) var(--ease-out),
+              transform var(--t-fast) var(--ease-out) !important;
+}
+.cfg-item:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,.09) !important;
+}
+
+/* ─── Eventos da agenda ──────────────────────────────────── */
+.gc-event {
+  transition: filter var(--t-fast) var(--ease-out),
+              box-shadow var(--t-mid) var(--ease-out),
+              transform var(--t-fast) var(--ease-spring) !important;
+}
+.gc-event:hover {
+  transform: translateY(-1px) scale(1.012) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2) !important;
+  filter: brightness(0.96) !important;
+  z-index: 20 !important;
+}
+
+/* ─── Dias do mês ────────────────────────────────────────── */
+.gc-mes-dia {
+  transition: background var(--t-fast) var(--ease-out),
+              box-shadow var(--t-fast) var(--ease-out) !important;
+}
+.gc-mes-dia:hover {
+  box-shadow: inset 0 0 0 2px var(--cor-primaria, #1a73e8) !important;
+}
+
+/* ─── Colunas de dia (semana) ────────────────────────────── */
+.gc-day-col {
+  transition: background var(--t-fast) var(--ease-out) !important;
+}
+
+/* ─── Modal de evento ────────────────────────────────────── */
+.gc-ev-modal {
+  animation: modal-pop var(--t-slow) var(--ease-spring) both;
+}
+@keyframes modal-pop {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+.gc-overlay {
+  animation: fade-in var(--t-mid) var(--ease-out) both;
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ─── Cards de procedimentos ─────────────────────────────── */
+.cfg-proc-item {
+  transition: box-shadow var(--t-fast) var(--ease-out),
+              transform var(--t-fast) var(--ease-out),
+              background var(--t-fast) var(--ease-out) !important;
+}
+.cfg-proc-item:hover {
+  transform: translateX(3px) !important;
+  box-shadow: -3px 0 0 var(--cor-primaria, #1a73e8), 0 2px 8px rgba(0,0,0,.07) !important;
+}
+
+/* ─── Inputs com foco suave ──────────────────────────────── */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+  transition: border-color var(--t-mid) var(--ease-out),
+              box-shadow var(--t-mid) var(--ease-out),
+              transform var(--t-fast) var(--ease-out) !important;
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+select:focus,
+textarea:focus {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 0 0 3px rgba(26,115,232,.15), 0 2px 8px rgba(0,0,0,.08) !important;
+}
+
+/* ─── Notificações / painel ──────────────────────────────── */
+.notif-painel {
+  animation: slide-down var(--t-slow) var(--ease-snappy) both;
+  transform-origin: top right;
+}
+@keyframes slide-down {
+  from { opacity: 0; transform: scale(0.94) translateY(-8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.notif-item {
+  transition: background var(--t-fast) var(--ease-out),
+              transform var(--t-fast) var(--ease-out) !important;
+}
+.notif-item:hover {
+  transform: translateX(3px) !important;
+}
+
+/* ─── Solicitações painel ────────────────────────────────── */
+.gc-sol-card {
+  transition: box-shadow var(--t-mid) var(--ease-out),
+              transform var(--t-fast) var(--ease-out) !important;
+}
+.gc-sol-card:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,.1) !important;
+}
+
+/* ─── Abas ───────────────────────────────────────────────── */
+.cfg-aba,
+.gc-toggle-btn,
+.admin-filtro-aba {
+  transition: background var(--t-fast) var(--ease-out),
+              color var(--t-fast) var(--ease-out),
+              border-color var(--t-fast) var(--ease-out),
+              transform var(--t-fast) var(--ease-out) !important;
+}
+.cfg-aba:hover:not(.ativa),
+.gc-toggle-btn:hover:not(.ativo),
+.admin-filtro-aba:hover:not(.ativa) {
+  transform: translateY(-1px) !important;
+}
+
+/* ─── Badges e pills ─────────────────────────────────────── */
+.nav-badge,
+.gc-badge-sol,
+.notif-dot {
+  animation: badge-pop 0.4s var(--ease-spring) both;
+}
+@keyframes badge-pop {
+  from { transform: scale(0); }
+  to   { transform: scale(1); }
+}
+
+/* ─── Página inteira — entrada suave ─────────────────────── */
+.gc-container,
+.pacientes-page,
+.cfg-page,
+.admin-page,
+.financeiro-page,
+.af-page,
+.ms-container,
+.prontuario-container {
+  animation: page-in var(--t-slow) var(--ease-snappy) both;
+}
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Linhas de tabela financeiro ────────────────────────── */
+.fin-table tbody tr,
+.extrato-table tbody tr {
+  transition: background var(--t-fast) var(--ease-out),
+              transform var(--t-fast) var(--ease-out) !important;
+}
+.fin-table tbody tr:hover,
+.extrato-table tbody tr:hover {
+  transform: translateX(2px) !important;
+}
+
+/* ─── Botão de recibo ────────────────────────────────────── */
+.btn-recibo {
+  transition: transform var(--t-fast) var(--ease-spring),
+              box-shadow var(--t-fast) var(--ease-out) !important;
+}
+.btn-recibo:hover {
+  transform: scale(1.08) !important;
+  box-shadow: 0 3px 10px rgba(0,0,0,.15) !important;
+}
+
+/* ─── Sidebar logo ───────────────────────────────────────── */
+.sidebar-logo {
+  transition: transform var(--t-mid) var(--ease-spring) !important;
+}
+.sidebar-logo:hover {
+  transform: scale(1.04) !important;
+}
+
+/* ─── Reduz motion para quem prefere ────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

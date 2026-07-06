@@ -6,6 +6,10 @@ import {
   marcarComoPago,
 } from "../../services/agendamentosService";
 import { listarPacientes } from "../../services/pacientesService";
+import { listarProfissionais } from "../../services/profissionaisService";
+import {
+  calcularComissoes, buscarComissoesSalvas, registrarPagamentoComissao,
+} from "../../services/comissoesService";
 import { useAuth } from "../../hooks/useAuth";
 import "../../styles/financeiro.css";
 
@@ -155,6 +159,17 @@ const Financeiro = () => {
   // Aba 4 — Extrato filtro status
   const [filtroStatus, setFiltroStatus] = useState("todos");
 
+  // Aba 5 — Comissões
+  const [mesComissao, setMesComissao] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [profissionais, setProfissionais] = useState([]);
+  const [sessoesComissao, setSessoesComissao] = useState([]);
+  const [comissoesSalvas, setComissoesSalvas] = useState([]);
+  const [carregandoCom, setCarregandoCom] = useState(false);
+  const [marcandoCom, setMarcandoCom] = useState(null);
+
   const carregar = useCallback(async () => {
     if (!workspaceId) return;
     try {
@@ -176,9 +191,25 @@ const Financeiro = () => {
     }
   }, [workspaceId]);
 
+  useEffect(() => { carregar(); }, [carregar]);
+
+  const carregarComissoes = useCallback(async () => {
+    if (!workspaceId) return;
+    setCarregandoCom(true);
+    const [profs, sess, salvas] = await Promise.all([
+      listarProfissionais(workspaceId),
+      calcularComissoes(workspaceId, mesComissao),
+      buscarComissoesSalvas(workspaceId, mesComissao),
+    ]);
+    setProfissionais(profs);
+    setSessoesComissao(sess);
+    setComissoesSalvas(salvas);
+    setCarregandoCom(false);
+  }, [workspaceId, mesComissao]);
+
   useEffect(() => {
-    carregar();
-  }, [carregar]);
+    if (aba === "comissoes") carregarComissoes();
+  }, [aba, carregarComissoes]);
 
   const handleMarcarPago = async (sessao) => {
     try {
@@ -598,11 +629,108 @@ const Financeiro = () => {
     </div>
   );
 
+  const renderComissoes = () => {
+    // Agrupa sessões por profissional
+    const porProf = {};
+    sessoesComissao.forEach(s => {
+      const pid = s.profissionalId;
+      if (!pid) return;
+      if (!porProf[pid]) porProf[pid] = { sessoes: [], totalGerado: 0 };
+      porProf[pid].sessoes.push(s);
+      porProf[pid].totalGerado += s.valor || 0;
+    });
+
+    const linhas = profissionais.map(p => {
+      const dados = porProf[p.id] || { sessoes: [], totalGerado: 0 };
+      const pct = Number(p.percentualComissao || 0);
+      const valorAPagar = dados.totalGerado * (pct / 100);
+      const salva = comissoesSalvas.find(c => c.profissionalId === p.id);
+      return { prof: p, ...dados, pct, valorAPagar, status: salva ? "pago" : "pendente", salva };
+    }).filter(l => l.sessoes.length > 0 || l.pct > 0);
+
+    const handleMarcarPago = async (linha) => {
+      setMarcandoCom(linha.prof.id);
+      await registrarPagamentoComissao(workspaceId, mesComissao, linha.prof.id, {
+        profissionalNome: linha.prof.nome,
+        totalGerado: linha.totalGerado,
+        percentual: linha.pct,
+        valorPago: linha.valorAPagar,
+        sessoes: linha.sessoes.length,
+      });
+      await carregarComissoes();
+      setMarcandoCom(null);
+    };
+
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
+          <label style={{ fontWeight: 600, fontSize: 14 }}>Mês:
+            <input type="month" value={mesComissao} onChange={e => setMesComissao(e.target.value)}
+              style={{ marginLeft: 8, border: "1px solid #dadce0", borderRadius: 8, padding: "6px 10px", fontSize: 14 }} />
+          </label>
+        </div>
+
+        {carregandoCom ? <p className="fin-vazio">Calculando...</p> : linhas.length === 0 ? (
+          <p className="fin-vazio">Nenhuma sessão concluída neste mês ou nenhum profissional com % de comissão configurado.</p>
+        ) : (
+          <div className="fin-com-tabela-wrap">
+            <table className="fin-com-tabela">
+              <thead>
+                <tr>
+                  <th>Profissional</th>
+                  <th>Sessões</th>
+                  <th>Total gerado</th>
+                  <th>% Comissão</th>
+                  <th>Valor a pagar</th>
+                  <th>Status</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {linhas.map(l => (
+                  <tr key={l.prof.id}>
+                    <td>
+                      <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: l.prof.cor || "#9c27b0", marginRight: 8 }} />
+                      <strong>{l.prof.nome}</strong>
+                    </td>
+                    <td>{l.sessoes.length}</td>
+                    <td>{moeda(l.totalGerado)}</td>
+                    <td>{l.pct}%</td>
+                    <td><strong style={{ color: "#1a73e8" }}>{moeda(l.valorAPagar)}</strong></td>
+                    <td>
+                      <span className={`fin-com-badge fin-com-badge--${l.status}`}>
+                        {l.status === "pago" ? "✅ Pago" : "⏳ Pendente"}
+                      </span>
+                      {l.salva?.pagoEm && (
+                        <span style={{ fontSize: 11, color: "#9aa0a6", display: "block" }}>
+                          em {new Date(l.salva.pagoEm.toDate?.() || l.salva.pagoEm).toLocaleDateString("pt-BR")}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      {l.status !== "pago" && (
+                        <button className="fin-com-btn" onClick={() => handleMarcarPago(l)}
+                          disabled={marcandoCom === l.prof.id}>
+                          {marcandoCom === l.prof.id ? "..." : "Marcar pago"}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const abas = [
-    { key: "resumo", label: "Resumo" },
+    { key: "resumo",      label: "Resumo" },
     { key: "inadimplentes", label: "Inadimplentes" },
     { key: "porPaciente", label: "Por Paciente" },
-    { key: "extrato", label: "Extrato" },
+    { key: "extrato",     label: "Extrato" },
+    { key: "comissoes",   label: "💼 Comissões" },
   ];
 
   return (
@@ -629,6 +757,8 @@ const Financeiro = () => {
         renderInadimplentes()
       ) : aba === "porPaciente" ? (
         renderPorPaciente()
+      ) : aba === "comissoes" ? (
+        renderComissoes()
       ) : (
         renderExtrato()
       )}

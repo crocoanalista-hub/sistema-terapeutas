@@ -910,3 +910,35 @@
   bottom: 0;
   border-right: none;
 }
+
+/* ─── Drag-to-create ghost ───────────────────────────────── */
+.gc-drag-ghost {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  background: rgba(26, 115, 232, 0.18);
+  border: 2px solid #1a73e8;
+  border-radius: 6px;
+  z-index: 30;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-start;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  min-height: 4px;
+}
+.gc-drag-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a73e8;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Cursor durante drag */
+.gc-day-col {
+  user-select: none;
+}
+.gc-day-col:active {
+  cursor: ns-resize;
+}

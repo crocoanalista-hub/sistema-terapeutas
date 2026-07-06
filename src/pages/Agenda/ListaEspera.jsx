@@ -10,7 +10,7 @@ import "../../styles/forms.css";
 import "../../styles/pacientes.css";
 
 const ListaEspera = () => {
-  const { user, workspaceId } = useAuth();
+  const { workspaceId } = useAuth();
   const navigate = useNavigate();
   const [lista, setLista] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -28,6 +28,7 @@ const ListaEspera = () => {
 
   useEffect(() => {
     if (workspaceId) carregar();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
 
   const carregar = async () => {

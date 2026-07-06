@@ -1,7 +1,48 @@
 import { db } from "./firebaseConfig";
 import {
-  doc, getDoc, updateDoc, collection, query, where, getDocs,
+  doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc,
 } from "firebase/firestore";
+
+export const VALORES_PLANO = {
+  essencial:     79,
+  profissional: 149,
+  trial:          0,
+  bloqueado:      0,
+};
+
+// ── Cobranças ────────────────────────────────────────────────
+export const listarCobrancas = async (terapeutaId) => {
+  const q = query(
+    collection(db, "cobrancas"),
+    where("terapeutaId", "==", terapeutaId)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0));
+};
+
+// ── Assinatura SaaS por terapeuta ────────────────────────────
+export const salvarAssinaturaTerapeuta = async (uid, assinatura) => {
+  await updateDoc(doc(db, "terapeutas", uid), { assinaturaSaas: assinatura });
+};
+
+export const listarTodasCobrancas = async () => {
+  const snap = await getDocs(collection(db, "cobrancas"));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0));
+};
+
+export const criarCobranca = async (dados) => {
+  const ref = await addDoc(collection(db, "cobrancas"), {
+    ...dados,
+    criadoEm: new Date(),
+    status: "pendente",
+  });
+  return ref.id;
+};
+
+export const atualizarCobranca = async (id, dados) =>
+  updateDoc(doc(db, "cobrancas", id), dados);
 
 export const PLANOS = {
   trial:    { label: "Trial",    cor: "#f9ab00" },

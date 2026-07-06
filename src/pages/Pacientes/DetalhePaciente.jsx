@@ -4,6 +4,7 @@ import { buscarPaciente } from "../../services/pacientesService";
 import { listarAgendamentosPaciente } from "../../services/agendamentosService";
 import {
   buscarConfigFinanceira, salvarConfigFinanceira, adicionarSessoesPacote,
+  salvarAssinatura, marcarAssinaturaPaga, calcularProximoVencimento, statusAssinatura,
 } from "../../services/pagamentosPacienteService";
 import { useAuth } from "../../hooks/useAuth";
 import "../../styles/detalhe-paciente.css";
@@ -29,6 +30,13 @@ export default function DetalhePaciente() {
   const [erro, setErro] = useState("");
   const [aba, setAba] = useState("dados");
 
+  // Assinatura
+  const [assinatura, setAssinatura] = useState(null);
+  const [editandoAssin, setEditandoAssin] = useState(false);
+  const [assinRascunho, setAssinRascunho] = useState({ ativa: true, valor: "", diaVencimento: "10", descricao: "" });
+  const [salvandoAssin, setSalvandoAssin] = useState(false);
+  const [marcandoPago, setMarcandoPago] = useState(false);
+
   // Financeiro
   const [cfg, setCfg] = useState(null);
   const [editandoCfg, setEditandoCfg] = useState(false);
@@ -37,6 +45,7 @@ export default function DetalhePaciente() {
   const [adicionandoPacote, setAdicionandoPacote] = useState(false);
   const [qntPacote, setQntPacote] = useState(10);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { carregarDados(); }, [id, user]);
 
   const carregarDados = async () => {
@@ -49,6 +58,10 @@ export default function DetalhePaciente() {
       setPaciente(dadosPaciente);
       setCfg(cfgFin);
       setCfgRascunho(cfgFin);
+      if (cfgFin?.assinatura) {
+        setAssinatura(cfgFin.assinatura);
+        setAssinRascunho(cfgFin.assinatura);
+      }
       if (workspaceId) {
         const ag = await listarAgendamentosPaciente(workspaceId, id);
         setAgendamentos(ag);
@@ -68,6 +81,28 @@ export default function DetalhePaciente() {
       setEditandoCfg(false);
     } catch (e) { alert("Erro: " + e.message); }
     setSalvandoCfg(false);
+  };
+
+  const handleSalvarAssinatura = async () => {
+    setSalvandoAssin(true);
+    try {
+      const prox = calcularProximoVencimento(assinRascunho.diaVencimento);
+      const nova = { ...assinRascunho, proximoVencimento: assinRascunho.proximoVencimento || prox };
+      await salvarAssinatura(id, nova);
+      setAssinatura(nova);
+      setEditandoAssin(false);
+    } catch (e) { alert("Erro: " + e.message); }
+    setSalvandoAssin(false);
+  };
+
+  const handleMarcarPago = async () => {
+    setMarcandoPago(true);
+    try {
+      await marcarAssinaturaPaga(id, assinatura.diaVencimento);
+      const nova = await buscarConfigFinanceira(id);
+      setAssinatura(nova.assinatura);
+    } catch (e) { alert("Erro: " + e.message); }
+    setMarcandoPago(false);
   };
 
   const handleAdicionarPacote = async () => {
@@ -184,6 +219,93 @@ export default function DetalhePaciente() {
           )}
         </div>
       )}
+
+      {/* ── Assinatura ─────────────────────────────────────── */}
+      {aba === "financeiro" && (() => {
+        const st = statusAssinatura(assinatura);
+        const STATUS_LABEL = { em_dia: "Em dia", vencendo: "Vencendo", vencido: "Vencido", inativa: "Sem assinatura" };
+        const STATUS_COR_AS = { em_dia: "#34a853", vencendo: "#f9ab00", vencido: "#ea4335", inativa: "#9aa0a6" };
+        const cor = STATUS_COR_AS[st];
+        return (
+          <div className="dp-card dp-assin-card" style={{ borderTopColor: cor }}>
+            <div className="dp-card-head">
+              <div>
+                <h3 className="dp-card-titulo">🔁 Assinatura Mensal</h3>
+                <span className="dp-assin-status" style={{ background: cor + "22", color: cor }}>
+                  {STATUS_LABEL[st]}
+                  {assinatura?.proximoVencimento && st !== "inativa"
+                    ? ` · vence ${new Date(assinatura.proximoVencimento + "T00:00").toLocaleDateString("pt-BR")}`
+                    : ""}
+                </span>
+              </div>
+              <div className="dp-assin-acoes">
+                {assinatura?.ativa && (st === "vencido" || st === "vencendo") && (
+                  <button className="dp-btn-primary dp-assin-btn-pago" onClick={handleMarcarPago} disabled={marcandoPago}>
+                    {marcandoPago ? "..." : "✅ Marcar pago"}
+                  </button>
+                )}
+                <button className="dp-btn-sec" onClick={() => {
+                  setAssinRascunho(assinatura || { ativa: true, valor: "", diaVencimento: "10", descricao: "" });
+                  setEditandoAssin(true);
+                }}>
+                  {assinatura ? "✏️ Editar" : "+ Criar assinatura"}
+                </button>
+              </div>
+            </div>
+
+            {assinatura?.ativa && !editandoAssin && (
+              <div className="dp-grid2" style={{ marginTop: 12 }}>
+                <div><p className="dp-field-label">Valor mensal</p><p className="dp-field-val">{moeda(assinatura.valor)}</p></div>
+                <div><p className="dp-field-label">Dia de vencimento</p><p className="dp-field-val">Todo dia {assinatura.diaVencimento}</p></div>
+                <div><p className="dp-field-label">Último pagamento</p><p className="dp-field-val">{assinatura.ultimoPagamento ? new Date(assinatura.ultimoPagamento + "T00:00").toLocaleDateString("pt-BR") : "Nunca"}</p></div>
+                <div><p className="dp-field-label">Próximo vencimento</p><p className="dp-field-val" style={{ color: cor, fontWeight: 700 }}>{new Date(assinatura.proximoVencimento + "T00:00").toLocaleDateString("pt-BR")}</p></div>
+                {assinatura.descricao && <div className="dp-grid2-full"><p className="dp-field-label">Descrição</p><p className="dp-field-val">{assinatura.descricao}</p></div>}
+              </div>
+            )}
+
+            {editandoAssin && (
+              <div className="dp-fin-form" style={{ marginTop: 14 }}>
+                <div className="dp-grid2">
+                  <div>
+                    <label className="dp-field-label">Valor mensal (R$)</label>
+                    <input className="dp-input" type="number" step="0.01" value={assinRascunho.valor}
+                      onChange={e => setAssinRascunho(c => ({ ...c, valor: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="dp-field-label">Dia de vencimento</label>
+                    <input className="dp-input" type="number" min={1} max={28} value={assinRascunho.diaVencimento}
+                      onChange={e => setAssinRascunho(c => ({ ...c, diaVencimento: e.target.value }))} />
+                  </div>
+                  <div className="dp-grid2-full">
+                    <label className="dp-field-label">Descrição</label>
+                    <input className="dp-input" type="text" placeholder="Ex: Mensalidade - Terapia semanal"
+                      value={assinRascunho.descricao}
+                      onChange={e => setAssinRascunho(c => ({ ...c, descricao: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="dp-field-label">Próximo vencimento</label>
+                    <input className="dp-input" type="date" value={assinRascunho.proximoVencimento || calcularProximoVencimento(assinRascunho.diaVencimento)}
+                      onChange={e => setAssinRascunho(c => ({ ...c, proximoVencimento: e.target.value }))} />
+                  </div>
+                  <div style={{ display:"flex", alignItems:"flex-end" }}>
+                    <label style={{ display:"flex", gap:8, alignItems:"center", cursor:"pointer" }}>
+                      <input type="checkbox" checked={assinRascunho.ativa}
+                        onChange={e => setAssinRascunho(c => ({ ...c, ativa: e.target.checked }))} />
+                      <span className="dp-field-label" style={{ margin:0 }}>Assinatura ativa</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="dp-fin-acoes">
+                  <button onClick={handleSalvarAssinatura} disabled={salvandoAssin} className="dp-btn-primary">
+                    {salvandoAssin ? "Salvando..." : "Salvar"}
+                  </button>
+                  <button onClick={() => setEditandoAssin(false)} className="dp-btn-sec">Cancelar</button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── Aba Financeiro ────────────────────────────────── */}
       {aba === "financeiro" && (

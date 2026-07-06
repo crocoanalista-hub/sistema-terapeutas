@@ -14,6 +14,7 @@ const NAV = [
   { label: "Financeiro",   icon: "💰", rota: "/financeiro" },
   { label: "Documentos",   icon: "📄", rota: "/documentos" },
   { label: "Histórico",    icon: "📊", rota: "/historico" },
+  { label: "Estoque",      icon: "📦", rota: "/estoque" },
   { label: "Configurações",icon: "⚙️", rota: "/configuracoes" },
 ];
 
@@ -81,7 +82,13 @@ const Layout = ({ children }) => {
             <div className="sidebar-logo">🧠</div>
           )}
           <h2>{config.nomeClinica || "Consultório"}</h2>
-          <p>{terapeuta?.nome || "Terapeuta"}</p>
+          <p
+            onClick={() => navigate("/minha-conta")}
+            style={{ cursor: "pointer", textDecoration: "underline", opacity: 0.8 }}
+            title="Minha Conta"
+          >
+            {terapeuta?.nome || "Terapeuta"}
+          </p>
         </div>
 
         <nav className="sidebar-nav">

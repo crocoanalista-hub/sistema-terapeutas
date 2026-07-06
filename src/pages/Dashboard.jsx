@@ -3,14 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { listarPacientes } from "../services/pacientesService";
 import { listarAgendamentos } from "../services/agendamentosService";
+import { listarItens } from "../services/estoqueService";
+import "../styles/estoque.css";
 
 const Dashboard = () => {
-  const { terapeuta, user, workspaceId } = useAuth();
+  const { terapeuta, workspaceId, slug } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ pacientes: 0, hoje: 0, semana: 0 });
+  const [itensAlerta, setItensAlerta] = useState([]);
 
   useEffect(() => {
-    if (workspaceId) carregarStats();
+    if (workspaceId) {
+      carregarStats();
+      listarItens(workspaceId).then(itens =>
+        setItensAlerta(itens.filter(i => Number(i.quantidade || 0) < Number(i.quantidadeMinima || 0)))
+      ).catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
 
   const carregarStats = async () => {
@@ -97,6 +106,15 @@ const Dashboard = () => {
         })}
       </p>
 
+      {/* Alerta estoque */}
+      {itensAlerta.length > 0 && (
+        <div className="dash-alerta-estoque" onClick={() => navigate("/estoque")}>
+          ⚠️ <strong>{itensAlerta.length} item{itensAlerta.length > 1 ? "s" : ""} abaixo do estoque mínimo:</strong>
+          &nbsp;{itensAlerta.slice(0, 3).map(i => i.nome).join(", ")}{itensAlerta.length > 3 ? "..." : ""}
+          &nbsp;— <span style={{ textDecoration: "underline" }}>Ver estoque</span>
+        </div>
+      )}
+
       {/* Stats */}
       <div
         style={{
@@ -179,6 +197,65 @@ const Dashboard = () => {
           </button>
         ))}
       </div>
+
+      {/* Portal do cliente */}
+      {slug && (
+        <div style={{
+          marginTop: 28,
+          background: "linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%)",
+          borderRadius: 14,
+          padding: "20px 24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+        }}>
+          <div>
+            <div style={{ color: "#fff", fontWeight: 800, fontSize: 16, marginBottom: 4 }}>
+              🌐 Portal do Cliente
+            </div>
+            <div style={{ color: "rgba(255,255,255,0.8)", fontSize: 13 }}>
+              Seus clientes acessam sessões, histórico e documentos por aqui
+            </div>
+            <div style={{
+              marginTop: 8, fontSize: 12, color: "rgba(255,255,255,0.6)",
+              fontFamily: "monospace", background: "rgba(0,0,0,0.2)",
+              display: "inline-block", padding: "3px 10px", borderRadius: 6,
+            }}>
+              {window.location.origin}/{slug}/cliente
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/${slug}/cliente`);
+                alert("Link copiado!");
+              }}
+              style={{
+                background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
+                color: "#fff", borderRadius: 8, padding: "9px 16px",
+                fontSize: 13, fontWeight: 600, cursor: "pointer",
+              }}
+            >
+              📋 Copiar link
+            </button>
+            <a
+              href={`/${slug}/cliente`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                background: "#fff", color: "#1a73e8",
+                borderRadius: 8, padding: "9px 16px",
+                fontSize: 13, fontWeight: 700, textDecoration: "none",
+                display: "inline-flex", alignItems: "center",
+              }}
+            >
+              Abrir portal ↗
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

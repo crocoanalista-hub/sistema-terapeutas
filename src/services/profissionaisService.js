@@ -1,7 +1,7 @@
 import { db } from "./firebaseConfig";
 import {
   collection, updateDoc, doc, getDocs, query, where,
-  setDoc, getDoc, deleteDoc, addDoc,
+  setDoc, getDoc, deleteDoc
 } from "firebase/firestore";
 
 // Gera um link de cadastro com token único (sem exigir e-mail)

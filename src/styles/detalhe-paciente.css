@@ -71,3 +71,17 @@
   .dp-grid2 { grid-template-columns: 1fr; }
   .dp-stats { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ─── Assinatura ──────────────────────────────────────────── */
+.dp-assin-card { border-top: 3px solid #9aa0a6; }
+.dp-assin-status {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.dp-assin-acoes { display: flex; gap: 8px; align-items: center; }
+.dp-assin-btn-pago { font-size: 13px; padding: 7px 16px; }
+.dp-grid2-full { grid-column: 1 / -1; }

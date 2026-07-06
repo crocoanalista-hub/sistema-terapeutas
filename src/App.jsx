@@ -27,6 +27,9 @@ import AnamnesePublica from "./pages/Pacientes/AnamnesePublica";
 import Financeiro from "./pages/Financeiro/Financeiro";
 import Documentos from "./pages/Documentos/Documentos";
 import Configuracoes from "./pages/Configuracoes/Configuracoes";
+import Estoque from "./pages/Estoque/Estoque";
+import PortalCliente from "./pages/PortalCliente/PortalCliente";
+import MinhaConta from "./pages/MinhaConta/MinhaConta";
 
 import "./App.css";
 
@@ -71,6 +74,12 @@ function App() {
         {/* Configurações */}
         <Route path="/configuracoes" element={<RotaProtegida element={<Configuracoes />} loading={loading} user={user} />} />
 
+        {/* Estoque */}
+        <Route path="/estoque" element={<RotaProtegida element={<Estoque />} loading={loading} user={user} />} />
+
+        {/* Minha Conta */}
+        <Route path="/minha-conta" element={<RotaProtegida element={<MinhaConta />} loading={loading} user={user} />} />
+
         {/* Admin — sem Layout (página própria) */}
         <Route path="/admin" element={<Admin />} />
 
@@ -82,6 +91,9 @@ function App() {
 
         {/* Anamnese pública */}
         <Route path="/:slug/anamnese/:token" element={<AnamnesePublica />} />
+
+        {/* Portal do cliente */}
+        <Route path="/:slug/cliente" element={<PortalCliente />} />
 
         {/* Entrada brandada por workspace */}
         <Route path="/:slug" element={<WorkspaceEntrada />} />

@@ -82,11 +82,12 @@ const Anamnese = () => {
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
   const [linkStatus, setLinkStatus] = useState(null); // null | "pendente" | "preenchido"
-  const [linkToken, setLinkToken] = useState(null);
+  const [_linkToken, setLinkToken] = useState(null); // eslint-disable-line no-unused-vars
   const [criandoLink, setCriandoLink] = useState(false);
 
   useEffect(() => {
     if (user && pacienteId) carregar();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, pacienteId]);
 
   const carregar = async () => {

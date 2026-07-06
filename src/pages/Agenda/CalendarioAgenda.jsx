@@ -53,6 +53,21 @@ const horaParaPx = (hora) => {
   return (h - START_HOUR) * HOUR_HEIGHT + (m / 60) * HOUR_HEIGHT;
 };
 
+// Converte px (relativo ao topo da grade) em "HH:MM" arredondado a 15min
+const pxParaHora = (py) => {
+  const minutosTotal = (py / HOUR_HEIGHT) * 60;
+  const arredondado = Math.round(minutosTotal / 15) * 15;
+  const h = Math.floor(arredondado / 60) + START_HOUR;
+  const m = arredondado % 60;
+  const hFinal = Math.max(START_HOUR, Math.min(END_HOUR - 1, h));
+  return `${String(hFinal).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+};
+
+const pxParaMinutos = (py) => {
+  const min = (py / HOUR_HEIGHT) * 60;
+  return Math.round(min / 15) * 15;
+};
+
 const agoraParaPx = () => {
   const now = new Date();
   const h = now.getHours(), m = now.getMinutes();
@@ -125,6 +140,10 @@ const CalendarioAgenda = () => {
   const [eventoAtivo, setEventoAtivo] = useState(null);
   const [valorPago, setValorPago] = useState("");
 
+  // Drag-to-create
+  const [drag, setDrag] = useState(null); // { ds, startY, endY }
+  const dragRef = useRef(null);
+
   const [modalReagendar, setModalReagendar] = useState(null);
   const [modalCancelar, setModalCancelar] = useState(null);
   const [modalConcluir, setModalConcluir] = useState(null);
@@ -153,20 +172,57 @@ const CalendarioAgenda = () => {
     return () => clearInterval(t);
   }, []);
 
+  // ─── Drag-to-create: listeners globais ───────────────────
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (!dragRef.current) return;
+      const { colEl } = dragRef.current;
+      const rect = colEl.getBoundingClientRect();
+      const y = Math.max(0, Math.min(e.clientY - rect.top, TOTAL_HEIGHT));
+      dragRef.current.endY = y;
+      setDrag(d => d ? { ...d, endY: y } : null);
+    };
+    const onMouseUp = () => {
+      if (!dragRef.current) return;
+      const { ds, startY, endY } = dragRef.current;
+      dragRef.current = null;
+      setDrag(null);
+
+      // Menos de 15px = clique simples (em evento filho ou na coluna) — ignora
+      if (Math.abs(endY - startY) < 15) return;
+
+      const topY    = Math.min(startY, endY);
+      const bottomY = Math.max(startY, endY);
+      const horaInicio = pxParaHora(topY);
+      const duracaoMin = Math.max(15, pxParaMinutos(bottomY) - pxParaMinutos(topY));
+      const durFinal = Math.round(duracaoMin / 15) * 15 || 30;
+      navigate(`/agenda/marcar?data=${ds}&hora=${horaInicio}&duracao=${durFinal}`);
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [navigate]);
+
   useEffect(() => {
     if (workspaceId) carregar();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
 
   useEffect(() => {
     if (!carregando && scrollRef.current && nowY !== null) {
       scrollRef.current.scrollTop = Math.max(0, nowY - 120);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [carregando]);
 
   useEffect(() => {
     if (eventoAtivo) {
       setValorPago(eventoAtivo.valor ? String(eventoAtivo.valor) : "");
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventoAtivo?.id]);
 
   const carregar = async () => {
@@ -472,12 +528,24 @@ const CalendarioAgenda = () => {
               const ds = fmt(dia);
               const isHoje = ds === hoje;
               const events = (porData[ds] || []).sort((a, b) => a.hora.localeCompare(b.hora));
+              const isDragging = drag && drag.ds === ds;
 
               return (
                 <div
                   key={ds}
                   className={`gc-day-col${isHoje ? " hoje" : ""}`}
-                  onClick={() => navigate(`/agenda/marcar?data=${ds}`)}
+                  onMouseDown={(e) => {
+                    if (e.button !== 0) return;
+                    e.preventDefault();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const y = Math.max(0, e.clientY - rect.top);
+                    dragRef.current = { ds, startY: y, endY: y, colEl: e.currentTarget };
+                    setDrag({ ds, startY: y, endY: y });
+                  }}
+                  onClick={(e) => {
+                    if (dragRef.current) return; // foi drag, não click
+                    navigate(`/agenda/marcar?data=${ds}`);
+                  }}
                 >
                   {isHoje && nowY !== null && (
                     <div className="gc-now-line" style={{ top: nowY }}>
@@ -490,6 +558,18 @@ const CalendarioAgenda = () => {
                     const curto = height < 48;
                     return renderEvento(agend, { top, height, curto });
                   })}
+                  {isDragging && (() => {
+                    const topY    = Math.min(drag.startY, drag.endY);
+                    const bottomY = Math.max(drag.startY, drag.endY);
+                    const h = Math.max(bottomY - topY, 4);
+                    const horaLabel = pxParaHora(topY);
+                    const durMin    = Math.max(15, Math.round((pxParaMinutos(bottomY) - pxParaMinutos(topY)) / 15) * 15);
+                    return (
+                      <div className="gc-drag-ghost" style={{ top: topY, height: h }}>
+                        <span className="gc-drag-label">{horaLabel} · {durMin}min</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}
@@ -520,8 +600,16 @@ const CalendarioAgenda = () => {
             const visivel = events.slice(0, 3);
             const extra = events.length - 3;
             return (
-              <div key={ds} className={`gc-mes-dia${!isMes ? " outro-mes" : ""}${isHoje ? " hoje" : ""}`}>
-                <span className={`gc-mes-num${isHoje ? " hoje" : ""}`}>{dia.getDate()}</span>
+              <div
+                key={ds}
+                className={`gc-mes-dia${!isMes ? " outro-mes" : ""}${isHoje ? " hoje" : ""}`}
+                onClick={() => { setDataRef(dia); setVista("dia"); }}
+                style={{ cursor: "pointer" }}
+                title="Ver dia"
+              >
+                <span className={`gc-mes-num${isHoje ? " hoje" : ""}`}>
+                  {dia.getDate()}
+                </span>
                 <div className="gc-mes-events">
                   {visivel.map((agend) => {
                     const profCor = agend.profissionalId && mapaProfCor[agend.profissionalId]
@@ -535,7 +623,11 @@ const CalendarioAgenda = () => {
                       </div>
                     );
                   })}
-                  {extra > 0 && <div className="gc-mes-mais">+{extra} mais</div>}
+                  {extra > 0 && (
+                    <div className="gc-mes-mais" onClick={(e) => { e.stopPropagation(); setDataRef(dia); setVista("dia"); }}>
+                      +{extra} mais
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -578,7 +670,15 @@ const CalendarioAgenda = () => {
 
             <div
               className={`gc-day-col gc-dia-single-col${isHoje ? " hoje" : ""}`}
-              onClick={() => navigate(`/agenda/marcar?data=${ds}`)}
+              onMouseDown={(e) => {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                const rect = e.currentTarget.getBoundingClientRect();
+                const y = Math.max(0, e.clientY - rect.top);
+                dragRef.current = { ds, startY: y, endY: y, colEl: e.currentTarget };
+                setDrag({ ds, startY: y, endY: y });
+              }}
+              onClick={() => { if (!dragRef.current) navigate(`/agenda/marcar?data=${ds}`); }}
             >
               {isHoje && nowY !== null && (
                 <div className="gc-now-line" style={{ top: nowY }}>
@@ -591,6 +691,18 @@ const CalendarioAgenda = () => {
                 const curto = height < 48;
                 return renderEvento(agend, { top, height, curto });
               })}
+              {drag && drag.ds === ds && (() => {
+                const topY    = Math.min(drag.startY, drag.endY);
+                const bottomY = Math.max(drag.startY, drag.endY);
+                const h = Math.max(bottomY - topY, 4);
+                const horaLabel = pxParaHora(topY);
+                const durMin    = Math.max(15, Math.round((pxParaMinutos(bottomY) - pxParaMinutos(topY)) / 15) * 15);
+                return (
+                  <div className="gc-drag-ghost" style={{ top: topY, height: h }}>
+                    <span className="gc-drag-label">{horaLabel} · {durMin}min</span>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -661,7 +773,7 @@ const CalendarioAgenda = () => {
               <p className="gc-ev-info gc-pago-ok">
                 ✅ Pago: R$ {Number(a.valorPago ?? a.valor ?? 0).toFixed(2).replace(".", ",")}
               </p>
-            ) : concluido ? (
+            ) : (
               <div className="gc-pagar-section">
                 <p className="gc-pagar-label">💰 Registrar pagamento</p>
                 <div className="gc-pagar-row">
@@ -679,7 +791,7 @@ const CalendarioAgenda = () => {
                   </button>
                 </div>
               </div>
-            ) : null}
+            )}
 
             {a.linkAtendimento && (
               <a href={a.linkAtendimento} target="_blank" rel="noreferrer" className="gc-link-sessao">
