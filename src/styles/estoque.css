@@ -168,3 +168,41 @@
     font-size: 12px !important;
   }
 }
+
+/* ── Estoque mobile ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Abas com scroll */
+  .estoque-abas {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+  }
+  .estoque-aba {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Tabela: esconde colunas menos importantes */
+  .estoque-tabela th:nth-child(2),
+  .estoque-tabela td:nth-child(2),
+  .estoque-tabela th:nth-child(3),
+  .estoque-tabela td:nth-child(3) {
+    display: none;
+  }
+
+  .estoque-tabela th,
+  .estoque-tabela td {
+    font-size: 13px;
+    padding: 10px 8px;
+  }
+
+  /* Botões de ação menores */
+  .estoque-acoes {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .estoque-btn {
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+}

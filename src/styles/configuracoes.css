@@ -696,3 +696,48 @@
 .cfg-proc-vazio { font-size: 12px; color: #aaa; font-style: italic; margin-bottom: 8px; }
 
 .cfg-label-sm { font-size: 12px; font-weight: 600; color: #5f6368; white-space: nowrap; }
+
+/* ── Mobile ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Abas com scroll horizontal */
+  .cfg-abas {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding-bottom: 0;
+  }
+  .cfg-aba {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+
+  /* Items de sala/profissional: nome + botões sem vazar */
+  .cfg-item {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .cfg-item-nome {
+    font-size: 15px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cfg-item-acoes {
+    flex-shrink: 0;
+    gap: 6px;
+  }
+  .cfg-btn-sm {
+    font-size: 12px;
+    padding: 6px 10px;
+    white-space: nowrap;
+  }
+
+  /* Texto descritivo não vaza */
+  .cfg-card p {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+}

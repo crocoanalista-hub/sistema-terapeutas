@@ -473,8 +473,8 @@
   }
 }
 
-/* Previne overflow horizontal em todo o app */
-body, #root, .layout {
-  overflow-x: hidden;
-  max-width: 100vw;
+/* Previne overflow horizontal */
+@media (max-width: 768px) {
+  body { overflow-x: hidden; }
+  .conteudo { overflow-x: hidden; }
 }
