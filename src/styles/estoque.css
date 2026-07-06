@@ -133,9 +133,9 @@
   gap: 12px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .dash-grid-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
     margin-bottom: 20px;
   }
@@ -143,5 +143,28 @@
   .dash-grid-atalhos {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+  }
+}
+
+@media (max-width: 400px) {
+  .dash-grid-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Cards do dashboard menores */
+  .dash-grid-stats > div {
+    padding: 16px !important;
+  }
+  .dash-grid-stats > div > div:nth-child(1) {
+    font-size: 22px !important;
+    margin-bottom: 4px !important;
+  }
+  .dash-grid-stats > div > div:nth-child(2) {
+    font-size: 26px !important;
+  }
+  .dash-grid-stats > div > div:nth-child(3) {
+    font-size: 12px !important;
   }
 }

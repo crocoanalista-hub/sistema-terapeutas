@@ -113,3 +113,41 @@
   white-space: nowrap;
 }
 .pac-assin-badge--none { color: #9aa0a6; background: transparent; }
+
+/* ── Mobile ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Esconde colunas menos importantes */
+  .pacientes-lista table thead tr th:nth-child(2),
+  .pacientes-lista table thead tr th:nth-child(3),
+  .pacientes-lista table tbody tr td:nth-child(2),
+  .pacientes-lista table tbody tr td:nth-child(3) {
+    display: none;
+  }
+
+  .pacientes-lista table {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .pacientes-lista table thead tr th:nth-child(1),
+  .pacientes-lista table tbody tr td:nth-child(1) {
+    width: 60%;
+  }
+
+  .pacientes-lista table thead tr th:last-child,
+  .pacientes-lista table tbody tr td:last-child {
+    width: 40%;
+    text-align: right;
+  }
+
+  .pacientes-lista td, .pacientes-lista th {
+    font-size: 14px;
+    padding: 12px 8px;
+  }
+
+  .btn-detalhes {
+    font-size: 13px;
+    padding: 7px 12px;
+  }
+}

@@ -427,3 +427,41 @@
   padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
 }
 .fin-com-btn:hover { background: #1a73e8; color: #fff; }
+
+/* ── Mobile ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .fin-titulo { font-size: 20px; margin-bottom: 14px; }
+
+  .fin-abas {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    gap: 0;
+  }
+  .fin-aba {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+
+  .fin-cards {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .fin-card {
+    padding: 14px 12px;
+  }
+  .fin-card-valor {
+    font-size: 20px !important;
+  }
+  .fin-card-label {
+    font-size: 11px !important;
+  }
+
+  /* Gráfico scroll horizontal */
+  .fin-grafico-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
