@@ -172,25 +172,28 @@ const CalendarioAgenda = () => {
     return () => clearInterval(t);
   }, []);
 
-  // ─── Drag-to-create: listeners globais ───────────────────
+  // ─── Drag-to-create: listeners globais (mouse + touch) ──────
   useEffect(() => {
-    const onMouseMove = (e) => {
-      if (!dragRef.current) return;
-      const { colEl } = dragRef.current;
+    const getY = (e, colEl) => {
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       const rect = colEl.getBoundingClientRect();
-      const y = Math.max(0, Math.min(e.clientY - rect.top, TOTAL_HEIGHT));
+      return Math.max(0, Math.min(clientY - rect.top, TOTAL_HEIGHT));
+    };
+
+    const onMove = (e) => {
+      if (!dragRef.current) return;
+      if (e.cancelable) e.preventDefault();
+      const y = getY(e, dragRef.current.colEl);
       dragRef.current.endY = y;
       setDrag(d => d ? { ...d, endY: y } : null);
     };
-    const onMouseUp = () => {
+
+    const onEnd = () => {
       if (!dragRef.current) return;
       const { ds, startY, endY } = dragRef.current;
       dragRef.current = null;
       setDrag(null);
-
-      // Menos de 15px = clique simples (em evento filho ou na coluna) — ignora
       if (Math.abs(endY - startY) < 15) return;
-
       const topY    = Math.min(startY, endY);
       const bottomY = Math.max(startY, endY);
       const horaInicio = pxParaHora(topY);
@@ -198,11 +201,16 @@ const CalendarioAgenda = () => {
       const durFinal = Math.round(duracaoMin / 15) * 15 || 30;
       navigate(`/agenda/marcar?data=${ds}&hora=${horaInicio}&duracao=${durFinal}`);
     };
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
     return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
     };
   }, [navigate]);
 
@@ -542,8 +550,14 @@ const CalendarioAgenda = () => {
                     dragRef.current = { ds, startY: y, endY: y, colEl: e.currentTarget };
                     setDrag({ ds, startY: y, endY: y });
                   }}
+                  onTouchStart={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const y = Math.max(0, e.touches[0].clientY - rect.top);
+                    dragRef.current = { ds, startY: y, endY: y, colEl: e.currentTarget };
+                    setDrag({ ds, startY: y, endY: y });
+                  }}
                   onClick={(e) => {
-                    if (dragRef.current) return; // foi drag, não click
+                    if (dragRef.current) return;
                     navigate(`/agenda/marcar?data=${ds}`);
                   }}
                 >
@@ -675,6 +689,12 @@ const CalendarioAgenda = () => {
                 e.preventDefault();
                 const rect = e.currentTarget.getBoundingClientRect();
                 const y = Math.max(0, e.clientY - rect.top);
+                dragRef.current = { ds, startY: y, endY: y, colEl: e.currentTarget };
+                setDrag({ ds, startY: y, endY: y });
+              }}
+              onTouchStart={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const y = Math.max(0, e.touches[0].clientY - rect.top);
                 dragRef.current = { ds, startY: y, endY: y, colEl: e.currentTarget };
                 setDrag({ ds, startY: y, endY: y });
               }}
