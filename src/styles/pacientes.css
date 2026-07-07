@@ -128,10 +128,20 @@
     display: none;
   }
 
-  .pacientes-lista table {
-    display: table;
+  /* Safari reserva espaço de colunas com display:none em table-layout:fixed;
+     por isso cada linha vira um flex-row só com as colunas visíveis. */
+  .pacientes-lista table,
+  .pacientes-lista table thead,
+  .pacientes-lista table tbody {
+    display: block;
     width: 100%;
-    table-layout: fixed;
+  }
+
+  .pacientes-lista table thead tr,
+  .pacientes-lista table tbody tr {
+    display: flex;
+    align-items: center;
+    width: 100%;
   }
 
   .pacientes-lista table thead tr th:nth-child(1),
