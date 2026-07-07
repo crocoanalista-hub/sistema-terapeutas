@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { usePlano } from "../../hooks/usePlano";
 import { listarCobrancas } from "../../services/planoService";
 import "../../styles/minha-conta.css";
 
@@ -17,6 +18,7 @@ const diasAte = (iso) => {
 
 export default function MinhaConta() {
   const { terapeuta, workspaceId } = useAuth();
+  const { usage, limites, diasRestantes } = usePlano(workspaceId);
   const [cobrancas, setCobrancas] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
@@ -90,6 +92,51 @@ export default function MinhaConta() {
           </div>
         )}
       </div>
+
+      {/* Uso do plano trial */}
+      {plano === "trial" && limites && (
+        <div className="mc-uso-card">
+          <div className="mc-uso-titulo">
+            ⏳ Trial
+            {diasRestantes !== null && (
+              <span className={`mc-uso-dias${diasRestantes <= 3 ? " mc-uso-dias--urgente" : diasRestantes <= 7 ? " mc-uso-dias--aviso" : ""}`}>
+                {diasRestantes > 0 ? `${diasRestantes} dia${diasRestantes !== 1 ? "s" : ""} restantes` : "Expirado"}
+              </span>
+            )}
+          </div>
+          <div className="mc-uso-itens">
+            {[
+              { label: "Clientes",      usado: usage.pacientes,    limite: limites.pacientes,    icone: "👥" },
+              { label: "Agendamentos",  usado: usage.agendamentos, limite: limites.agendamentos, icone: "📅" },
+              { label: "Documentos",    usado: usage.documentos,   limite: limites.documentos,   icone: "📄" },
+            ].map(({ label, usado, limite, icone }) => {
+              const pct = limite ? Math.min(100, Math.round((usado / limite) * 100)) : 0;
+              const urgente = pct >= 100;
+              const aviso   = pct >= 75 && !urgente;
+              return (
+                <div key={label} className="mc-uso-item">
+                  <div className="mc-uso-item-header">
+                    <span>{icone} {label}</span>
+                    <span className={urgente ? "mc-uso-cheio" : ""}>
+                      {usado} / {limite}
+                    </span>
+                  </div>
+                  <div className="mc-uso-barra-bg">
+                    <div
+                      className={`mc-uso-barra${urgente ? " mc-uso-barra--cheio" : aviso ? " mc-uso-barra--aviso" : ""}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mc-uso-rodape">
+            Quer mais? Entre em contato para ativar o plano completo.
+            <a href="mailto:igorcroco@gmail.com" className="mc-uso-cta">Falar com suporte →</a>
+          </div>
+        </div>
+      )}
 
       {/* Status rápido */}
       <div className="mc-status-grid">
