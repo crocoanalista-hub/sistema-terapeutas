@@ -1,0 +1,170 @@
+.onboarding-card {
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 14px;
+  margin-bottom: 28px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  border-left: 4px solid #1a73e8;
+}
+
+.onboarding-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+  gap: 12px;
+}
+
+.onboarding-header:hover { background: #fafbff; }
+
+.onboarding-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.onboarding-emoji { font-size: 24px; flex-shrink: 0; }
+
+.onboarding-titulo {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a2535;
+  line-height: 1.2;
+}
+
+.onboarding-subtitulo {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.onboarding-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.onboarding-progresso-mini {
+  width: 80px;
+  height: 6px;
+  background: #e8eaed;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.onboarding-progresso-barra {
+  height: 100%;
+  background: #1a73e8;
+  border-radius: 10px;
+  transition: width 0.4s ease;
+}
+
+.onboarding-toggle {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* Passos */
+.onboarding-passos {
+  border-top: 1px solid #f1f3f4;
+  padding: 8px 0;
+}
+
+.onboarding-passo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px;
+  transition: background 0.12s;
+}
+
+.onboarding-passo:hover { background: #fafafa; }
+
+.onboarding-passo.feito { opacity: 0.5; }
+
+.onboarding-passo-icone {
+  font-size: 22px;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+}
+
+.onboarding-passo-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.onboarding-passo-titulo {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a2535;
+}
+
+.onboarding-passo.feito .onboarding-passo-titulo {
+  text-decoration: line-through;
+  color: #888;
+}
+
+.onboarding-passo-desc {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.onboarding-passo-btn {
+  flex-shrink: 0;
+  background: #e8f0fe;
+  color: #1a73e8;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.onboarding-passo-btn:hover {
+  background: #1a73e8;
+  color: #fff;
+}
+
+/* Footer */
+.onboarding-footer {
+  border-top: 1px solid #f1f3f4;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.onboarding-pular {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+
+.onboarding-pular:hover { color: #e74c3c; }
+
+/* Minimizado */
+.onboarding-card.minimizado .onboarding-header:hover { background: #fafbff; }
+
+/* Mobile */
+@media (max-width: 600px) {
+  .onboarding-passo { flex-wrap: wrap; gap: 8px; }
+  .onboarding-passo-btn { width: 100%; text-align: center; }
+  .onboarding-progresso-mini { width: 60px; }
+}

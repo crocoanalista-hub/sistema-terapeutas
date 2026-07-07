@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { listarPacientes } from "../services/pacientesService";
 import { listarAgendamentos } from "../services/agendamentosService";
 import { listarItens } from "../services/estoqueService";
+import OnboardingChecklist from "../components/OnboardingChecklist";
 import "../styles/estoque.css";
 
 const Dashboard = () => {
@@ -86,7 +87,7 @@ const Dashboard = () => {
   ];
 
   const atalhos = [
-    { label: "+ Novo Paciente", cor: "#3498db", rota: "/pacientes/novo" },
+    { label: "+ Novo Cliente", cor: "#3498db", rota: "/pacientes/novo" },
     { label: "+ Nova Sessão", cor: "#27ae60", rota: "/agenda/marcar" },
     { label: "Ver Agenda", cor: "#f39c12", rota: "/agenda" },
     { label: "Histórico", cor: "#9b59b6", rota: "/historico" },
@@ -105,6 +106,8 @@ const Dashboard = () => {
           year: "numeric",
         })}
       </p>
+
+      <OnboardingChecklist workspaceId={workspaceId} />
 
       {/* Alerta estoque */}
       {itensAlerta.length > 0 && (
