@@ -779,7 +779,7 @@ export default function Configuracoes() {
             <p className="cfg-descricao cfg-descricao-sm">
               Seu link personalizado de acesso ao sistema. Compartilhe com sua equipe.
             </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 8 }}>
               <span style={{ color: "#9aa0a6", fontSize: 13, whiteSpace: "nowrap" }}>
                 {window.location.origin}/
               </span>
@@ -787,6 +787,7 @@ export default function Configuracoes() {
                 className="cfg-input cfg-input-inline"
                 placeholder="meu-consultorio"
                 value={slug}
+                style={{ minWidth: 0 }}
                 onChange={(e) => {
                   const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
                   setSlug(val);
@@ -797,17 +798,17 @@ export default function Configuracoes() {
             {slugErro && <p style={{ fontSize: 12, color: "#d93025", margin: "6px 0 0" }}>{slugErro}</p>}
             {slug && !slugErro && (
               <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#137333" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontSize: 12, color: "#137333" }}>
                   🔐 Login:
-                  <strong>{window.location.origin}/{slug}</strong>
+                  <strong style={{ wordBreak: "break-all" }}>{window.location.origin}/{slug}</strong>
                   <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/${slug}`)}
                     style={{ fontSize: 11, padding: "2px 8px", cursor: "pointer", border: "1px solid #dadce0", borderRadius: 4, background: "white", color: "#333" }}>
                     Copiar
                   </button>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#1a73e8" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontSize: 12, color: "#1a73e8" }}>
                   📅 Agendamento online:
-                  <strong>{window.location.origin}/{slug}/agendar</strong>
+                  <strong style={{ wordBreak: "break-all" }}>{window.location.origin}/{slug}/agendar</strong>
                   <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/${slug}/agendar`)}
                     style={{ fontSize: 11, padding: "2px 8px", cursor: "pointer", border: "1px solid #dadce0", borderRadius: 4, background: "white", color: "#333" }}>
                     Copiar
