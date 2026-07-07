@@ -7,6 +7,7 @@ import {
   buscarConfigTrial, salvarConfigTrial,
 } from "../../services/planoService";
 import { seedDadosDemo } from "../../services/seedService";
+import { criarCobrancaAsaas } from "../../services/asaasService";
 import "../../styles/admin.css";
 
 const ADMIN_EMAILS = [
@@ -60,7 +61,8 @@ export default function Admin() {
   const [cobrancas, setCobrancas] = useState([]);
   const [carregandoFin, setCarregandoFin] = useState(false);
   const [modalCobranca, setModalCobranca] = useState(null); // { terapeutaId, nome, email }
-  const [novaCobranca, setNovaCobranca] = useState({ valor: "", vencimento: "", plano: "essencial", descricao: "", recorrente: false, diaVencimento: "10" });
+  const [novaCobranca, setNovaCobranca] = useState({ valor: "", vencimento: "", plano: "essencial", descricao: "", recorrente: false, diaVencimento: "10", cpfCnpj: "", mobilePhone: "" });
+  const [linkCobrancaCriada, setLinkCobrancaCriada] = useState(null);
   const [salvandoCob, setSalvandoCob] = useState(false);
 
   // Acesso restrito
@@ -171,6 +173,24 @@ export default function Admin() {
     setSalvandoCob(true);
     try {
       const descFinal = descricao || `Plano ${plano} — ${new Date(vencimento + "T12:00").toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}`;
+
+      // Cria cobrança no Asaas
+      let asaasDados = {};
+      try {
+        asaasDados = await criarCobrancaAsaas({
+          nome: modalCobranca.nome,
+          email: modalCobranca.email,
+          cpfCnpj: novaCobranca.cpfCnpj || "",
+          mobilePhone: novaCobranca.mobilePhone || "",
+          valor: parseFloat(valor),
+          vencimento,
+          descricao: descFinal,
+          externalReference: modalCobranca.terapeutaId,
+        });
+      } catch (asaasErr) {
+        console.warn("[Admin] Asaas erro:", asaasErr.message);
+      }
+
       await criarCobranca({
         terapeutaId: modalCobranca.terapeutaId,
         terapeutaNome: modalCobranca.nome,
@@ -181,7 +201,11 @@ export default function Admin() {
         descricao: descFinal,
         recorrente: !!recorrente,
         diaVencimento: recorrente ? Number(diaVencimento) : null,
+        asaasId: asaasDados.asaasId || null,
+        linkPagamento: asaasDados.linkPagamento || null,
+        pixCopiaECola: asaasDados.pixCopiaECola || null,
       });
+
       if (recorrente) {
         await salvarAssinaturaTerapeuta(modalCobranca.terapeutaId, {
           ativa: true,
@@ -191,10 +215,12 @@ export default function Admin() {
           descricao: descricao || `Plano ${plano}`,
           criadaEm: new Date().toISOString().slice(0, 10),
         });
-        await carregar(); // atualiza lista de terapeutas com assinaturaSaas
+        await carregar();
       }
+
       setModalCobranca(null);
-      setNovaCobranca({ valor: "", vencimento: "", plano: "essencial", descricao: "", recorrente: false, diaVencimento: "10" });
+      setNovaCobranca({ valor: "", vencimento: "", plano: "essencial", descricao: "", recorrente: false, diaVencimento: "10", cpfCnpj: "", mobilePhone: "" });
+      if (asaasDados.linkPagamento) setLinkCobrancaCriada(asaasDados.linkPagamento);
       carregarFinanceiro();
     } catch (e) { alert("Erro: " + e.message); }
     setSalvandoCob(false);
@@ -642,6 +668,30 @@ export default function Admin() {
       )}
 
       {/* Modal nova cobrança */}
+      {/* Popup link cobrança criada */}
+      {linkCobrancaCriada && (
+        <div className="admin-overlay" onClick={() => setLinkCobrancaCriada(null)}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <h3 className="admin-modal-titulo">✅ Cobrança criada no Asaas</h3>
+            <p style={{ fontSize: 13, color: "#5f6368", marginBottom: 16 }}>
+              Compartilhe o link abaixo com o cliente para que ele realize o pagamento via PIX, boleto ou cartão.
+            </p>
+            <div style={{ background: "#f8faff", border: "1px solid #e8edf8", borderRadius: 8, padding: "10px 14px", fontFamily: "monospace", fontSize: 12, wordBreak: "break-all", marginBottom: 16 }}>
+              {linkCobrancaCriada}
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="admin-btn admin-btn--ativar" onClick={() => { navigator.clipboard.writeText(linkCobrancaCriada); alert("Link copiado!"); }}>
+                📋 Copiar link
+              </button>
+              <a href={linkCobrancaCriada} target="_blank" rel="noreferrer" className="admin-btn" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+                Abrir ↗
+              </a>
+              <button className="admin-btn" onClick={() => setLinkCobrancaCriada(null)}>Fechar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {modalCobranca && (
         <div className="admin-overlay" onClick={() => setModalCobranca(null)}>
           <div className="admin-modal" onClick={e => e.stopPropagation()}>
@@ -683,6 +733,12 @@ export default function Admin() {
               )}
               <label>Descrição (opcional)
                 <input type="text" value={novaCobranca.descricao} onChange={e => setNovaCobranca(n => ({ ...n, descricao: e.target.value }))} placeholder="Ex: Mensalidade julho 2026" />
+              </label>
+              <label>CPF / CNPJ <span style={{ fontSize: 11, color: "#aaa" }}>(necessário para boleto)</span>
+                <input type="text" value={novaCobranca.cpfCnpj} onChange={e => setNovaCobranca(n => ({ ...n, cpfCnpj: e.target.value }))} placeholder="000.000.000-00" />
+              </label>
+              <label>WhatsApp <span style={{ fontSize: 11, color: "#aaa" }}>(opcional)</span>
+                <input type="text" value={novaCobranca.mobilePhone} onChange={e => setNovaCobranca(n => ({ ...n, mobilePhone: e.target.value }))} placeholder="(11) 99999-9999" />
               </label>
             </div>
             <div className="admin-modal-acoes">

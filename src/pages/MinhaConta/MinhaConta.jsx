@@ -182,8 +182,15 @@ export default function MinhaConta() {
               {proxima.descricao || `Plano ${proxima.plano}`} · vence {fmtData(proxima.vencimento)}
             </div>
           </div>
-          <div className={`mc-proxima-valor mc-proxima-valor--${statusProxima}`}>
-            {moeda(proxima.valor)}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+            <div className={`mc-proxima-valor mc-proxima-valor--${statusProxima}`}>
+              {moeda(proxima.valor)}
+            </div>
+            {proxima.linkPagamento && (
+              <a href={proxima.linkPagamento} target="_blank" rel="noreferrer" className="mc-btn-pagar">
+                💳 Pagar agora
+              </a>
+            )}
           </div>
         </div>
       )}
@@ -220,7 +227,11 @@ export default function MinhaConta() {
                     <td><strong>{moeda(c.valor)}</strong></td>
                     <td>{fmtData(c.vencimento)}</td>
                     <td><span className={`mc-badge mc-badge--${statusKey}`}>{statusLabel[statusKey] || c.status}</span></td>
-                    <td>{c.pagoEm ? new Date(c.pagoEm?.toDate?.() || c.pagoEm).toLocaleDateString("pt-BR") : "—"}</td>
+                    <td>{c.pagoEm ? new Date(c.pagoEm?.toDate?.() || c.pagoEm).toLocaleDateString("pt-BR") : c.linkPagamento && c.status === "pendente" ? (
+                      <a href={c.linkPagamento} target="_blank" rel="noreferrer" className="mc-btn-pagar">
+                        💳 Pagar agora
+                      </a>
+                    ) : "—"}</td>
                   </tr>
                 );
               })}
