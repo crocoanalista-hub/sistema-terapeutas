@@ -1,5 +1,5 @@
 import { db } from "./firebaseConfig";
-import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc, deleteDoc, addDoc, updateDoc } from "firebase/firestore";
 
 // ── Planos ───────────────────────────────────────────────────
 export const listarPlanos = async () => {
