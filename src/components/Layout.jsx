@@ -6,6 +6,7 @@ import { useSolicitacoes } from "../hooks/useSolicitacoes";
 import { logout } from "../services/authService";
 import TrialBanner from "./TrialBanner";
 import InstallPrompt from "./InstallPrompt";
+import TrialExpiradoModal from "./TrialExpiradoModal";
 import "../styles/layout.css";
 
 const NAV = [
@@ -187,6 +188,7 @@ const Layout = ({ children }) => {
         <TrialBanner />
         {children}
         <InstallPrompt />
+        <TrialExpiradoModal />
       </main>
 
       {/* ── Bottom Nav (mobile) ── */}
