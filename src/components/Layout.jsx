@@ -17,6 +17,7 @@ const NAV = [
   { label: "Histórico",    icon: "📊", rota: "/historico" },
   { label: "Estoque",      icon: "📦", rota: "/estoque" },
   { label: "Configurações",icon: "⚙️", rota: "/configuracoes" },
+  { label: "Meu Plano",    icon: "💳", rota: "/minha-conta" },
 ];
 
 // Itens visíveis na bottom nav (os 4 principais + "Mais")
