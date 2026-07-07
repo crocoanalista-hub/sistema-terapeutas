@@ -124,7 +124,7 @@ const CalendarioAgenda = () => {
   const navigate = useNavigate();
   const scrollRef = useRef(null);
 
-  const [vista, setVista] = useState("semana");
+  const [vista, setVista] = useState("dia");
   const [dataRef, setDataRef] = useState(new Date());
   const [agendamentos, setAgendamentos] = useState([]);
   const [mapaPac, setMapaPac] = useState({});
