@@ -119,8 +119,12 @@
   /* Esconde colunas menos importantes */
   .pacientes-lista table thead tr th:nth-child(2),
   .pacientes-lista table thead tr th:nth-child(3),
+  .pacientes-lista table thead tr th:nth-child(4),
+  .pacientes-lista table thead tr th:nth-child(5),
   .pacientes-lista table tbody tr td:nth-child(2),
-  .pacientes-lista table tbody tr td:nth-child(3) {
+  .pacientes-lista table tbody tr td:nth-child(3),
+  .pacientes-lista table tbody tr td:nth-child(4),
+  .pacientes-lista table tbody tr td:nth-child(5) {
     display: none;
   }
 
