@@ -1,4 +1,4 @@
-import * as admin from "firebase-admin";
+const admin = require("firebase-admin");
 
 if (!admin.apps.length) {
   const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || "{}");
@@ -12,7 +12,7 @@ async function getConfig() {
   if (_cfg) return _cfg;
   const snap = await db.collection("config").doc("asaas").get();
   _cfg = snap.exists ? snap.data() : {};
-  setTimeout(() => { _cfg = null; }, 60_000); // refresca a cada 1min
+  setTimeout(() => { _cfg = null; }, 60_000);
   return _cfg;
 }
 
@@ -37,10 +37,10 @@ async function buscarOuCriarCliente(base, headers, { nome, email, cpfCnpj, mobil
   return cliente.id;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { nome, email, cpfCnpj, mobilePhone, valor, vencimento, descricao, externalReference } = req.body;
+  const { nome, email, cpfCnpj, mobilePhone, valor, vencimento, descricao, externalReference } = req.body || {};
   if (!nome || !email || !valor || !vencimento) {
     return res.status(400).json({ error: "Campos obrigatórios: nome, email, valor, vencimento" });
   }
@@ -101,4 +101,4 @@ export default async function handler(req, res) {
     console.error("[asaas/criar-cobranca]", err.message);
     return res.status(500).json({ error: err.message });
   }
-}
+};
