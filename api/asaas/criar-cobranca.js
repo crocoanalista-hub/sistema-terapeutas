@@ -1,28 +1,35 @@
-const ASAAS_BASE = process.env.ASAAS_SANDBOX === "true"
-  ? "https://sandbox.asaas.com/api/v3"
-  : "https://api.asaas.com/v3";
+import * as admin from "firebase-admin";
 
-const headers = () => ({
-  "Content-Type": "application/json",
-  "access_token": process.env.ASAAS_API_KEY,
-});
+if (!admin.apps.length) {
+  const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || "{}");
+  admin.initializeApp({ credential: admin.credential.cert(sa) });
+}
 
-async function buscarOuCriarCliente({ nome, email, cpfCnpj, mobilePhone }) {
-  // Busca por CPF/CNPJ primeiro
+const db = admin.firestore();
+
+let _cfg = null;
+async function getConfig() {
+  if (_cfg) return _cfg;
+  const snap = await db.collection("config").doc("asaas").get();
+  _cfg = snap.exists ? snap.data() : {};
+  setTimeout(() => { _cfg = null; }, 60_000); // refresca a cada 1min
+  return _cfg;
+}
+
+async function buscarOuCriarCliente(base, headers, { nome, email, cpfCnpj, mobilePhone }) {
   if (cpfCnpj) {
-    const r = await fetch(`${ASAAS_BASE}/customers?cpfCnpj=${cpfCnpj.replace(/\D/g, "")}`, { headers: headers() });
+    const r = await fetch(`${base}/customers?cpfCnpj=${cpfCnpj.replace(/\D/g, "")}`, { headers });
     const data = await r.json();
     if (data.data?.length > 0) return data.data[0].id;
   }
 
-  // Cria novo cliente
   const body = { name: nome, email };
   if (cpfCnpj) body.cpfCnpj = cpfCnpj.replace(/\D/g, "");
   if (mobilePhone) body.mobilePhone = mobilePhone.replace(/\D/g, "");
 
-  const r = await fetch(`${ASAAS_BASE}/customers`, {
+  const r = await fetch(`${base}/customers`, {
     method: "POST",
-    headers: headers(),
+    headers,
     body: JSON.stringify(body),
   });
   const cliente = await r.json();
@@ -34,20 +41,34 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { nome, email, cpfCnpj, mobilePhone, valor, vencimento, descricao, externalReference } = req.body;
-
   if (!nome || !email || !valor || !vencimento) {
     return res.status(400).json({ error: "Campos obrigatórios: nome, email, valor, vencimento" });
   }
 
   try {
-    const customerId = await buscarOuCriarCliente({ nome, email, cpfCnpj, mobilePhone });
+    const cfg = await getConfig();
+    const apiKey = cfg.apiKey || process.env.ASAAS_API_KEY;
+    const sandbox = cfg.sandbox ?? (process.env.ASAAS_SANDBOX === "true");
 
-    const chargeRes = await fetch(`${ASAAS_BASE}/payments`, {
+    if (!apiKey) return res.status(500).json({ error: "Chave da API Asaas não configurada. Acesse /admin → Integrações." });
+
+    const base = sandbox
+      ? "https://sandbox.asaas.com/api/v3"
+      : "https://api.asaas.com/v3";
+
+    const headers = {
+      "Content-Type": "application/json",
+      "access_token": apiKey,
+    };
+
+    const customerId = await buscarOuCriarCliente(base, headers, { nome, email, cpfCnpj, mobilePhone });
+
+    const chargeRes = await fetch(`${base}/payments`, {
       method: "POST",
-      headers: headers(),
+      headers,
       body: JSON.stringify({
         customer: customerId,
-        billingType: "UNDEFINED", // usuário escolhe PIX, boleto ou cartão na tela do Asaas
+        billingType: "UNDEFINED",
         value: Number(valor),
         dueDate: vencimento,
         description: descricao || `Plano Novu — ${vencimento}`,
@@ -59,10 +80,9 @@ export default async function handler(req, res) {
     const charge = await chargeRes.json();
     if (!charge.id) throw new Error(charge.errors?.[0]?.description || "Erro ao criar cobrança no Asaas");
 
-    // Busca QR Code PIX separadamente
     let pixQrCode = null, pixCopiaECola = null;
     try {
-      const pixRes = await fetch(`${ASAAS_BASE}/payments/${charge.id}/pixQrCode`, { headers: headers() });
+      const pixRes = await fetch(`${base}/payments/${charge.id}/pixQrCode`, { headers });
       const pix = await pixRes.json();
       pixQrCode = pix.encodedImage || null;
       pixCopiaECola = pix.payload || null;

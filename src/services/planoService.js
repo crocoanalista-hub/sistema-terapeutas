@@ -145,3 +145,14 @@ export const incrementarDocumentos = async (workspaceId) => {
   const atual = snap.data()?.documentosGerados || 0;
   await updateDoc(doc(db, "terapeutas", workspaceId), { documentosGerados: atual + 1 });
 };
+
+// ── Config Asaas ─────────────────────────────────────────────
+export const buscarConfigAsaas = async () => {
+  const snap = await getDoc(doc(db, "config", "asaas"));
+  if (!snap.exists()) return null;
+  return snap.data();
+};
+
+export const salvarConfigAsaas = async (config) => {
+  await setDoc(doc(db, "config", "asaas"), config, { merge: true });
+};

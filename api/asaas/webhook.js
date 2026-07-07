@@ -21,10 +21,18 @@ const STATUS_MAP = {
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
-  // Verifica token secreto para segurança
+  // Verifica token secreto lendo do Firestore (com fallback para env var)
   const token = req.query.token || req.headers["x-asaas-token"];
-  if (process.env.ASAAS_WEBHOOK_TOKEN && token !== process.env.ASAAS_WEBHOOK_TOKEN) {
-    return res.status(401).json({ error: "Unauthorized" });
+  try {
+    const cfgSnap = await db.collection("config").doc("asaas").get();
+    const webhookToken = cfgSnap.exists ? cfgSnap.data().webhookToken : process.env.ASAAS_WEBHOOK_TOKEN;
+    if (webhookToken && token !== webhookToken) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+  } catch {
+    if (process.env.ASAAS_WEBHOOK_TOKEN && token !== process.env.ASAAS_WEBHOOK_TOKEN) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
   }
 
   const { event, payment } = req.body;

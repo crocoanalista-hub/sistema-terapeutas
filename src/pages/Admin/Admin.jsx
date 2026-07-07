@@ -4,7 +4,7 @@ import { useAuth } from "../../hooks/useAuth";
 import {
   listarTodosTerapeutas, atualizarPlano, buscarUsage, PLANOS, LIMITES_TRIAL, TRIAL_DIAS,
   listarTodasCobrancas, criarCobranca, atualizarCobranca, VALORES_PLANO, salvarAssinaturaTerapeuta,
-  buscarConfigTrial, salvarConfigTrial,
+  buscarConfigTrial, salvarConfigTrial, buscarConfigAsaas, salvarConfigAsaas,
 } from "../../services/planoService";
 import { seedDadosDemo } from "../../services/seedService";
 import { criarCobrancaAsaas } from "../../services/asaasService";
@@ -57,6 +57,12 @@ export default function Admin() {
   const [salvandoConfig, setSalvandoConfig] = useState(false);
   const [configSalva, setConfigSalva] = useState(false);
 
+  // Config Asaas
+  const [configAsaas, setConfigAsaas] = useState({ apiKey: "", sandbox: false, webhookToken: "" });
+  const [salvandoAsaas, setSalvandoAsaas] = useState(false);
+  const [asaasSalvo, setAsaasSalvo] = useState(false);
+  const [mostrarApiKey, setMostrarApiKey] = useState(false);
+
   // Financeiro
   const [cobrancas, setCobrancas] = useState([]);
   const [carregandoFin, setCarregandoFin] = useState(false);
@@ -97,7 +103,23 @@ export default function Admin() {
     buscarConfigTrial().then(cfg => {
       if (cfg) setConfigTrial(c => ({ ...c, ...cfg }));
     }).catch(() => {});
+    buscarConfigAsaas().then(cfg => {
+      if (cfg) setConfigAsaas(c => ({ ...c, ...cfg }));
+    }).catch(() => {});
   }, []);
+
+  const handleSalvarConfigAsaas = async (e) => {
+    e.preventDefault();
+    setSalvandoAsaas(true);
+    await salvarConfigAsaas({
+      apiKey: configAsaas.apiKey,
+      sandbox: !!configAsaas.sandbox,
+      webhookToken: configAsaas.webhookToken,
+    });
+    setSalvandoAsaas(false);
+    setAsaasSalvo(true);
+    setTimeout(() => setAsaasSalvo(false), 2500);
+  };
 
   const handleSalvarConfigTrial = async (e) => {
     e.preventDefault();
@@ -349,6 +371,9 @@ export default function Admin() {
         </button>
         <button className={`admin-aba${abaAtiva === "config" ? " ativa" : ""}`} onClick={() => setAbaAtiva("config")}>
           ⚙️ Configurações
+        </button>
+        <button className={`admin-aba${abaAtiva === "integracoes" ? " ativa" : ""}`} onClick={() => setAbaAtiva("integracoes")}>
+          🔌 Integrações
         </button>
       </div>
 
@@ -804,6 +829,82 @@ export default function Admin() {
 
           <div style={{ marginTop: 32, padding: 16, background: "#f8f9fa", borderRadius: 10, fontSize: 13, color: "#666" }}>
             <strong>Atenção:</strong> as alterações aqui afetam apenas novos usuários que se registrarem. Para alterar os limites de um usuário já existente, edite diretamente na aba <strong>Contas</strong>.
+          </div>
+        </div>
+      )}
+
+      {/* ─── ABA INTEGRAÇÕES ─── */}
+      {abaAtiva === "integracoes" && (
+        <div style={{ maxWidth: 560 }}>
+          <h3 style={{ margin: "0 0 6px", color: "#1a2535" }}>🔌 Integração Asaas</h3>
+          <p style={{ margin: "0 0 24px", color: "#888", fontSize: 13 }}>
+            Configure a API do Asaas para gerar cobranças com PIX, boleto e cartão automaticamente.
+          </p>
+
+          <form onSubmit={handleSalvarConfigAsaas} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#3c4043" }}>Chave da API (access_token)</span>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type={mostrarApiKey ? "text" : "password"}
+                  value={configAsaas.apiKey}
+                  onChange={e => setConfigAsaas(c => ({ ...c, apiKey: e.target.value }))}
+                  placeholder="$aact_..."
+                  style={{ flex: 1, border: "1px solid #dadce0", borderRadius: 8, padding: "9px 12px", fontSize: 14, fontFamily: "monospace" }}
+                />
+                <button type="button" onClick={() => setMostrarApiKey(v => !v)}
+                  style={{ padding: "9px 14px", border: "1px solid #dadce0", borderRadius: 8, background: "#f8f9fa", cursor: "pointer", fontSize: 13 }}>
+                  {mostrarApiKey ? "🙈 Ocultar" : "👁 Ver"}
+                </button>
+              </div>
+              <span style={{ fontSize: 11, color: "#aaa" }}>Encontre em: Asaas → Configurações → Integrações → API</span>
+            </label>
+
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#3c4043" }}>Token do Webhook</span>
+              <input
+                type="text"
+                value={configAsaas.webhookToken}
+                onChange={e => setConfigAsaas(c => ({ ...c, webhookToken: e.target.value }))}
+                placeholder="Crie uma senha secreta, ex: novu2026abc"
+                style={{ border: "1px solid #dadce0", borderRadius: 8, padding: "9px 12px", fontSize: 14 }}
+              />
+              <span style={{ fontSize: 11, color: "#aaa" }}>
+                URL para cadastrar no Asaas: <strong>https://novu.institutocroco.com.br/api/asaas/webhook?token=<em>{configAsaas.webhookToken || "SEU_TOKEN"}</em></strong>
+              </span>
+            </label>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={!!configAsaas.sandbox}
+                onChange={e => setConfigAsaas(c => ({ ...c, sandbox: e.target.checked }))}
+                style={{ width: 16, height: 16 }}
+              />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#3c4043" }}>Modo Sandbox (testes)</div>
+                <div style={{ fontSize: 11, color: "#aaa" }}>Ative para usar o ambiente de testes do Asaas. Desative em produção.</div>
+              </div>
+            </label>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 14, paddingTop: 4 }}>
+              <button type="submit" className="admin-btn admin-btn--ativar" disabled={salvandoAsaas}>
+                {salvandoAsaas ? "Salvando..." : "💾 Salvar configurações"}
+              </button>
+              {asaasSalvo && (
+                <span style={{ color: "#34a853", fontWeight: 600, fontSize: 13 }}>✅ Salvo!</span>
+              )}
+            </div>
+          </form>
+
+          <div style={{ marginTop: 28, background: "#f8f9fa", borderRadius: 10, padding: 16, fontSize: 13, color: "#5f6368", lineHeight: 1.6 }}>
+            <strong>Passo a passo para ativar o webhook no Asaas:</strong>
+            <ol style={{ margin: "8px 0 0 16px", padding: 0 }}>
+              <li>Acesse <strong>Asaas → Configurações → Integrações → Webhooks</strong></li>
+              <li>Clique em <strong>Adicionar webhook</strong></li>
+              <li>Cole a URL acima com o seu token</li>
+              <li>Marque os eventos: <strong>PAYMENT_CONFIRMED, PAYMENT_RECEIVED, PAYMENT_OVERDUE, PAYMENT_CANCELED</strong></li>
+            </ol>
           </div>
         </div>
       )}
