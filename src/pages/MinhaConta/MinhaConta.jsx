@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { usePlano } from "../../hooks/usePlano";
 import { listarCobrancas } from "../../services/planoService";
+import { listarPlanos } from "../../services/planosService";
 import "../../styles/minha-conta.css";
 
 const moeda = (v) =>
@@ -21,6 +22,9 @@ export default function MinhaConta() {
   const { usage, limites, diasRestantes } = usePlano(workspaceId);
   const [cobrancas, setCobrancas] = useState([]);
   const [carregando, setCarregando] = useState(true);
+  const [planos, setPlanos] = useState([]);
+  const [modalPlanos, setModalPlanos] = useState(false);
+  const pioneiro = terapeuta?.membroPioneiro;
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -28,6 +32,7 @@ export default function MinhaConta() {
       .then(setCobrancas)
       .catch(() => {})
       .finally(() => setCarregando(false));
+    listarPlanos().then(lista => setPlanos(lista.filter(p => p.ativo))).catch(() => {});
   }, [workspaceId]);
 
   const plano = terapeuta?.plano || "trial";
@@ -68,7 +73,73 @@ export default function MinhaConta() {
 
   return (
     <div className="mc-page">
-      <h2 className="mc-titulo">Minha Conta</h2>
+      <h2 className="mc-titulo">Meu Plano</h2>
+
+      {/* Card Trial em destaque */}
+      {plano === "trial" && (
+        <div className={`mc-trial-destaque${diasRestantes !== null && diasRestantes <= 3 ? " mc-trial-urgente" : ""}`}>
+          <div className="mc-trial-esquerda">
+            <div className="mc-trial-icone">{diasRestantes === 0 ? "⚠️" : "⏳"}</div>
+            <div>
+              <div className="mc-trial-label">Período de teste</div>
+              <div className="mc-trial-dias">
+                {diasRestantes === null ? "Trial ativo" :
+                 diasRestantes <= 0 ? "Trial encerrado" :
+                 diasRestantes === 1 ? "Último dia!" :
+                 `${diasRestantes} dias restantes`}
+              </div>
+              {pioneiro && (
+                <div className="mc-trial-pioneiro">⭐ Você é Membro Pioneiro — desconto especial garantido!</div>
+              )}
+            </div>
+          </div>
+          <button className="mc-trial-cta" onClick={() => setModalPlanos(true)}>
+            Ver planos →
+          </button>
+        </div>
+      )}
+
+      {/* Modal Ver Planos */}
+      {modalPlanos && (
+        <div className="mc-modal-overlay" onClick={() => setModalPlanos(false)}>
+          <div className="mc-modal-planos" onClick={e => e.stopPropagation()}>
+            <div className="mc-modal-header">
+              <h3>Escolha seu plano</h3>
+              {pioneiro && <div className="mc-modal-pioneiro-badge">⭐ Preços especiais de Membro Pioneiro aplicados</div>}
+              <button className="mc-modal-fechar" onClick={() => setModalPlanos(false)}>✕</button>
+            </div>
+            <div className="mc-modal-grid">
+              {planos.map(p => {
+                const preco = pioneiro && p.precoPioneiro ? p.precoPioneiro : p.preco;
+                const precoOriginal = pioneiro && p.precoPioneiro ? p.preco : null;
+                return (
+                  <div key={p.id} className={`mc-plano-card${p.destaque ? " mc-plano-destaque" : ""}`}>
+                    {p.destaque && <div className="mc-plano-tag">MAIS POPULAR</div>}
+                    {pioneiro && p.precoPioneiro && <div className="mc-plano-tag-pioneiro">⭐ PIONEIRO</div>}
+                    <div className="mc-plano-card-nome">{p.nome}</div>
+                    <div className="mc-plano-card-desc">{p.descricao}</div>
+                    <div className="mc-plano-card-preco">
+                      {precoOriginal && (
+                        <span className="mc-preco-riscado">R$ {Number(precoOriginal).toFixed(2).replace(".", ",")}</span>
+                      )}
+                      <span className="mc-preco-atual">R$ {Number(preco).toFixed(2).replace(".", ",")}<span className="mc-preco-periodo">/mês</span></span>
+                    </div>
+                    {Array.isArray(p.recursos) && (
+                      <ul className="mc-plano-recursos">
+                        {p.recursos.map((r, i) => <li key={i}>✅ {r}</li>)}
+                      </ul>
+                    )}
+                    <a href="mailto:igorcroco@gmail.com?subject=Quero assinar o plano" className="mc-plano-assinar">
+                      Assinar agora
+                    </a>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mc-modal-rodape">Dúvidas? <a href="mailto:igorcroco@gmail.com">igorcroco@gmail.com</a> · respondemos em até 24h</p>
+          </div>
+        </div>
+      )}
 
       {/* Hero do plano */}
       <div className={`mc-plano-hero ${heroClass}`}>

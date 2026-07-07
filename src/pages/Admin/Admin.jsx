@@ -8,6 +8,7 @@ import {
 } from "../../services/planoService";
 import { seedDadosDemo } from "../../services/seedService";
 import { criarCobrancaAsaas } from "../../services/asaasService";
+import { listarPlanos, salvarPlano, excluirPlano, setMembroPioneiro } from "../../services/planosService";
 import "../../styles/admin.css";
 
 const ADMIN_EMAILS = [
@@ -63,6 +64,12 @@ export default function Admin() {
   const [asaasSalvo, setAsaasSalvo] = useState(false);
   const [mostrarApiKey, setMostrarApiKey] = useState(false);
 
+  // Planos
+  const [planos, setPlanos] = useState([]);
+  const [editandoPlano, setEditandoPlano] = useState(null); // null | {} | { id, ... }
+  const PLANO_VAZIO = { nome: "", preco: "", precoPioneiro: "", descricao: "", recursos: "", destaque: false, ativo: true, ordem: 99 };
+  const [salvandoPlano, setSalvandoPlano] = useState(false);
+
   // Financeiro
   const [cobrancas, setCobrancas] = useState([]);
   const [carregandoFin, setCarregandoFin] = useState(false);
@@ -106,7 +113,41 @@ export default function Admin() {
     buscarConfigAsaas().then(cfg => {
       if (cfg) setConfigAsaas(c => ({ ...c, ...cfg }));
     }).catch(() => {});
+    listarPlanos().then(setPlanos).catch(() => {});
   }, []);
+
+  const handleSalvarPlano = async (e) => {
+    e.preventDefault();
+    setSalvandoPlano(true);
+    try {
+      const dados = {
+        ...editandoPlano,
+        preco: parseFloat(editandoPlano.preco),
+        precoPioneiro: parseFloat(editandoPlano.precoPioneiro) || 0,
+        ordem: Number(editandoPlano.ordem) || 99,
+        recursos: typeof editandoPlano.recursos === "string"
+          ? editandoPlano.recursos.split("\n").map(r => r.trim()).filter(Boolean)
+          : editandoPlano.recursos,
+      };
+      await salvarPlano(dados);
+      const lista = await listarPlanos();
+      setPlanos(lista);
+      setEditandoPlano(null);
+    } catch (e) { alert("Erro: " + e.message); }
+    setSalvandoPlano(false);
+  };
+
+  const handleExcluirPlano = async (id) => {
+    if (!window.confirm("Excluir este plano?")) return;
+    await excluirPlano(id);
+    setPlanos(p => p.filter(x => x.id !== id));
+  };
+
+  const handleTogglePioneiro = async (t) => {
+    const novo = !t.membroPioneiro;
+    await setMembroPioneiro(t.id, novo);
+    setTerapeutas(ts => ts.map(x => x.id === t.id ? { ...x, membroPioneiro: novo } : x));
+  };
 
   const handleSalvarConfigAsaas = async (e) => {
     e.preventDefault();
@@ -372,6 +413,9 @@ export default function Admin() {
         <button className={`admin-aba${abaAtiva === "config" ? " ativa" : ""}`} onClick={() => setAbaAtiva("config")}>
           ⚙️ Configurações
         </button>
+        <button className={`admin-aba${abaAtiva === "planos" ? " ativa" : ""}`} onClick={() => setAbaAtiva("planos")}>
+          💎 Planos
+        </button>
         <button className={`admin-aba${abaAtiva === "integracoes" ? " ativa" : ""}`} onClick={() => setAbaAtiva("integracoes")}>
           🔌 Integrações
         </button>
@@ -488,6 +532,21 @@ export default function Admin() {
                       salvando={salvando === t.id}
                     />
                   )}
+
+                  {/* Membro Pioneiro */}
+                  <div style={{ marginBottom: 12 }}>
+                    <button
+                      onClick={() => handleTogglePioneiro(t)}
+                      className={`admin-btn ${t.membroPioneiro ? "admin-btn--pioneiro-ativo" : "admin-btn--pioneiro"}`}
+                    >
+                      {t.membroPioneiro ? "⭐ Membro Pioneiro (ativo)" : "☆ Marcar como Pioneiro"}
+                    </button>
+                    {t.membroPioneiro && (
+                      <span style={{ fontSize: 12, color: "#f59e0b", marginLeft: 10 }}>
+                        Desconto pioneiro aplicado nas cobranças
+                      </span>
+                    )}
+                  </div>
 
                   {/* Ações */}
                   <div className="admin-acoes">
@@ -830,6 +889,91 @@ export default function Admin() {
           <div style={{ marginTop: 32, padding: 16, background: "#f8f9fa", borderRadius: 10, fontSize: 13, color: "#666" }}>
             <strong>Atenção:</strong> as alterações aqui afetam apenas novos usuários que se registrarem. Para alterar os limites de um usuário já existente, edite diretamente na aba <strong>Contas</strong>.
           </div>
+        </div>
+      )}
+
+      {/* ─── ABA PLANOS ─── */}
+      {abaAtiva === "planos" && (
+        <div style={{ maxWidth: 700 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+            <div>
+              <h3 style={{ margin: "0 0 4px", color: "#1a2535" }}>💎 Planos de assinatura</h3>
+              <p style={{ margin: 0, color: "#888", fontSize: 13 }}>Crie e edite os planos oferecidos. O preço pioneiro é aplicado automaticamente para membros marcados como Pioneiro.</p>
+            </div>
+            <button className="admin-btn admin-btn--ativar" onClick={() => setEditandoPlano({ ...PLANO_VAZIO })}>
+              + Novo plano
+            </button>
+          </div>
+
+          {/* Lista de planos */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
+            {planos.map(p => (
+              <div key={p.id} style={{ background: "#fff", border: `2px solid ${p.destaque ? "#1a73e8" : "#e8eaed"}`, borderRadius: 12, padding: "16px 20px", display: "flex", alignItems: "center", gap: 16 }}>
+                {p.destaque && <span style={{ background: "#1a73e8", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, whiteSpace: "nowrap" }}>MAIS POPULAR</span>}
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <strong style={{ fontSize: 15, color: "#1a2535" }}>{p.nome}</strong>
+                    {!p.ativo && <span style={{ fontSize: 11, color: "#aaa", background: "#f1f3f4", padding: "2px 8px", borderRadius: 20 }}>Inativo</span>}
+                  </div>
+                  <div style={{ fontSize: 13, color: "#5f6368", marginTop: 2 }}>{p.descricao}</div>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#1a2535" }}>R$ {Number(p.preco).toFixed(2).replace(".", ",")}</div>
+                  <div style={{ fontSize: 12, color: "#f59e0b" }}>⭐ Pioneiro: R$ {Number(p.precoPioneiro).toFixed(2).replace(".", ",")}</div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  <button className="admin-btn" onClick={() => setEditandoPlano({ ...p, recursos: Array.isArray(p.recursos) ? p.recursos.join("\n") : p.recursos })}>✏️ Editar</button>
+                  <button className="admin-btn admin-btn--bloquear" onClick={() => handleExcluirPlano(p.id)}>🗑</button>
+                </div>
+              </div>
+            ))}
+            {planos.length === 0 && <div style={{ color: "#aaa", fontSize: 14, textAlign: "center", padding: 32 }}>Nenhum plano cadastrado.</div>}
+          </div>
+
+          {/* Formulário de edição */}
+          {editandoPlano && (
+            <div style={{ background: "#f8faff", border: "1px solid #e8edf8", borderRadius: 14, padding: 24 }}>
+              <h4 style={{ margin: "0 0 18px", color: "#1a2535" }}>{editandoPlano.id ? "Editar plano" : "Novo plano"}</h4>
+              <form onSubmit={handleSalvarPlano} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#5f6368" }}>Nome do plano</span>
+                    <input value={editandoPlano.nome} onChange={e => setEditandoPlano(p => ({ ...p, nome: e.target.value }))} required placeholder="Ex: Essencial" style={{ border: "1px solid #dadce0", borderRadius: 8, padding: "9px 12px", fontSize: 14 }} />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#5f6368" }}>Descrição</span>
+                    <input value={editandoPlano.descricao} onChange={e => setEditandoPlano(p => ({ ...p, descricao: e.target.value }))} placeholder="Ex: Ideal para profissional solo" style={{ border: "1px solid #dadce0", borderRadius: 8, padding: "9px 12px", fontSize: 14 }} />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#5f6368" }}>Preço (R$)</span>
+                    <input type="number" step="0.01" value={editandoPlano.preco} onChange={e => setEditandoPlano(p => ({ ...p, preco: e.target.value }))} required placeholder="79.90" style={{ border: "1px solid #dadce0", borderRadius: 8, padding: "9px 12px", fontSize: 14 }} />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#5f6368" }}>⭐ Preço Pioneiro (R$)</span>
+                    <input type="number" step="0.01" value={editandoPlano.precoPioneiro} onChange={e => setEditandoPlano(p => ({ ...p, precoPioneiro: e.target.value }))} placeholder="49.90" style={{ border: "1px solid #dadce0", borderRadius: 8, padding: "9px 12px", fontSize: 14 }} />
+                  </label>
+                </div>
+                <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#5f6368" }}>Recursos (um por linha)</span>
+                  <textarea rows={4} value={editandoPlano.recursos} onChange={e => setEditandoPlano(p => ({ ...p, recursos: e.target.value }))} placeholder={"Clientes ilimitados\nAgenda\nFinanceiro"} style={{ border: "1px solid #dadce0", borderRadius: 8, padding: "9px 12px", fontSize: 14, resize: "vertical" }} />
+                </label>
+                <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13 }}>
+                    <input type="checkbox" checked={!!editandoPlano.destaque} onChange={e => setEditandoPlano(p => ({ ...p, destaque: e.target.checked }))} />
+                    Destacar como "Mais popular"
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13 }}>
+                    <input type="checkbox" checked={!!editandoPlano.ativo} onChange={e => setEditandoPlano(p => ({ ...p, ativo: e.target.checked }))} />
+                    Plano ativo (visível para usuários)
+                  </label>
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button type="submit" className="admin-btn admin-btn--ativar" disabled={salvandoPlano}>{salvandoPlano ? "Salvando..." : "💾 Salvar plano"}</button>
+                  <button type="button" className="admin-btn" onClick={() => setEditandoPlano(null)}>Cancelar</button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       )}
 
