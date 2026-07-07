@@ -47,7 +47,7 @@ const CadastrarPaciente = () => {
     setCarregando(true);
     try {
       await adicionarPaciente(workspaceId, dados);
-      alert("Paciente cadastrado com sucesso!");
+      alert("Cliente cadastrado com sucesso!");
       navigate("/pacientes");
     } catch (err) {
       setErro("Erro ao cadastrar paciente: " + err.message);
@@ -59,7 +59,7 @@ const CadastrarPaciente = () => {
   return (
     <div className="form-container">
       <div className="form-box">
-        <h2>Cadastrar Novo Paciente</h2>
+        <h2>Cadastrar Novo Cliente</h2>
 
         {erro && <div className="erro-message">{erro}</div>}
 
@@ -143,7 +143,7 @@ const CadastrarPaciente = () => {
               Cancelar
             </button>
             <button type="submit" disabled={carregando} className="btn-salvar">
-              {carregando ? "Cadastrando..." : "Cadastrar Paciente"}
+              {carregando ? "Cadastrando..." : "Cadastrar Cliente"}
             </button>
           </div>
         </form>

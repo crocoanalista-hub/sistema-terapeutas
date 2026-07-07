@@ -62,7 +62,7 @@ const Dashboard = () => {
     {
       cor: "#3498db",
       icone: "👥",
-      titulo: "Pacientes",
+      titulo: "Clientes",
       valor: stats.pacientes,
       sub: "cadastrados",
       rota: "/pacientes",

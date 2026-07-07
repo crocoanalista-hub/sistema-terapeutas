@@ -577,7 +577,7 @@ const Financeiro = () => {
             <thead>
               <tr>
                 <th>Data</th>
-                <th>Paciente</th>
+                <th>Cliente</th>
                 <th>Hora</th>
                 <th>Valor</th>
                 <th>Status</th>
@@ -728,7 +728,7 @@ const Financeiro = () => {
   const abas = [
     { key: "resumo",      label: "Resumo" },
     { key: "inadimplentes", label: "Inadimplentes" },
-    { key: "porPaciente", label: "Por Paciente" },
+    { key: "porPaciente", label: "Por Cliente" },
     { key: "extrato",     label: "Extrato" },
     { key: "comissoes",   label: "💼 Comissões" },
   ];
@@ -772,7 +772,7 @@ const Financeiro = () => {
               <strong>Terapeuta:</strong> {terapeuta?.nome || ""}
             </div>
             <div className="recibo-linha">
-              <strong>Paciente:</strong>{" "}
+              <strong>Cliente:</strong>{" "}
               {mapaPacientes[reciboSessao.pacienteId]?.nome || ""}
             </div>
             <div className="recibo-linha">

@@ -119,7 +119,7 @@ export default function DetalhePaciente() {
   if (carregando) return <div className="dp-loading">Carregando...</div>;
   if (!paciente) return (
     <div className="dp-not-found">
-      <p>Paciente não encontrado.</p>
+      <p>Cliente não encontrado.</p>
       <button onClick={() => navigate("/pacientes")}>Voltar</button>
     </div>
   );

@@ -754,7 +754,7 @@ export default function Configuracoes() {
             </div>
             <span className="cfg-preview-nome">{aparencia.nomeClinica || "Consultório"}</span>
             <div className="cfg-preview-nav">
-              {["Dashboard","Pacientes","Agenda"].map(l => (
+              {["Dashboard","Clientes","Agenda"].map(l => (
                 <div key={l} className="cfg-preview-nav-item" style={{ borderLeftColor: aparencia.corPrimaria }}>
                   {l}
                 </div>

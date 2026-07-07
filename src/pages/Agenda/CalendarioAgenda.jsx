@@ -748,7 +748,7 @@ const CalendarioAgenda = () => {
         <div className="gc-ev-modal" onClick={(e) => e.stopPropagation()}>
           <div className="gc-ev-modal-top" style={{ borderTopColor: cor.border }}>
             <div>
-              <h3 className="gc-ev-nome">{pac?.nome || "Paciente"}</h3>
+              <h3 className="gc-ev-nome">{pac?.nome || "Cliente"}</h3>
               <p className="gc-ev-data" style={{ textTransform: "capitalize" }}>{dataFmt}</p>
               <p className="gc-ev-hora">{a.hora} · {a.duracao || 60} minutos</p>
             </div>
@@ -1073,7 +1073,7 @@ const CalendarioAgenda = () => {
         return (
           <Modal titulo="Registrar Falta" onClose={() => setModalFalta(null)}>
             <p style={{ color: "#666", fontSize: "14px", marginBottom: "16px" }}>
-              Confirmar falta de <strong>{pac?.nome || "Paciente"}</strong> em <strong>{dataFmt} às {modalFalta.hora}</strong>?
+              Confirmar falta de <strong>{pac?.nome || "Cliente"}</strong> em <strong>{dataFmt} às {modalFalta.hora}</strong>?
             </p>
             <div className="gc-concluir-pagar" style={{ marginBottom: "16px" }}>
               <label className="gc-concluir-pagar-toggle">

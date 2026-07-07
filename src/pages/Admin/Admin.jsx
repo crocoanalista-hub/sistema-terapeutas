@@ -774,7 +774,7 @@ function LimitesEditor({ limites, onSalvar, salvando }) {
       <p className="admin-limites-titulo">Limites personalizados</p>
       <div className="admin-limites-grid">
         {[
-          { key: "pacientes",    label: "Pacientes" },
+          { key: "pacientes",    label: "Clientes" },
           { key: "agendamentos", label: "Agendamentos" },
           { key: "documentos",   label: "Documentos" },
         ].map(({ key, label }) => (

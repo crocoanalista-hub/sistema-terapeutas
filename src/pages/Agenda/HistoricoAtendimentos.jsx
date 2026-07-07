@@ -92,7 +92,7 @@ const HistoricoAtendimentos = () => {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ backgroundColor: "#f8f9fa", borderBottom: "2px solid #dee2e6" }}>
-                <th style={{ padding: "15px", textAlign: "left" }}>Paciente</th>
+                <th style={{ padding: "15px", textAlign: "left" }}>Cliente</th>
                 <th style={{ padding: "15px", textAlign: "left" }}>Data</th>
                 <th style={{ padding: "15px", textAlign: "left" }}>Hora</th>
                 <th style={{ padding: "15px", textAlign: "left" }}>Duração</th>

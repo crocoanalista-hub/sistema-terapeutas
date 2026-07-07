@@ -10,7 +10,7 @@ import "../styles/layout.css";
 
 const NAV = [
   { label: "Dashboard",    icon: "🏠", rota: "/dashboard" },
-  { label: "Pacientes",    icon: "👥", rota: "/pacientes" },
+  { label: "Clientes",    icon: "👥", rota: "/pacientes" },
   { label: "Agenda",       icon: "📅", rota: "/agenda" },
   { label: "Financeiro",   icon: "💰", rota: "/financeiro" },
   { label: "Documentos",   icon: "📄", rota: "/documentos" },
@@ -22,7 +22,7 @@ const NAV = [
 // Itens visíveis na bottom nav (os 4 principais + "Mais")
 const NAV_BOTTOM = [
   { label: "Início",    icon: "🏠", rota: "/dashboard" },
-  { label: "Pacientes", icon: "👥", rota: "/pacientes" },
+  { label: "Clientes", icon: "👥", rota: "/pacientes" },
   { label: "Agenda",    icon: "📅", rota: "/agenda" },
   { label: "Financeiro",icon: "💰", rota: "/financeiro" },
 ];

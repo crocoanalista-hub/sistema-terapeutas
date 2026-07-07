@@ -58,7 +58,7 @@ const EditarPaciente = () => {
     setSalvando(true);
     try {
       await atualizarPaciente(id, dados);
-      alert("Paciente atualizado com sucesso!");
+      alert("Cliente atualizado com sucesso!");
       navigate("/pacientes");
     } catch (err) {
       setErro("Erro ao atualizar paciente: " + err.message);
@@ -74,7 +74,7 @@ const EditarPaciente = () => {
   return (
     <div className="form-container">
       <div className="form-box">
-        <h2>Editar Paciente</h2>
+        <h2>Editar Cliente</h2>
 
         {erro && <div className="erro-message">{erro}</div>}
 

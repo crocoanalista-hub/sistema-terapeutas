@@ -52,7 +52,7 @@ const TEMPLATES_PADRAO = {
     { id: "b12", tipo: "p",   texto: "O(A) Terapeuta se compromete a manter sigilo sobre todas as informações compartilhadas durante as sessões, em conformidade com o Código de Ética profissional e a Lei Geral de Proteção de Dados (LGPD – Lei 13.709/2018), exceto nos casos previstos em lei." },
     { id: "b13", tipo: "h4",  texto: "5. DAS DISPOSIÇÕES GERAIS" },
     { id: "b14", tipo: "p",   texto: "O presente contrato tem validade por tempo indeterminado, podendo ser rescindido por qualquer das partes mediante comunicação prévia." },
-    { id: "b15", tipo: "assinaturas", parteA: "Terapeuta", parteB: "Paciente/Cliente" },
+    { id: "b15", tipo: "assinaturas", parteA: "Terapeuta", parteB: "Cliente" },
     { id: "b16", tipo: "data", texto: "{dataContrato}" },
   ],
 
@@ -77,11 +77,11 @@ const TEMPLATES_PADRAO = {
   consentimento: [
     { id: "b1", tipo: "h2", texto: "TERMO DE CONSENTIMENTO INFORMADO" },
     { id: "b2", tipo: "p",  texto: "Terapeuta: {terapeuta}" },
-    { id: "b3", tipo: "p",  texto: "Paciente: {paciente}" },
+    { id: "b3", tipo: "p",  texto: "Cliente: {paciente}" },
     { id: "b4", tipo: "p",  texto: "Declaro que fui devidamente informado(a) sobre o processo psicoterápico, incluindo:" },
     { id: "b5", tipo: "lista", texto: "A natureza e os objetivos do tratamento psicoterápico\nOs possíveis benefícios e limitações da psicoterapia\nA duração estimada do tratamento e a frequência das sessões\nOs honorários e as condições de cancelamento\nO dever de sigilo do(a) terapeuta e suas exceções legais\nMeu direito de interromper o tratamento a qualquer momento" },
     { id: "b6", tipo: "p",  texto: "Tendo compreendido as informações acima, consinto livremente em iniciar o processo psicoterápico com o(a) terapeuta {terapeuta}." },
-    { id: "b7", tipo: "assinaturas", parteA: "Terapeuta", parteB: "Paciente" },
+    { id: "b7", tipo: "assinaturas", parteA: "Terapeuta", parteB: "Cliente" },
     { id: "b8", tipo: "data", texto: "{data}" },
   ],
 
@@ -192,7 +192,7 @@ const Documentos = () => {
 
   const pac = pacientes.find(p => p.id === pacienteSelecionado);
   const nomeTerapeuta = terapeuta?.nome || "[Nome do Terapeuta]";
-  const nomePaciente  = pac?.nome || "[Nome do Paciente]";
+  const nomePaciente  = pac?.nome || "[Nome do Cliente]";
   const hoje = new Date().toLocaleDateString("pt-BR");
 
   const vars = {
@@ -313,7 +313,7 @@ const Documentos = () => {
   const renderFormulario = () => {
     const selectPac = (
       <div className="doc-form-grupo">
-        <label>Paciente</label>
+        <label>Cliente</label>
         <select value={pacienteSelecionado} onChange={e => setPacienteSelecionado(e.target.value)}>
           <option value="">-- Selecione --</option>
           {pacientes.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
@@ -577,7 +577,7 @@ const Documentos = () => {
             </div>
             <div className="modal-assin-body">
               <div className="modal-assin-grupo">
-                <label>Paciente (da lista)</label>
+                <label>Cliente (da lista)</label>
                 <select
                   value={formAssin.pacienteId}
                   onChange={e => {

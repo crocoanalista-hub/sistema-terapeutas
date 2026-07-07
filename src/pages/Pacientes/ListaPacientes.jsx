@@ -62,12 +62,12 @@ const ListaPacientes = () => {
   return (
     <div className="pacientes-container">
       <div className="pacientes-header">
-        <h2>Meus Pacientes</h2>
+        <h2>Meus Clientes</h2>
         <button
           className="btn-novo"
           onClick={() => navigate("/pacientes/novo")}
         >
-          + Novo Paciente
+          + Novo Cliente
         </button>
       </div>
 

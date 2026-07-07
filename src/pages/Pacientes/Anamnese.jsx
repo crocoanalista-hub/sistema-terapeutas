@@ -213,7 +213,7 @@ const Anamnese = () => {
   // ─── ENVIAR LINK ANAMNESE ────────────────────────────────
   const enviarAnamnese = async () => {
     if (!paciente?.telefone) {
-      alert("Paciente sem número de WhatsApp cadastrado.");
+      alert("Cliente sem número de WhatsApp cadastrado.");
       return;
     }
     setCriandoLink(true);
