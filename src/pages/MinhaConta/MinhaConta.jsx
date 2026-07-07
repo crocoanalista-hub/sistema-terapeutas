@@ -3,6 +3,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { usePlano } from "../../hooks/usePlano";
 import { listarCobrancas } from "../../services/planoService";
 import { listarPlanos } from "../../services/planosService";
+import { criarCobrancaAsaas } from "../../services/asaasService";
 import "../../styles/minha-conta.css";
 
 const moeda = (v) =>
@@ -17,310 +18,321 @@ const diasAte = (iso) => {
   return Math.ceil(diff / 86400000);
 };
 
+function vencimento30dias() {
+  const d = new Date();
+  d.setDate(d.getDate() + 30);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function MinhaConta() {
   const { terapeuta, workspaceId } = useAuth();
   const { usage, limites, diasRestantes } = usePlano(workspaceId);
   const [cobrancas, setCobrancas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [planos, setPlanos] = useState([]);
-  const [modalPlanos, setModalPlanos] = useState(false);
+  const [historicoAberto, setHistoricoAberto] = useState(false);
+
+  // Checkout
+  const [checkout, setCheckout] = useState(null); // { plano, preco }
+  const [cpfCnpj, setCpfCnpj] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [processando, setProcessando] = useState(false);
+  const [linkGerado, setLinkGerado] = useState(null);
+
   const pioneiro = terapeuta?.membroPioneiro;
+  const plano = terapeuta?.plano || "trial";
 
   useEffect(() => {
     if (!workspaceId) return;
-    listarCobrancas(workspaceId)
-      .then(setCobrancas)
-      .catch(() => {})
-      .finally(() => setCarregando(false));
+    listarCobrancas(workspaceId).then(setCobrancas).catch(() => {}).finally(() => setCarregando(false));
     listarPlanos().then(lista => setPlanos(lista.filter(p => p.ativo))).catch(() => {});
   }, [workspaceId]);
 
-  const plano = terapeuta?.plano || "trial";
-  const trialExpira = terapeuta?.trialExpira?.toDate?.() || (terapeuta?.trialExpira ? new Date(terapeuta.trialExpira) : null);
-  const diasTrial = trialExpira ? Math.ceil((trialExpira - new Date()) / 86400000) : null;
-
-  // Próxima cobrança pendente
   const pendentes = cobrancas.filter(c => c.status === "pendente").sort((a, b) => a.vencimento > b.vencimento ? 1 : -1);
   const proxima = pendentes[0] || null;
   const diasProxima = proxima ? diasAte(proxima.vencimento) : null;
+  const statusProxima = diasProxima === null ? null : diasProxima < 0 ? "urgente" : diasProxima <= 5 ? "aviso" : "ok";
+  const pagas = cobrancas.filter(c => c.status === "pago");
+  const atrasadas = cobrancas.filter(c => c.status === "pendente" && c.vencimento && new Date(c.vencimento + "T23:59") < new Date());
 
-  const statusProxima = diasProxima === null ? null
-    : diasProxima < 0  ? "urgente"
-    : diasProxima <= 5 ? "aviso"
-    : "ok";
+  const handleAssinar = (p) => {
+    const preco = pioneiro && p.precoPioneiro ? p.precoPioneiro : p.preco;
+    setCheckout({ plano: p, preco });
+    setLinkGerado(null);
+    setCpfCnpj("");
+    setTelefone("");
+  };
 
-  const heroClass =
-    plano === "ativo"     ? "mc-plano-hero--ativo"
-    : plano === "bloqueado" ? "mc-plano-hero--bloqueado"
-    : "mc-plano-hero--trial";
-
-  const planoLabel =
-    plano === "ativo"      ? "Plano Ativo"
-    : plano === "bloqueado" ? "Conta Bloqueada"
-    : "Período de Teste";
-
-  const planoDesc =
-    plano === "ativo"       ? `Obrigado por ser cliente! Seu acesso está liberado.`
-    : plano === "bloqueado"  ? "Entre em contato com o suporte para reativar sua conta."
-    : diasTrial !== null     ? `${diasTrial > 0 ? `${diasTrial} dias restantes` : "Trial expirado"} no período gratuito.`
-    : "Período de teste ativo.";
-
-  const pagas    = cobrancas.filter(c => c.status === "pago");
-  const atrasadas = cobrancas.filter(c => {
-    if (c.status !== "pendente") return false;
-    return c.vencimento && new Date(c.vencimento + "T23:59") < new Date();
-  });
+  const handleConfirmarCheckout = async (e) => {
+    e.preventDefault();
+    if (!cpfCnpj) { alert("Informe seu CPF ou CNPJ para continuar."); return; }
+    setProcessando(true);
+    try {
+      const venc = vencimento30dias();
+      const desc = `Plano ${checkout.plano.nome} — Novu`;
+      const result = await criarCobrancaAsaas({
+        nome: terapeuta?.nome || "Terapeuta",
+        email: terapeuta?.email || "",
+        cpfCnpj,
+        mobilePhone: telefone,
+        valor: checkout.preco,
+        vencimento: venc,
+        descricao: desc,
+        externalReference: workspaceId,
+      });
+      setLinkGerado(result.linkPagamento);
+      window.open(result.linkPagamento, "_blank");
+    } catch (err) {
+      alert("Erro ao gerar cobrança: " + err.message);
+    }
+    setProcessando(false);
+  };
 
   return (
     <div className="mc-page">
-      <h2 className="mc-titulo">Meu Plano</h2>
 
-      {/* Card Trial em destaque */}
-      {plano === "trial" && (
-        <div className={`mc-trial-destaque${diasRestantes !== null && diasRestantes <= 3 ? " mc-trial-urgente" : ""}`}>
-          <div className="mc-trial-esquerda">
-            <div className="mc-trial-icone">{diasRestantes === 0 ? "⚠️" : "⏳"}</div>
-            <div>
-              <div className="mc-trial-label">Período de teste</div>
-              <div className="mc-trial-dias">
-                {diasRestantes === null ? "Trial ativo" :
-                 diasRestantes <= 0 ? "Trial encerrado" :
-                 diasRestantes === 1 ? "Último dia!" :
-                 `${diasRestantes} dias restantes`}
-              </div>
-              {pioneiro && (
-                <div className="mc-trial-pioneiro">⭐ Você é Membro Pioneiro — desconto especial garantido!</div>
-              )}
-            </div>
+      {/* ── Status atual ── */}
+      <div className="mc-hero-status">
+        <div className="mc-hero-left">
+          <div className="mc-hero-label">Seu plano atual</div>
+          <div className="mc-hero-plano">
+            {plano === "ativo" ? "✅ Plano Ativo" : plano === "bloqueado" ? "🔒 Conta Bloqueada" : "⏳ Período de Teste (Trial)"}
           </div>
-          <button className="mc-trial-cta" onClick={() => setModalPlanos(true)}>
-            Ver planos →
-          </button>
+          {plano === "trial" && diasRestantes !== null && (
+            <div className={`mc-hero-dias${diasRestantes <= 3 ? " urgente" : diasRestantes <= 7 ? " aviso" : ""}`}>
+              {diasRestantes <= 0 ? "Trial encerrado — escolha um plano abaixo" :
+               diasRestantes === 1 ? "Último dia do trial!" :
+               `${diasRestantes} dias restantes no trial`}
+            </div>
+          )}
+          {pioneiro && (
+            <div className="mc-hero-pioneiro">⭐ Você é Membro Pioneiro — preços especiais aplicados</div>
+          )}
+          {atrasadas.length > 0 && (
+            <div className="mc-hero-alerta">⚠️ Você tem {atrasadas.length} cobrança{atrasadas.length > 1 ? "s" : ""} em atraso</div>
+          )}
         </div>
-      )}
 
-      {/* Modal Ver Planos */}
-      {modalPlanos && (
-        <div className="mc-modal-overlay" onClick={() => setModalPlanos(false)}>
-          <div className="mc-modal-planos" onClick={e => e.stopPropagation()}>
-            <div className="mc-modal-header">
-              <h3>Escolha seu plano</h3>
-              {pioneiro && <div className="mc-modal-pioneiro-badge">⭐ Preços especiais de Membro Pioneiro aplicados</div>}
-              <button className="mc-modal-fechar" onClick={() => setModalPlanos(false)}>✕</button>
-            </div>
-            <div className="mc-modal-grid">
-              {planos.map(p => {
-                const preco = pioneiro && p.precoPioneiro ? p.precoPioneiro : p.preco;
-                const precoOriginal = pioneiro && p.precoPioneiro ? p.preco : null;
-                return (
-                  <div key={p.id} className={`mc-plano-card${p.destaque ? " mc-plano-destaque" : ""}`}>
-                    {p.destaque && <div className="mc-plano-tag">MAIS POPULAR</div>}
-                    {pioneiro && p.precoPioneiro && <div className="mc-plano-tag-pioneiro">⭐ PIONEIRO</div>}
-                    <div className="mc-plano-card-nome">{p.nome}</div>
-                    <div className="mc-plano-card-desc">{p.descricao}</div>
-                    <div className="mc-plano-card-preco">
-                      {precoOriginal && (
-                        <span className="mc-preco-riscado">R$ {Number(precoOriginal).toFixed(2).replace(".", ",")}</span>
-                      )}
-                      <span className="mc-preco-atual">R$ {Number(preco).toFixed(2).replace(".", ",")}<span className="mc-preco-periodo">/mês</span></span>
-                    </div>
-                    {Array.isArray(p.recursos) && (
-                      <ul className="mc-plano-recursos">
-                        {p.recursos.map((r, i) => <li key={i}>✅ {r}</li>)}
-                      </ul>
-                    )}
-                    <a href="mailto:igorcroco@gmail.com?subject=Quero assinar o plano" className="mc-plano-assinar">
-                      Assinar agora
-                    </a>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="mc-modal-rodape">Dúvidas? <a href="mailto:igorcroco@gmail.com">igorcroco@gmail.com</a> · respondemos em até 24h</p>
-          </div>
-        </div>
-      )}
-
-      {/* Hero do plano */}
-      <div className={`mc-plano-hero ${heroClass}`}>
-        <div className="mc-plano-label">Seu plano</div>
-        <div className="mc-plano-nome">{planoLabel}</div>
-        <div className="mc-plano-desc">{planoDesc}</div>
-
-        {plano === "trial" && diasTrial !== null && diasTrial <= 3 && (
-          <div className="mc-plano-alerta">
-            ⚠️ Seu trial expira em breve. Entre em contato para ativar o plano completo.
-          </div>
-        )}
-        {plano === "bloqueado" && (
-          <div className="mc-plano-alerta">
-            🔒 Acesso restrito. Regularize seu pagamento para continuar usando a plataforma.
-          </div>
-        )}
-        {atrasadas.length > 0 && plano !== "bloqueado" && (
-          <div className="mc-plano-alerta">
-            ⚠️ Você tem {atrasadas.length} cobrança{atrasadas.length > 1 ? "s" : ""} em atraso.
-          </div>
-        )}
-      </div>
-
-      {/* Uso do plano trial */}
-      {plano === "trial" && limites && (
-        <div className="mc-uso-card">
-          <div className="mc-uso-titulo">
-            ⏳ Trial
-            {diasRestantes !== null && (
-              <span className={`mc-uso-dias${diasRestantes <= 3 ? " mc-uso-dias--urgente" : diasRestantes <= 7 ? " mc-uso-dias--aviso" : ""}`}>
-                {diasRestantes > 0 ? `${diasRestantes} dia${diasRestantes !== 1 ? "s" : ""} restantes` : "Expirado"}
-              </span>
-            )}
-          </div>
-          <div className="mc-uso-itens">
+        {plano === "trial" && limites && (
+          <div className="mc-hero-uso">
             {[
-              { label: "Clientes",      usado: usage.pacientes,    limite: limites.pacientes,    icone: "👥" },
-              { label: "Agendamentos",  usado: usage.agendamentos, limite: limites.agendamentos, icone: "📅" },
-              { label: "Documentos",    usado: usage.documentos,   limite: limites.documentos,   icone: "📄" },
+              { label: "Clientes",     usado: usage.pacientes,    limite: limites.pacientes,    icone: "👥" },
+              { label: "Agendamentos", usado: usage.agendamentos, limite: limites.agendamentos, icone: "📅" },
+              { label: "Documentos",   usado: usage.documentos,   limite: limites.documentos,   icone: "📄" },
             ].map(({ label, usado, limite, icone }) => {
               const pct = limite ? Math.min(100, Math.round((usado / limite) * 100)) : 0;
-              const urgente = pct >= 100;
-              const aviso   = pct >= 75 && !urgente;
               return (
-                <div key={label} className="mc-uso-item">
-                  <div className="mc-uso-item-header">
-                    <span>{icone} {label}</span>
-                    <span className={urgente ? "mc-uso-cheio" : ""}>
-                      {usado} / {limite}
-                    </span>
-                  </div>
+                <div key={label} className="mc-hero-uso-item">
+                  <div className="mc-hero-uso-label">{icone} {label} <span>{usado}/{limite}</span></div>
                   <div className="mc-uso-barra-bg">
-                    <div
-                      className={`mc-uso-barra${urgente ? " mc-uso-barra--cheio" : aviso ? " mc-uso-barra--aviso" : ""}`}
-                      style={{ width: `${pct}%` }}
-                    />
+                    <div className={`mc-uso-barra${pct >= 100 ? " mc-uso-barra--cheio" : pct >= 75 ? " mc-uso-barra--aviso" : ""}`} style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               );
             })}
           </div>
-          <div className="mc-uso-rodape">
-            Quer mais? Entre em contato para ativar o plano completo.
-            <a href="mailto:igorcroco@gmail.com" className="mc-uso-cta">Falar com suporte →</a>
-          </div>
-        </div>
-      )}
-
-      {/* Status rápido */}
-      <div className="mc-status-grid">
-        <div className={`mc-status-card${atrasadas.length > 0 ? " mc-status-card--urgente" : " mc-status-card--ok"}`}>
-          <div className="mc-status-label">Em atraso</div>
-          <div className="mc-status-valor">{atrasadas.length}</div>
-          <div className="mc-status-sub">cobrança{atrasadas.length !== 1 ? "s" : ""}</div>
-        </div>
-        <div className={`mc-status-card${pendentes.length > 0 ? " mc-status-card--aviso" : " mc-status-card--ok"}`}>
-          <div className="mc-status-label">Pendentes</div>
-          <div className="mc-status-valor">{pendentes.length}</div>
-          <div className="mc-status-sub">a vencer</div>
-        </div>
-        <div className="mc-status-card mc-status-card--ok">
-          <div className="mc-status-label">Pagamentos</div>
-          <div className="mc-status-valor">{pagas.length}</div>
-          <div className="mc-status-sub">realizados</div>
-        </div>
-        <div className="mc-status-card mc-status-card--ok">
-          <div className="mc-status-label">Total pago</div>
-          <div className="mc-status-valor" style={{ fontSize: 16 }}>
-            {moeda(pagas.reduce((s, c) => s + (c.valor || 0), 0))}
-          </div>
-          <div className="mc-status-sub">histórico</div>
-        </div>
+        )}
       </div>
 
-      {/* Próxima cobrança */}
+      {/* ── Próxima cobrança pendente ── */}
       {proxima && (
-        <div className="mc-proxima-card">
-          <div className="mc-proxima-icone">
-            {statusProxima === "urgente" ? "🔴" : statusProxima === "aviso" ? "⚠️" : "📅"}
-          </div>
+        <div className={`mc-proxima-card mc-proxima-card--${statusProxima}`}>
+          <div className="mc-proxima-icone">{statusProxima === "urgente" ? "🔴" : statusProxima === "aviso" ? "⚠️" : "📅"}</div>
           <div className="mc-proxima-info">
             <div className="mc-proxima-titulo">
-              {statusProxima === "urgente"
-                ? `Cobrança atrasada há ${Math.abs(diasProxima)} dia${Math.abs(diasProxima) !== 1 ? "s" : ""}`
-                : statusProxima === "aviso"
-                ? `Vence em ${diasProxima} dia${diasProxima !== 1 ? "s" : ""}`
-                : `Próxima cobrança em ${diasProxima} dias`}
+              {statusProxima === "urgente" ? `Cobrança atrasada há ${Math.abs(diasProxima)} dia${Math.abs(diasProxima) !== 1 ? "s" : ""}` :
+               statusProxima === "aviso" ? `Vence em ${diasProxima} dia${diasProxima !== 1 ? "s" : ""}` :
+               `Próxima cobrança em ${diasProxima} dias`}
             </div>
-            <div className="mc-proxima-data">
-              {proxima.descricao || `Plano ${proxima.plano}`} · vence {fmtData(proxima.vencimento)}
-            </div>
+            <div className="mc-proxima-data">{proxima.descricao || `Plano ${proxima.plano}`} · vence {fmtData(proxima.vencimento)}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-            <div className={`mc-proxima-valor mc-proxima-valor--${statusProxima}`}>
-              {moeda(proxima.valor)}
-            </div>
+            <div className={`mc-proxima-valor mc-proxima-valor--${statusProxima}`}>{moeda(proxima.valor)}</div>
             {proxima.linkPagamento && (
-              <a href={proxima.linkPagamento} target="_blank" rel="noreferrer" className="mc-btn-pagar">
-                💳 Pagar agora
-              </a>
+              <a href={proxima.linkPagamento} target="_blank" rel="noreferrer" className="mc-btn-pagar">💳 Pagar agora</a>
             )}
           </div>
         </div>
       )}
 
-      {/* Histórico de cobranças */}
-      <h3 className="mc-secao-titulo">Histórico de cobranças</h3>
+      {/* ── Planos ── */}
+      {plano !== "ativo" && (
+        <div className="mc-planos-section">
+          <div className="mc-planos-header">
+            <h2 className="mc-planos-titulo">Escolha seu plano</h2>
+            <p className="mc-planos-sub">Cancele quando quiser · Sem fidelidade · Dados sempre seus</p>
+            {pioneiro && (
+              <div className="mc-planos-pioneiro-banner">
+                ⭐ <strong>Membro Pioneiro:</strong> seus preços exclusivos já estão aplicados abaixo
+              </div>
+            )}
+          </div>
 
-      {carregando ? (
-        <p style={{ color: "#9aa0a6" }}>Carregando...</p>
-      ) : cobrancas.length === 0 ? (
-        <div className="mc-vazio">Nenhuma cobrança registrada ainda.</div>
-      ) : (
-        <div className="mc-tabela-wrap">
-          <table className="mc-tabela">
-            <thead>
-              <tr>
-                <th>Descrição</th>
-                <th>Plano</th>
-                <th>Valor</th>
-                <th>Vencimento</th>
-                <th>Status</th>
-                <th>Pago em</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cobrancas.map(c => {
-                const atrasado = c.status === "pendente" && c.vencimento && new Date(c.vencimento + "T23:59") < new Date();
-                const statusKey = atrasado ? "atrasado" : c.status;
-                const statusLabel = { pago: "✅ Pago", pendente: "🕐 Pendente", atrasado: "⚠️ Atrasado", cancelado: "❌ Cancelado" };
-                return (
-                  <tr key={c.id}>
-                    <td>{c.descricao || "—"}</td>
-                    <td style={{ textTransform: "capitalize" }}>{c.plano || "—"}</td>
-                    <td><strong>{moeda(c.valor)}</strong></td>
-                    <td>{fmtData(c.vencimento)}</td>
-                    <td><span className={`mc-badge mc-badge--${statusKey}`}>{statusLabel[statusKey] || c.status}</span></td>
-                    <td>{c.pagoEm ? new Date(c.pagoEm?.toDate?.() || c.pagoEm).toLocaleDateString("pt-BR") : c.linkPagamento && c.status === "pendente" ? (
-                      <a href={c.linkPagamento} target="_blank" rel="noreferrer" className="mc-btn-pagar">
-                        💳 Pagar agora
-                      </a>
-                    ) : "—"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="mc-planos-grid">
+            {planos.map(p => {
+              const preco = pioneiro && p.precoPioneiro ? p.precoPioneiro : p.preco;
+              const precoOriginal = pioneiro && p.precoPioneiro ? p.preco : null;
+              return (
+                <div key={p.id} className={`mc-plan-card${p.destaque ? " mc-plan-card--destaque" : ""}`}>
+                  {p.destaque && <div className="mc-plan-badge">Mais popular</div>}
+
+                  <div className="mc-plan-nome">{p.nome}</div>
+                  <div className="mc-plan-desc">{p.descricao}</div>
+
+                  <div className="mc-plan-preco-wrap">
+                    {precoOriginal && (
+                      <div className="mc-plan-preco-original">R$ {Number(precoOriginal).toFixed(2).replace(".", ",")}/mês</div>
+                    )}
+                    <div className="mc-plan-preco">
+                      <span className="mc-plan-cifrao">R$</span>
+                      <span className="mc-plan-valor">{Number(preco).toFixed(2).replace(".", ",")}</span>
+                      <span className="mc-plan-periodo">/mês</span>
+                    </div>
+                    {pioneiro && p.precoPioneiro && (
+                      <div className="mc-plan-economia">
+                        Você economiza R$ {(Number(p.preco) - Number(p.precoPioneiro)).toFixed(2).replace(".", ",")} /mês
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    className={`mc-plan-btn${p.destaque ? " mc-plan-btn--destaque" : ""}`}
+                    onClick={() => handleAssinar(p)}
+                  >
+                    Assinar agora
+                  </button>
+
+                  {Array.isArray(p.recursos) && p.recursos.length > 0 && (
+                    <ul className="mc-plan-lista">
+                      {p.recursos.map((r, i) => (
+                        <li key={i}><span className="mc-plan-check">✓</span> {r}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="mc-planos-rodape">
+            Dúvidas? Fale com a gente pelo{" "}
+            <a href="mailto:igorcroco@gmail.com">igorcroco@gmail.com</a>
+          </p>
         </div>
       )}
 
-      {/* Suporte */}
-      <div className="mc-suporte">
-        <div className="mc-suporte-texto">
-          <strong>Dúvidas sobre cobrança ou plano?</strong><br />
-          Entre em contato com nosso suporte e resolveremos rapidamente.
-        </div>
-        <a href="mailto:igorcroco@gmail.com" className="mc-suporte-btn">
-          ✉️ Falar com suporte
-        </a>
+      {/* ── Histórico (colapsável) ── */}
+      <div className="mc-historico-wrap">
+        <button className="mc-historico-toggle" onClick={() => setHistoricoAberto(v => !v)}>
+          📋 Histórico de cobranças {cobrancas.length > 0 && `(${cobrancas.length})`}
+          <span>{historicoAberto ? "▲" : "▼"}</span>
+        </button>
+
+        {historicoAberto && (
+          carregando ? <p style={{ color: "#9aa0a6", padding: "12px 0" }}>Carregando...</p> :
+          cobrancas.length === 0 ? <div className="mc-vazio">Nenhuma cobrança registrada ainda.</div> : (
+            <div className="mc-tabela-wrap">
+              <table className="mc-tabela">
+                <thead>
+                  <tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody>
+                  {cobrancas.map(c => {
+                    const atrasado = c.status === "pendente" && c.vencimento && new Date(c.vencimento + "T23:59") < new Date();
+                    const sk = atrasado ? "atrasado" : c.status;
+                    const sl = { pago: "✅ Pago", pendente: "🕐 Pendente", atrasado: "⚠️ Atrasado", cancelado: "❌ Cancelado" };
+                    return (
+                      <tr key={c.id}>
+                        <td>{c.descricao || "—"}</td>
+                        <td><strong>{moeda(c.valor)}</strong></td>
+                        <td>{fmtData(c.vencimento)}</td>
+                        <td><span className={`mc-badge mc-badge--${sk}`}>{sl[sk] || c.status}</span></td>
+                        <td>{c.linkPagamento && c.status === "pendente" && (
+                          <a href={c.linkPagamento} target="_blank" rel="noreferrer" className="mc-btn-pagar">💳 Pagar</a>
+                        )}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )
+        )}
       </div>
+
+      {/* ── Modal Checkout ── */}
+      {checkout && (
+        <div className="mc-modal-overlay" onClick={() => !processando && setCheckout(null)}>
+          <div className="mc-checkout-modal" onClick={e => e.stopPropagation()}>
+
+            {!linkGerado ? (
+              <>
+                <button className="mc-modal-fechar" onClick={() => setCheckout(null)}>✕</button>
+                <div className="mc-checkout-header">
+                  <div className="mc-checkout-icone">💳</div>
+                  <h3>Assinar {checkout.plano.nome}</h3>
+                  <div className="mc-checkout-preco">
+                    R$ {Number(checkout.preco).toFixed(2).replace(".", ",")}<span>/mês</span>
+                  </div>
+                </div>
+
+                <form onSubmit={handleConfirmarCheckout} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div className="mc-checkout-field">
+                    <label>Nome completo</label>
+                    <input type="text" value={terapeuta?.nome || ""} readOnly style={{ background: "#f8f9fa" }} />
+                  </div>
+                  <div className="mc-checkout-field">
+                    <label>E-mail</label>
+                    <input type="email" value={terapeuta?.email || ""} readOnly style={{ background: "#f8f9fa" }} />
+                  </div>
+                  <div className="mc-checkout-field">
+                    <label>CPF / CNPJ <span style={{ color: "#e53e3e" }}>*</span></label>
+                    <input
+                      type="text"
+                      value={cpfCnpj}
+                      onChange={e => setCpfCnpj(e.target.value)}
+                      placeholder="000.000.000-00"
+                      required
+                    />
+                  </div>
+                  <div className="mc-checkout-field">
+                    <label>WhatsApp <span style={{ color: "#aaa", fontSize: 11 }}>(opcional)</span></label>
+                    <input
+                      type="text"
+                      value={telefone}
+                      onChange={e => setTelefone(e.target.value)}
+                      placeholder="(11) 99999-9999"
+                    />
+                  </div>
+
+                  <div className="mc-checkout-metodos">
+                    <span>💳</span><span>PIX</span><span>📄</span>
+                    <small>Você escolhe a forma de pagamento na próxima tela</small>
+                  </div>
+
+                  <button type="submit" className="mc-checkout-btn" disabled={processando}>
+                    {processando ? "Gerando cobrança..." : `Continuar para pagamento →`}
+                  </button>
+                  <p style={{ fontSize: 11, color: "#aaa", textAlign: "center", margin: 0 }}>
+                    Você será direcionado para a página segura de pagamento
+                  </p>
+                </form>
+              </>
+            ) : (
+              <div className="mc-checkout-sucesso">
+                <div style={{ fontSize: 48 }}>🎉</div>
+                <h3>Cobrança gerada!</h3>
+                <p>Uma nova aba foi aberta com seu link de pagamento. Se não abriu, clique abaixo.</p>
+                <a href={linkGerado} target="_blank" rel="noreferrer" className="mc-checkout-btn">
+                  Abrir link de pagamento ↗
+                </a>
+                <button className="mc-modal-fechar-link" onClick={() => setCheckout(null)}>Fechar</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
