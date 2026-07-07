@@ -52,7 +52,6 @@ export default function MinhaConta() {
   const proxima = pendentes[0] || null;
   const diasProxima = proxima ? diasAte(proxima.vencimento) : null;
   const statusProxima = diasProxima === null ? null : diasProxima < 0 ? "urgente" : diasProxima <= 5 ? "aviso" : "ok";
-  const pagas = cobrancas.filter(c => c.status === "pago");
   const atrasadas = cobrancas.filter(c => c.status === "pendente" && c.vencimento && new Date(c.vencimento + "T23:59") < new Date());
 
   const handleAssinar = (p) => {
