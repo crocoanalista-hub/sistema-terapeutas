@@ -132,6 +132,7 @@ const Documentos = () => {
     tipoDoc: "contrato",
     pacienteId: "",
   });
+  const [linkGerado, setLinkGerado] = useState(null); // { link, nomePaciente, telefone, labelDoc }
   const [modalVerAssin, setModalVerAssin] = useState(null); // { base64, nomePaciente }
 
   const [dados, setDados] = useState({
@@ -499,18 +500,15 @@ const Documentos = () => {
       });
       const link = `${window.location.origin}/${slug}/assinar/${docId}`;
       setModalSolicitar(false);
-      setFormAssin({ nomePaciente: "", telefone: "", tipoDoc: "contrato", pacienteId: "" });
       await carregarAssinaturas();
-      // Sempre copia o link, além de oferecer envio via WhatsApp se tiver telefone
-      await navigator.clipboard.writeText(link).catch(() => {});
-      if (formAssin.telefone.trim()) {
-        const tel = formAssin.telefone.replace(/\D/g, "");
-        const msg = encodeURIComponent(`Olá, ${formAssin.nomePaciente.trim()}! Segue o link para assinar o documento "${labelDoc}": ${link}`);
-        window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
-        alert("Link também copiado para a área de transferência.");
-      } else {
-        alert(`Link gerado e copiado para a área de transferência:\n${link}`);
-      }
+      // Não abre nada sozinho — mostra o link com botões para copiar ou enviar por WhatsApp
+      setLinkGerado({
+        link,
+        nomePaciente: formAssin.nomePaciente.trim(),
+        telefone: formAssin.telefone.trim(),
+        labelDoc,
+      });
+      setFormAssin({ nomePaciente: "", telefone: "", tipoDoc: "contrato", pacienteId: "" });
     } catch (e) {
       alert("Erro ao criar o documento: " + e.message);
     } finally {
@@ -522,6 +520,17 @@ const Documentos = () => {
     const link = `${window.location.origin}/${slug}/assinar/${docId}`;
     navigator.clipboard.writeText(link).catch(() => {});
     alert("Link copiado!");
+  };
+
+  const copiarLinkGerado = () => {
+    navigator.clipboard.writeText(linkGerado.link).catch(() => {});
+    alert("Link copiado!");
+  };
+
+  const enviarLinkGeradoWhatsapp = () => {
+    const tel = linkGerado.telefone.replace(/\D/g, "");
+    const msg = encodeURIComponent(`Olá, ${linkGerado.nomePaciente}! Segue o link para assinar o documento "${linkGerado.labelDoc}": ${linkGerado.link}`);
+    window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
   };
 
   // ─── Render aba Assinaturas ──────────────────────────────
@@ -628,6 +637,33 @@ const Documentos = () => {
               <button className="btn-criar" onClick={handleCriarAssinatura} disabled={criando}>
                 {criando ? "Gerando..." : "Gerar link"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal link gerado — nada é enviado sozinho, o usuário escolhe a ação */}
+      {linkGerado && (
+        <div className="modal-assin-overlay" onClick={() => setLinkGerado(null)}>
+          <div className="modal-assin" onClick={e => e.stopPropagation()}>
+            <div className="modal-assin-header">
+              <h3>Link gerado!</h3>
+              <button className="modal-assin-fechar" onClick={() => setLinkGerado(null)}>✕</button>
+            </div>
+            <div className="modal-assin-body">
+              <p style={{ margin: "0 0 12px", fontSize: 13, color: "#5f6368" }}>
+                Documento <strong>{linkGerado.labelDoc}</strong> para <strong>{linkGerado.nomePaciente}</strong>.
+              </p>
+              <div className="modal-assin-grupo">
+                <label>Link para assinatura</label>
+                <input readOnly value={linkGerado.link} onFocus={e => e.target.select()} />
+              </div>
+            </div>
+            <div className="modal-assin-footer">
+              <button className="btn-cancelar" onClick={copiarLinkGerado}>📋 Copiar link</button>
+              {linkGerado.telefone && (
+                <button className="btn-criar" onClick={enviarLinkGeradoWhatsapp}>💬 Enviar por WhatsApp</button>
+              )}
             </div>
           </div>
         </div>
