@@ -501,13 +501,14 @@ const Documentos = () => {
       setModalSolicitar(false);
       setFormAssin({ nomePaciente: "", telefone: "", tipoDoc: "contrato", pacienteId: "" });
       await carregarAssinaturas();
-      // Oferecer envio via WhatsApp se tiver telefone
+      // Sempre copia o link, além de oferecer envio via WhatsApp se tiver telefone
+      await navigator.clipboard.writeText(link).catch(() => {});
       if (formAssin.telefone.trim()) {
         const tel = formAssin.telefone.replace(/\D/g, "");
         const msg = encodeURIComponent(`Olá, ${formAssin.nomePaciente.trim()}! Segue o link para assinar o documento "${labelDoc}": ${link}`);
         window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
+        alert("Link também copiado para a área de transferência.");
       } else {
-        navigator.clipboard.writeText(link).catch(() => {});
         alert(`Link gerado e copiado para a área de transferência:\n${link}`);
       }
     } catch (e) {
