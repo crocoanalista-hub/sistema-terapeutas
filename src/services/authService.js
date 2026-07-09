@@ -5,7 +5,7 @@ import {
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, deleteDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 
 // Registrar novo terapeuta (ou profissional, se houver convite)
 export const registrarTerapeuta = async (email, senha, nome, slug = "") => {
@@ -65,10 +65,26 @@ export const registrarTerapeuta = async (email, senha, nome, slug = "") => {
   }
 };
 
+// Registra o último acesso do terapeuta/profissional (usado no Admin > Atividade)
+const registrarUltimoAcesso = async (uid) => {
+  const terapeutaRef = doc(db, "terapeutas", uid);
+  const terapeutaSnap = await getDoc(terapeutaRef);
+  if (terapeutaSnap.exists()) {
+    await setDoc(terapeutaRef, { ultimoAcesso: serverTimestamp() }, { merge: true });
+    return;
+  }
+  const profRef = doc(db, "profissionais", uid);
+  const profSnap = await getDoc(profRef);
+  if (profSnap.exists()) {
+    await setDoc(profRef, { ultimoAcesso: serverTimestamp() }, { merge: true });
+  }
+};
+
 // Login
 export const login = async (email, senha) => {
   try {
     const resultado = await signInWithEmailAndPassword(auth, email, senha);
+    registrarUltimoAcesso(resultado.user.uid).catch(() => {});
     return resultado.user;
   } catch (erro) {
     throw new Error(erro.message);

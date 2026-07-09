@@ -31,6 +31,27 @@ const formatarData = (data) => {
   return d.toLocaleDateString("pt-BR");
 };
 
+// ── Atividade / inatividade dos terapeutas ───────────────────
+const NIVEIS_INATIVIDADE = [
+  { id: 0, nome: "Ativo",               emoji: "✓", cor: "#34a853" },
+  { id: 1, nome: "1-2 semanas inativo", emoji: "⏱", cor: "#f9ab00" },
+  { id: 2, nome: "2-3 semanas inativo", emoji: "⚠", cor: "#ff8f00" },
+  { id: 3, nome: "3-4 semanas inativo", emoji: "!", cor: "#ea4335" },
+  { id: 4, nome: "Mais de 4 semanas",   emoji: "✕", cor: "#8c1d18" },
+  { id: 5, nome: "Sem dados",           emoji: "?", cor: "#5f6368" },
+];
+
+const calcularNivelInatividade = (ultimoAcesso) => {
+  if (!ultimoAcesso) return { ...NIVEIS_INATIVIDADE[5], diasInativo: null };
+  const d = ultimoAcesso?.toDate ? ultimoAcesso.toDate() : new Date(ultimoAcesso);
+  const diasInativo = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if (diasInativo < 7)  return { ...NIVEIS_INATIVIDADE[0], diasInativo };
+  if (diasInativo < 14) return { ...NIVEIS_INATIVIDADE[1], diasInativo };
+  if (diasInativo < 21) return { ...NIVEIS_INATIVIDADE[2], diasInativo };
+  if (diasInativo < 28) return { ...NIVEIS_INATIVIDADE[3], diasInativo };
+  return { ...NIVEIS_INATIVIDADE[4], diasInativo };
+};
+
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -42,6 +63,7 @@ export default function Admin() {
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState("");
   const [filtroPlano, setFiltroPlano] = useState("todos");
+  const [filtroInatividade, setFiltroInatividade] = useState(null);
   const [expandido, setExpandido] = useState(null);
   const [salvando, setSalvando] = useState(null);
   const [seedando, setSeedando] = useState(false);
@@ -354,6 +376,16 @@ export default function Admin() {
     }).length,
   };
 
+  // ── Atividade / inatividade ──
+  const terapeutasComNivel = terapeutas.map(t => ({ ...t, inatividade: calcularNivelInatividade(t.ultimoAcesso) }));
+  const distribuicaoInatividade = NIVEIS_INATIVIDADE.reduce((acc, n) => {
+    acc[n.id] = terapeutasComNivel.filter(t => t.inatividade.id === n.id).length;
+    return acc;
+  }, {});
+  const terapeutasFiltradosInatividade = filtroInatividade !== null
+    ? terapeutasComNivel.filter(t => t.inatividade.id === filtroInatividade)
+    : terapeutasComNivel;
+
   if (authLoading || carregando) return <div className="admin-loading">Carregando painel admin...</div>;
   if (!user || !isAdmin(user.email)) return null;
 
@@ -409,6 +441,9 @@ export default function Admin() {
         </button>
         <button className={`admin-aba${abaAtiva === "financeiro" ? " ativa" : ""}`} onClick={() => setAbaAtiva("financeiro")}>
           💳 Financeiro
+        </button>
+        <button className={`admin-aba${abaAtiva === "atividade" ? " ativa" : ""}`} onClick={() => setAbaAtiva("atividade")}>
+          📊 Atividade
         </button>
         <button className={`admin-aba${abaAtiva === "config" ? " ativa" : ""}`} onClick={() => setAbaAtiva("config")}>
           ⚙️ Configurações
@@ -603,6 +638,67 @@ export default function Admin() {
         })}
       </div>
       </> /* fim aba contas */}
+
+      {/* ─── ABA ATIVIDADE ─── */}
+      {abaAtiva === "atividade" && (
+        <>
+          <p className="admin-sub" style={{ margin: "-8px 0 16px" }}>
+            Monitore o engajamento dos terapeutas e detecte risco de abandono, com base no último acesso.
+          </p>
+
+          <div className="admin-stats">
+            {NIVEIS_INATIVIDADE.map(n => {
+              const qtd = distribuicaoInatividade[n.id] || 0;
+              const total = terapeutasComNivel.length;
+              const pct = total > 0 ? Math.round((qtd / total) * 100) : 0;
+              const selecionado = filtroInatividade === n.id;
+              return (
+                <div
+                  key={n.id}
+                  className="admin-stat-card"
+                  style={{
+                    borderTopColor: n.cor,
+                    cursor: "pointer",
+                    background: selecionado ? n.cor + "12" : undefined,
+                    boxShadow: selecionado ? `0 0 0 2px ${n.cor}55` : undefined,
+                  }}
+                  onClick={() => setFiltroInatividade(selecionado ? null : n.id)}
+                >
+                  <span className="admin-stat-valor" style={{ color: n.cor }}>{qtd}</span>
+                  <span className="admin-stat-label">{n.emoji} {n.nome}</span>
+                  <span style={{ fontSize: 11, color: "#9aa0a6" }}>{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="admin-lista">
+            {terapeutasFiltradosInatividade.length === 0 && <p className="admin-vazio">Nenhum terapeuta nesta categoria.</p>}
+            {terapeutasFiltradosInatividade.map(t => (
+              <div key={t.id} className="admin-card">
+                <div className="admin-card-main">
+                  <div className="admin-card-info">
+                    <span className="admin-card-nome">{t.nome || "Sem nome"}</span>
+                    <span className="admin-card-email">{t.email}</span>
+                    {t.slug && <span className="admin-card-slug">/{t.slug}</span>}
+                  </div>
+                  <div className="admin-card-meta">
+                    <span
+                      className="admin-badge"
+                      style={{ background: t.inatividade.cor + "1a", color: t.inatividade.cor, border: `1px solid ${t.inatividade.cor}` }}
+                    >
+                      {t.inatividade.emoji} {t.inatividade.nome}
+                    </span>
+                    <span className="admin-card-data">
+                      {t.inatividade.diasInativo === null ? "Nunca acessou" : `${t.inatividade.diasInativo}d inativo`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* ─── ABA FINANCEIRO ─── */}
       {abaAtiva === "financeiro" && (
