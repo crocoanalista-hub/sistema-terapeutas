@@ -126,6 +126,17 @@ const CalendarioAgenda = () => {
 
   const [vista, setVista] = useState("dia");
   const [dataRef, setDataRef] = useState(new Date());
+
+  // Navega para o período anterior/seguinte (dia, semana ou mês, conforme a vista atual)
+  const navegarPeriodo = (delta) => {
+    setDataRef(d => {
+      const n = new Date(d);
+      if (vista === "semana") n.setDate(n.getDate() + 7 * delta);
+      else if (vista === "dia") n.setDate(n.getDate() + delta);
+      else n.setMonth(n.getMonth() + delta);
+      return n;
+    });
+  };
   const [agendamentos, setAgendamentos] = useState([]);
   const [mapaPac, setMapaPac] = useState({});
   const [salas, setSalas] = useState([]);
@@ -172,7 +183,10 @@ const CalendarioAgenda = () => {
     return () => clearInterval(t);
   }, []);
 
-  // ─── Drag-to-create: listeners globais (mouse + touch) ──────
+  // ─── Drag-to-create (vertical) + swipe de navegação (horizontal, touch) ──
+  // No touch, o gesto começa "indefinido": só decidimos se é arraste (criar
+  // sessão) ou swipe (trocar de dia/semana) quando o movimento é claro o
+  // suficiente pra saber se foi mais horizontal ou mais vertical.
   useEffect(() => {
     const getY = (e, colEl) => {
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -182,6 +196,26 @@ const CalendarioAgenda = () => {
 
     const onMove = (e) => {
       if (!dragRef.current) return;
+      const isTouch = !!e.touches;
+      const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+
+      if (isTouch && dragRef.current.modo == null) {
+        const dx = clientX - dragRef.current.startX;
+        const dy = getY(e, dragRef.current.colEl) - dragRef.current.startY;
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return; // movimento pequeno demais pra decidir ainda
+        if (Math.abs(dx) > Math.abs(dy)) {
+          dragRef.current.modo = "swipe";
+        } else {
+          dragRef.current.modo = "drag";
+          setDrag({ ds: dragRef.current.ds, startY: dragRef.current.startY, endY: dragRef.current.startY });
+        }
+      }
+
+      if (dragRef.current.modo === "swipe") {
+        dragRef.current.endX = clientX;
+        return;
+      }
+
       if (e.cancelable) e.preventDefault();
       const y = getY(e, dragRef.current.colEl);
       dragRef.current.endY = y;
@@ -190,9 +224,16 @@ const CalendarioAgenda = () => {
 
     const onEnd = () => {
       if (!dragRef.current) return;
-      const { ds, startY, endY } = dragRef.current;
+      const { modo, ds, startY, endY, startX, endX } = dragRef.current;
       dragRef.current = null;
       setDrag(null);
+
+      if (modo === "swipe") {
+        const dx = (endX ?? startX) - startX;
+        if (Math.abs(dx) > 50) navegarPeriodo(dx > 0 ? -1 : 1);
+        return;
+      }
+      if (modo !== "drag") return;
       if (Math.abs(endY - startY) < 15) return;
       const topY    = Math.min(startY, endY);
       const bottomY = Math.max(startY, endY);
@@ -212,7 +253,8 @@ const CalendarioAgenda = () => {
       window.removeEventListener("touchmove", onMove);
       window.removeEventListener("touchend", onEnd);
     };
-  }, [navigate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, vista]);
 
   useEffect(() => {
     if (workspaceId) carregar();
@@ -547,14 +589,13 @@ const CalendarioAgenda = () => {
                     e.preventDefault();
                     const rect = e.currentTarget.getBoundingClientRect();
                     const y = Math.max(0, e.clientY - rect.top);
-                    dragRef.current = { ds, startY: y, endY: y, colEl: e.currentTarget };
+                    dragRef.current = { ds, startY: y, endY: y, colEl: e.currentTarget, modo: "drag" };
                     setDrag({ ds, startY: y, endY: y });
                   }}
                   onTouchStart={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     const y = Math.max(0, e.touches[0].clientY - rect.top);
-                    dragRef.current = { ds, startY: y, endY: y, colEl: e.currentTarget };
-                    setDrag({ ds, startY: y, endY: y });
+                    dragRef.current = { ds, startX: e.touches[0].clientX, startY: y, endY: y, colEl: e.currentTarget, modo: null };
                   }}
                   onClick={(e) => {
                     if (dragRef.current) return;
@@ -689,14 +730,13 @@ const CalendarioAgenda = () => {
                 e.preventDefault();
                 const rect = e.currentTarget.getBoundingClientRect();
                 const y = Math.max(0, e.clientY - rect.top);
-                dragRef.current = { ds, startY: y, endY: y, colEl: e.currentTarget };
+                dragRef.current = { ds, startY: y, endY: y, colEl: e.currentTarget, modo: "drag" };
                 setDrag({ ds, startY: y, endY: y });
               }}
               onTouchStart={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const y = Math.max(0, e.touches[0].clientY - rect.top);
-                dragRef.current = { ds, startY: y, endY: y, colEl: e.currentTarget };
-                setDrag({ ds, startY: y, endY: y });
+                dragRef.current = { ds, startX: e.touches[0].clientX, startY: y, endY: y, colEl: e.currentTarget, modo: null };
               }}
               onClick={() => { if (!dragRef.current) navigate(`/agenda/marcar?data=${ds}`); }}
             >
@@ -867,20 +907,8 @@ const CalendarioAgenda = () => {
         <div className="gc-toolbar-left">
           <button className="gc-btn-hoje" onClick={() => setDataRef(new Date())}>Hoje</button>
           <div className="gc-nav-group">
-            <button className="gc-nav-btn" onClick={() => setDataRef(d => {
-              const n = new Date(d);
-              if (vista === "semana") n.setDate(n.getDate() - 7);
-              else if (vista === "dia") n.setDate(n.getDate() - 1);
-              else n.setMonth(n.getMonth() - 1);
-              return n;
-            })}>‹</button>
-            <button className="gc-nav-btn" onClick={() => setDataRef(d => {
-              const n = new Date(d);
-              if (vista === "semana") n.setDate(n.getDate() + 7);
-              else if (vista === "dia") n.setDate(n.getDate() + 1);
-              else n.setMonth(n.getMonth() + 1);
-              return n;
-            })}>›</button>
+            <button className="gc-nav-btn" onClick={() => navegarPeriodo(-1)}>‹</button>
+            <button className="gc-nav-btn" onClick={() => navegarPeriodo(1)}>›</button>
           </div>
           <h2 className="gc-periodo">{labelPeriodo}</h2>
         </div>
