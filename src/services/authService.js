@@ -4,6 +4,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 
@@ -98,6 +99,11 @@ export const logout = async () => {
   } catch (erro) {
     throw new Error(erro.message);
   }
+};
+
+// Redefinir senha por e-mail
+export const redefinirSenha = async (email) => {
+  await sendPasswordResetEmail(auth, email);
 };
 
 // Monitorar estado de autenticação

@@ -4,6 +4,7 @@ import { useAuth } from "./hooks/useAuth";
 
 import Login from "./pages/Login";
 import Registro from "./pages/Registro";
+import EsqueciSenha from "./pages/EsqueciSenha";
 import WorkspaceEntrada from "./pages/WorkspaceEntrada";
 import Admin from "./pages/Admin/Admin";
 import Layout from "./components/Layout";
@@ -47,6 +48,7 @@ function App() {
         {/* Públicas */}
         <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
         <Route path="/registro" element={user ? <Navigate to="/dashboard" /> : <Registro />} />
+        <Route path="/esqueci-senha" element={user ? <Navigate to="/dashboard" /> : <EsqueciSenha />} />
 
         {/* Dashboard */}
         <Route path="/dashboard" element={<RotaProtegida element={<Dashboard />} loading={loading} user={user} />} />

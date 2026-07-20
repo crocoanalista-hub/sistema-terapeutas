@@ -74,6 +74,9 @@ const Login = () => {
 
         <div className="login-footer">
           <p>
+            <Link to="/esqueci-senha">Esqueci minha senha</Link>
+          </p>
+          <p>
             Não tem conta? <Link to="/registro">Registre-se aqui</Link>
           </p>
         </div>
