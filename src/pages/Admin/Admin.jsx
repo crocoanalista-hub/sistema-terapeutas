@@ -9,6 +9,7 @@ import {
 import { seedDadosDemo } from "../../services/seedService";
 import { criarCobrancaAsaas } from "../../services/asaasService";
 import { listarPlanos, salvarPlano, excluirPlano, setMembroPioneiro } from "../../services/planosService";
+import { salvarConfiguracoes } from "../../services/configuracoesService";
 import "../../styles/admin.css";
 
 const ADMIN_EMAILS = [
@@ -174,6 +175,12 @@ export default function Admin() {
     const novo = !t.membroPioneiro;
     await setMembroPioneiro(t.id, novo);
     setTerapeutas(ts => ts.map(x => x.id === t.id ? { ...x, membroPioneiro: novo } : x));
+  };
+
+  const handleTogglePaginaProfissional = async (t) => {
+    const novo = !t.paginaProfissional;
+    await salvarConfiguracoes(t.id, { paginaProfissional: novo });
+    setTerapeutas(ts => ts.map(x => x.id === t.id ? { ...x, paginaProfissional: novo } : x));
   };
 
   const handleSalvarConfigAsaas = async (e) => {
@@ -591,6 +598,21 @@ export default function Admin() {
                     {t.membroPioneiro && (
                       <span style={{ fontSize: 12, color: "#f59e0b", marginLeft: 10 }}>
                         Desconto pioneiro aplicado nas cobranças
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Página Profissional */}
+                  <div style={{ marginBottom: 12 }}>
+                    <button
+                      onClick={() => handleTogglePaginaProfissional(t)}
+                      className={`admin-btn ${t.paginaProfissional ? "admin-btn--pioneiro-ativo" : "admin-btn--pioneiro"}`}
+                    >
+                      {t.paginaProfissional ? "🌐 Página Profissional (ativa)" : "🌐 Liberar Página Profissional"}
+                    </button>
+                    {t.paginaProfissional && (
+                      <span style={{ fontSize: 12, color: "#7c5c3e", marginLeft: 10 }}>
+                        Landing page pública ativa no slug
                       </span>
                     )}
                   </div>

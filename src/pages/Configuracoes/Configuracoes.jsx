@@ -1056,29 +1056,30 @@ export default function Configuracoes() {
       {/* ═══ ABA PÁGINA PÚBLICA ═══ */}
       {aba === "pagina" && (
         <div className="cfg-conteudo">
-          {!pag.paginaProfissional && (
+          {!pag.paginaProfissional ? (
             <div className="cfg-card" style={{ background: "#fffbeb", borderColor: "#f9ab00" }}>
               <h3 className="cfg-card-titulo">🌟 Página Profissional</h3>
               <p className="cfg-descricao">
-                Sua página pública em <strong>novu.institutocroco.com.br/{"{seu-slug}"}</strong> atualmente só mostra o login.<br />
-                Ative a <strong>Página Profissional</strong> para exibir uma landing page completa com foto, bio, especialidades, depoimentos e botão WhatsApp.
+                Sua página pública em <strong>novu.institutocroco.com.br/{"{seu-slug}"}</strong> ainda não está ativa.<br />
+                A <strong>Página Profissional</strong> é liberada pelo Instituto Croco. Entre em contato para ativar.
               </p>
-              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 600 }}>
-                <input type="checkbox" checked={pag.paginaProfissional} onChange={e => setPag(p => ({ ...p, paginaProfissional: e.target.checked }))} />
-                Ativar Página Profissional
-              </label>
+              <a
+                href="https://wa.me/5511999999999?text=Quero+ativar+minha+Página+Profissional"
+                target="_blank"
+                rel="noreferrer"
+                style={{ display: "inline-block", background: "#25d366", color: "#fff", padding: "8px 18px", borderRadius: 8, fontWeight: 600, fontSize: 13, textDecoration: "none" }}
+              >
+                💬 Solicitar ativação
+              </a>
+            </div>
+          ) : (
+            <div className="cfg-card" style={{ background: "#e6f4ea", borderColor: "#34a853" }}>
+              <p style={{ margin: 0, fontWeight: 600, color: "#137333" }}>✅ Página Profissional ativa! Preencha os campos abaixo para personalizar.</p>
             </div>
           )}
 
-          {pag.paginaProfissional && (
-            <div className="cfg-card" style={{ background: "#e6f4ea", borderColor: "#34a853" }}>
-              <p style={{ margin: 0, fontWeight: 600, color: "#137333" }}>✅ Página Profissional ativa! Preencha os campos abaixo para personalizar.</p>
-              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginTop: 10, fontSize: 13, color: "#5f6368" }}>
-                <input type="checkbox" checked={pag.paginaProfissional} onChange={e => setPag(p => ({ ...p, paginaProfissional: e.target.checked }))} />
-                Desativar página
-              </label>
-            </div>
-          )}
+          {/* Campos de edição — só visíveis quando ativo */}
+          {pag.paginaProfissional && (<>
 
           {/* Informações principais */}
           <div className="cfg-card">
@@ -1235,6 +1236,8 @@ export default function Configuracoes() {
           <button className="cfg-btn-primary" onClick={handleSalvarPagina} disabled={salvandoPag} style={{ alignSelf: "flex-start" }}>
             {salvandoPag ? "Salvando…" : "💾 Salvar página pública"}
           </button>
+
+          </>)}
         </div>
       )}
     </div>

@@ -165,11 +165,11 @@ export default function MinhaConta() {
             <div className="mc-proxima-titulo" style={{ color: "#4a2c1a" }}>Sua Página Profissional</div>
             <div className="mc-proxima-data">
               Tenha uma landing page completa com bio, especialidades, depoimentos e botão WhatsApp — igual a sites de R$ 2.000+.
-              Ative agora em <strong>Configurações → Página Pública</strong>.
+              Entre em contato para liberar o acesso.
             </div>
           </div>
-          <a href="/configuracoes" className="mc-btn-pagar" style={{ background: "#7c5c3e", whiteSpace: "nowrap" }}>
-            ✨ Ativar grátis
+          <a href="https://wa.me/5511999999999?text=Quero+ativar+minha+Página+Profissional" target="_blank" rel="noreferrer" className="mc-btn-pagar" style={{ background: "#7c5c3e", whiteSpace: "nowrap" }}>
+            ✨ Quero essa página
           </a>
         </div>
       )}
