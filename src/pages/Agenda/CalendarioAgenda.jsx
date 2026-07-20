@@ -155,6 +155,11 @@ const CalendarioAgenda = () => {
   const [drag, setDrag] = useState(null); // { ds, startY, endY }
   const dragRef = useRef(null);
 
+  // Drag-to-reschedule (arrastar um evento existente pra cima/baixo)
+  const [arrastandoEvento, setArrastandoEvento] = useState(null); // { id, deltaY }
+  const arrastarEventoRef = useRef(null);
+  const ultimoArrasteEventoRef = useRef(false);
+
   const [modalReagendar, setModalReagendar] = useState(null);
   const [modalCancelar, setModalCancelar] = useState(null);
   const [modalConcluir, setModalConcluir] = useState(null);
@@ -255,6 +260,51 @@ const CalendarioAgenda = () => {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate, vista]);
+
+  // ─── Drag-to-reschedule: arrastar um evento existente pra cima/baixo ──
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!arrastarEventoRef.current) return;
+      if (e.cancelable) e.preventDefault();
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const deltaY = clientY - arrastarEventoRef.current.startClientY;
+      arrastarEventoRef.current.deltaY = deltaY;
+      setArrastandoEvento({ id: arrastarEventoRef.current.agend.id, deltaY });
+    };
+
+    const onEnd = async () => {
+      if (!arrastarEventoRef.current) return;
+      const { agend, ds, deltaY } = arrastarEventoRef.current;
+      arrastarEventoRef.current = null;
+      setArrastandoEvento(null);
+
+      if (Math.abs(deltaY) < 8) return; // moveu de menos, trata como clique normal
+
+      ultimoArrasteEventoRef.current = true;
+      const topOriginal = horaParaPx(agend.hora);
+      const novoTop = Math.max(0, Math.min(topOriginal + deltaY, TOTAL_HEIGHT - 15));
+      const novaHoraCalc = pxParaHora(novoTop);
+      if (novaHoraCalc === agend.hora) return;
+      try {
+        await reagendarSessao(agend.id, ds, novaHoraCalc);
+        await carregar();
+      } catch (err) {
+        alert("Erro ao reagendar: " + err.message);
+      }
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (workspaceId) carregar();
@@ -500,7 +550,7 @@ const CalendarioAgenda = () => {
   };
 
   // ─── Render do evento ─────────────────────────────────────
-  const renderEvento = (agend, extra = {}) => {
+  const renderEvento = (agend, extra = {}, ds = agend.data) => {
     const cor = CORES_STATUS[agend.status] || CORES_STATUS.confirmado;
     const pac = mapaPac[agend.pacienteId];
     // Fundo = cor do profissional; borda esquerda fina = cor do status
@@ -511,6 +561,7 @@ const CalendarioAgenda = () => {
       ? profCor + "22"   // cor do profissional bem clara (14% opacidade)
       : cor.bg;
     const borderColor = profCor ? profCor : cor.border;
+    const arrastandoEsse = arrastandoEvento?.id === agend.id;
 
     return (
       <div
@@ -522,9 +573,29 @@ const CalendarioAgenda = () => {
           background: bgColor,
           borderLeftColor: borderColor,
           color: "#1a2535",
+          ...(arrastandoEsse ? {
+            transform: `translateY(${arrastandoEvento.deltaY}px)`,
+            zIndex: 50,
+            opacity: 0.9,
+            boxShadow: "0 4px 14px rgba(0,0,0,.25)",
+            cursor: "grabbing",
+          } : {}),
           ...extra.style,
         }}
-        onClick={(e) => { e.stopPropagation(); setEventoAtivo(agend); }}
+        onMouseDown={(e) => {
+          if (e.button !== 0) return;
+          e.stopPropagation();
+          arrastarEventoRef.current = { agend, ds, startClientY: e.clientY, deltaY: 0 };
+        }}
+        onTouchStart={(e) => {
+          e.stopPropagation();
+          arrastarEventoRef.current = { agend, ds, startClientY: e.touches[0].clientY, deltaY: 0 };
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (ultimoArrasteEventoRef.current) { ultimoArrasteEventoRef.current = false; return; }
+          setEventoAtivo(agend);
+        }}
       >
         {extra.curto
           ? <span className="gc-event-curto">{agend.hora} {pac?.nome}</span>
@@ -611,7 +682,7 @@ const CalendarioAgenda = () => {
                     const top = horaParaPx(agend.hora);
                     const height = Math.max(((agend.duracao || 60) / 60) * HOUR_HEIGHT - 2, 20);
                     const curto = height < 48;
-                    return renderEvento(agend, { top, height, curto });
+                    return renderEvento(agend, { top, height, curto }, ds);
                   })}
                   {isDragging && (() => {
                     const topY    = Math.min(drag.startY, drag.endY);
@@ -749,7 +820,7 @@ const CalendarioAgenda = () => {
                 const top = horaParaPx(agend.hora);
                 const height = Math.max(((agend.duracao || 60) / 60) * HOUR_HEIGHT - 2, 20);
                 const curto = height < 48;
-                return renderEvento(agend, { top, height, curto });
+                return renderEvento(agend, { top, height, curto }, ds);
               })}
               {drag && drag.ds === ds && (() => {
                 const topY    = Math.min(drag.startY, drag.endY);
