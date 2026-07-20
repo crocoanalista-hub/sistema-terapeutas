@@ -61,6 +61,7 @@ export default function Admin() {
   const [terapeutas, setTerapeutas] = useState([]);
   const [usages, setUsages] = useState({});
   const [carregando, setCarregando] = useState(true);
+  const [erroCarregar, setErroCarregar] = useState(null);
   const [busca, setBusca] = useState("");
   const [filtroPlano, setFiltroPlano] = useState("todos");
   const [filtroInatividade, setFiltroInatividade] = useState(null);
@@ -111,6 +112,7 @@ export default function Admin() {
 
   const carregar = useCallback(async () => {
     setCarregando(true);
+    setErroCarregar(null);
     try {
       const lista = await listarTodosTerapeutas();
       setTerapeutas(lista);
@@ -122,7 +124,10 @@ export default function Admin() {
         })
       );
       setUsages(Object.fromEntries(entries));
-    } catch {}
+    } catch (e) {
+      console.error("[Admin] Erro ao carregar terapeutas:", e);
+      setErroCarregar(e.message || String(e));
+    }
     setCarregando(false);
   }, []);
 
@@ -426,6 +431,13 @@ export default function Admin() {
           </button>
         </div>
       </div>
+
+      {erroCarregar && (
+        <div className="admin-seed-resultado" style={{ background: "#fce8e6", color: "#7a1c14", border: "1px solid #f5b7b1" }}>
+          ⚠️ Erro ao carregar as contas: <strong>{erroCarregar}</strong>
+          <button onClick={() => setErroCarregar(null)}>✕</button>
+        </div>
+      )}
 
       {seedResultado && (
         <div className="admin-seed-resultado">
