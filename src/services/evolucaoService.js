@@ -1,8 +1,23 @@
-import { db } from "./firebaseConfig";
+import { db, storage } from "./firebaseConfig";
 import {
   collection, addDoc, updateDoc, deleteDoc,
   doc, getDocs, query, where,
 } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+
+export const uploadFotoEvolucao = async (terapeutaId, pacienteId, arquivo) => {
+  const ext = arquivo.name.split(".").pop();
+  const nome = `evolucoes/${terapeutaId}/${pacienteId}/${Date.now()}.${ext}`;
+  const storageRef = ref(storage, nome);
+  await uploadBytes(storageRef, arquivo);
+  return await getDownloadURL(storageRef);
+};
+
+export const deletarFotoEvolucao = async (url) => {
+  try {
+    await deleteObject(ref(storage, url));
+  } catch {}
+};
 
 export const adicionarEvolucao = async (terapeutaId, pacienteId, dados) => {
   const payload = {
@@ -19,6 +34,8 @@ export const adicionarEvolucao = async (terapeutaId, pacienteId, dados) => {
   if (dados.queixa)      payload.queixa      = dados.queixa;
   if (dados.intervencao) payload.intervencao = dados.intervencao;
   if (dados.plano)       payload.plano       = dados.plano;
+
+  if (dados.fotoUrl) payload.fotoUrl = dados.fotoUrl;
 
   const docRef = await addDoc(collection(db, "evolucoes"), payload);
   return docRef.id;
@@ -48,6 +65,7 @@ export const atualizarEvolucao = async (id, dados) => {
   if ("queixa"      in dados) payload.queixa      = dados.queixa      || "";
   if ("intervencao" in dados) payload.intervencao = dados.intervencao || "";
   if ("plano"       in dados) payload.plano       = dados.plano       || "";
+  if ("fotoUrl"     in dados) payload.fotoUrl     = dados.fotoUrl     || null;
 
   await updateDoc(doc(db, "evolucoes", id), payload);
 };

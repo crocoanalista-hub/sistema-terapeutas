@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   listarEvolucoes,
   adicionarEvolucao,
   atualizarEvolucao,
   deletarEvolucao,
+  uploadFotoEvolucao,
 } from "../../services/evolucaoService";
 import { buscarPaciente } from "../../services/pacientesService";
 import { useAuth } from "../../hooks/useAuth";
@@ -33,6 +34,7 @@ const DADOS_INICIAIS = {
   conteudo: "",
   intervencao: "",
   plano: "",
+  fotoUrl: null,
 };
 
 /* ------------------------------------------------------------------ */
@@ -110,7 +112,6 @@ const EvolucaoCard = ({ evol, onEditar, onDeletar }) => {
       </div>
 
       {ehLegado ? (
-        /* Registro antigo — exibe conteudo direto */
         <div className="prontuario-conteudo-simples">{evol.conteudo}</div>
       ) : (
         <div className="prontuario-sections">
@@ -118,6 +119,15 @@ const EvolucaoCard = ({ evol, onEditar, onDeletar }) => {
           <Secao titulo="Evolução / Observações clínicas" icone="📝" conteudo={evol.conteudo} />
           <Secao titulo="Intervenções realizadas" icone="🛠" conteudo={evol.intervencao} />
           <Secao titulo="Plano para próxima sessão" icone="🎯" conteudo={evol.plano} />
+        </div>
+      )}
+
+      {evol.fotoUrl && (
+        <div className="prontuario-foto-wrap">
+          <div className="prontuario-foto-label">📷 Anotações da sessão</div>
+          <a href={evol.fotoUrl} target="_blank" rel="noreferrer">
+            <img src={evol.fotoUrl} alt="Anotações da sessão" className="prontuario-foto" />
+          </a>
         </div>
       )}
     </div>
@@ -141,6 +151,9 @@ const EvolucaoPaciente = () => {
   const [salvando, setSalvando]     = useState(false);
   const [erro, setErro]             = useState("");
   const [dados, setDados]           = useState({ ...DADOS_INICIAIS });
+  const [fotoArquivo, setFotoArquivo] = useState(null);
+  const [fotoPreview, setFotoPreview] = useState(null);
+  const fotoInputRef = useRef(null);
 
   useEffect(() => {
     if (workspaceId) carregar();
@@ -167,6 +180,8 @@ const EvolucaoPaciente = () => {
     setDados({ ...DADOS_INICIAIS, data: new Date().toISOString().slice(0, 10) });
     setEditando(null);
     setErro("");
+    setFotoArquivo(null);
+    setFotoPreview(null);
   };
 
   const abrirNovaEvolucao = () => {
@@ -184,7 +199,10 @@ const EvolucaoPaciente = () => {
       conteudo:    evol.conteudo    || "",
       intervencao: evol.intervencao || "",
       plano:       evol.plano       || "",
+      fotoUrl:     evol.fotoUrl     || null,
     });
+    setFotoArquivo(null);
+    setFotoPreview(evol.fotoUrl || null);
     setMostrarForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -199,6 +217,20 @@ const EvolucaoPaciente = () => {
     }
   };
 
+  const handleFotoChange = (e) => {
+    const arquivo = e.target.files[0];
+    if (!arquivo) return;
+    setFotoArquivo(arquivo);
+    setFotoPreview(URL.createObjectURL(arquivo));
+  };
+
+  const removerFoto = () => {
+    setFotoArquivo(null);
+    setFotoPreview(null);
+    setDados(prev => ({ ...prev, fotoUrl: null }));
+    if (fotoInputRef.current) fotoInputRef.current.value = "";
+  };
+
   const handleSalvar = async (e) => {
     e.preventDefault();
     if (!dados.conteudo.trim() && !dados.queixa.trim()) {
@@ -207,10 +239,15 @@ const EvolucaoPaciente = () => {
     }
     setSalvando(true);
     try {
+      let fotoUrl = dados.fotoUrl || null;
+      if (fotoArquivo) {
+        fotoUrl = await uploadFotoEvolucao(workspaceId, id, fotoArquivo);
+      }
+      const payload = { ...dados, fotoUrl };
       if (editando) {
-        await atualizarEvolucao(editando.id, dados);
+        await atualizarEvolucao(editando.id, payload);
       } else {
-        await adicionarEvolucao(workspaceId, id, dados);
+        await adicionarEvolucao(workspaceId, id, payload);
       }
       resetForm();
       setMostrarForm(false);
@@ -364,13 +401,42 @@ const EvolucaoPaciente = () => {
               />
             </div>
 
+            {/* Foto das anotações */}
+            <div className="form-group">
+              <label>📷 Foto das anotações <span style={{ fontSize: 12, color: "#9aa0a6", fontWeight: 400 }}>(opcional)</span></label>
+              {fotoPreview ? (
+                <div className="evolucao-foto-preview-wrap">
+                  <img src={fotoPreview} alt="Preview" className="evolucao-foto-preview" />
+                  <button type="button" className="evolucao-foto-remover" onClick={removerFoto}>
+                    ✕ Remover foto
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className="evolucao-foto-dropzone"
+                  onClick={() => fotoInputRef.current?.click()}
+                >
+                  <span>📷</span>
+                  <span>Clique para adicionar uma foto das anotações</span>
+                  <span style={{ fontSize: 12, color: "#9aa0a6" }}>JPG, PNG ou HEIC</span>
+                </div>
+              )}
+              <input
+                ref={fotoInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleFotoChange}
+              />
+            </div>
+
             <div className="form-buttons">
               <button type="button" className="btn-cancelar" onClick={cancelar}>
                 Cancelar
               </button>
               <button type="submit" className="btn-salvar" disabled={salvando}>
                 {salvando
-                  ? "Salvando..."
+                  ? fotoArquivo ? "Enviando foto..." : "Salvando..."
                   : editando
                   ? "Salvar Alterações"
                   : "Salvar Evolução"}
