@@ -63,6 +63,21 @@ export default function Configuracoes() {
   const [editandoProc, setEditandoProc] = useState(null); // { profId, proc }
   const PROC_VAZIO = { nome: "", duracao: 60, valor: "" };
 
+  // ── Página Pública ──
+  const PAG_VAZIO = {
+    paginaProfissional: false,
+    pagHeadline: "", pagSubheadline: "", pagBio: "",
+    pagFoto: "", pagFotoBio: "", pagVideo: "",
+    pagWhatsapp: "", pagCidade: "", pagFormacao: "", pagAbordagem: "",
+    pagBtnTexto: "", pagMensagemWhatsapp: "",
+    pagCorPrimaria: "#7c5c3e", pagCorFundo: "#fdf8f3",
+    pagCtaTitulo: "", pagCtaSub: "",
+    pagEspecialidades: [], pagDepoimentos: [], pagProcesso: [], pagFaq: [],
+  };
+  const [pag, setPag] = useState(PAG_VAZIO);
+  const [salvandoPag, setSalvandoPag] = useState(false);
+  const [pagSalva, setPagSalva] = useState(false);
+
   // ── Horários de funcionamento ──
   const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
   const HORAS_DISPONIVEIS = [
@@ -94,6 +109,7 @@ export default function Configuracoes() {
       if (cfg.horariosFuncionamento)    setHorarios(cfg.horariosFuncionamento);
       if (cfg.duracaoSessao)            setDuracaoSessao(cfg.duracaoSessao);
       if (cfg.intervaloEntreSessoes != null) setIntervaloEntreSessoes(cfg.intervaloEntreSessoes);
+      setPag(p => ({ ...p, ...Object.fromEntries(Object.keys(PAG_VAZIO).map(k => [k, cfg[k] ?? p[k]])) }));
     }).catch(() => {});
     // Carrega slug atual do terapeuta
     carregarSlug();
@@ -268,6 +284,28 @@ export default function Configuracoes() {
   };
 
 
+  const handleSalvarPagina = async () => {
+    setSalvandoPag(true);
+    try {
+      await salvarConfiguracoes(workspaceId, pag);
+      setPagSalva(true);
+      setTimeout(() => setPagSalva(false), 3000);
+    } catch (e) { alert("Erro ao salvar: " + e.message); }
+    setSalvandoPag(false);
+  };
+
+  const addItemPag = (campo) => setPag(p => ({ ...p, [campo]: [...(p[campo] || []), {}] }));
+  const updateItemPag = (campo, idx, val) => setPag(p => {
+    const arr = [...(p[campo] || [])];
+    arr[idx] = { ...arr[idx], ...val };
+    return { ...p, [campo]: arr };
+  });
+  const removeItemPag = (campo, idx) => setPag(p => {
+    const arr = [...(p[campo] || [])];
+    arr.splice(idx, 1);
+    return { ...p, [campo]: arr };
+  });
+
   const handleSalvarHorarios = async () => {
     setSalvandoHorarios(true);
     try {
@@ -334,6 +372,12 @@ export default function Configuracoes() {
           onClick={() => setAba("horarios")}
         >
           🕐 Horários
+        </button>
+        <button
+          className={`cfg-aba ${aba === "pagina" ? "ativa" : ""}`}
+          onClick={() => setAba("pagina")}
+        >
+          🌐 Página Pública
         </button>
       </div>
 
@@ -1005,6 +1049,191 @@ export default function Configuracoes() {
             style={{ alignSelf: "flex-start" }}
           >
             {salvandoHorarios ? "Salvando…" : "💾 Salvar horários"}
+          </button>
+        </div>
+      )}
+
+      {/* ═══ ABA PÁGINA PÚBLICA ═══ */}
+      {aba === "pagina" && (
+        <div className="cfg-conteudo">
+          {!pag.paginaProfissional && (
+            <div className="cfg-card" style={{ background: "#fffbeb", borderColor: "#f9ab00" }}>
+              <h3 className="cfg-card-titulo">🌟 Página Profissional</h3>
+              <p className="cfg-descricao">
+                Sua página pública em <strong>novu.institutocroco.com.br/{"{seu-slug}"}</strong> atualmente só mostra o login.<br />
+                Ative a <strong>Página Profissional</strong> para exibir uma landing page completa com foto, bio, especialidades, depoimentos e botão WhatsApp.
+              </p>
+              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 600 }}>
+                <input type="checkbox" checked={pag.paginaProfissional} onChange={e => setPag(p => ({ ...p, paginaProfissional: e.target.checked }))} />
+                Ativar Página Profissional
+              </label>
+            </div>
+          )}
+
+          {pag.paginaProfissional && (
+            <div className="cfg-card" style={{ background: "#e6f4ea", borderColor: "#34a853" }}>
+              <p style={{ margin: 0, fontWeight: 600, color: "#137333" }}>✅ Página Profissional ativa! Preencha os campos abaixo para personalizar.</p>
+              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginTop: 10, fontSize: 13, color: "#5f6368" }}>
+                <input type="checkbox" checked={pag.paginaProfissional} onChange={e => setPag(p => ({ ...p, paginaProfissional: e.target.checked }))} />
+                Desativar página
+              </label>
+            </div>
+          )}
+
+          {/* Informações principais */}
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Informações Principais</h3>
+            <div className="cfg-campo-grupo">
+              <label className="cfg-label">Título principal (headline)</label>
+              <input className="cfg-input" placeholder="Ex: Terapia Individual e de Casal em São Paulo" value={pag.pagHeadline} onChange={e => setPag(p => ({ ...p, pagHeadline: e.target.value }))} />
+            </div>
+            <div className="cfg-campo-grupo">
+              <label className="cfg-label">Subtítulo</label>
+              <textarea className="cfg-input" rows={3} placeholder="Uma frase que conecta com a dor do seu cliente ideal..." value={pag.pagSubheadline} onChange={e => setPag(p => ({ ...p, pagSubheadline: e.target.value }))} />
+            </div>
+            <div className="cfg-campo-grupo">
+              <label className="cfg-label">Cidade</label>
+              <input className="cfg-input" placeholder="Ex: São Paulo, SP" value={pag.pagCidade} onChange={e => setPag(p => ({ ...p, pagCidade: e.target.value }))} />
+            </div>
+            <div className="cfg-campo-grupo">
+              <label className="cfg-label">WhatsApp (apenas números)</label>
+              <input className="cfg-input" placeholder="11999999999" value={pag.pagWhatsapp} onChange={e => setPag(p => ({ ...p, pagWhatsapp: e.target.value }))} />
+            </div>
+            <div className="cfg-campo-grupo">
+              <label className="cfg-label">Mensagem padrão do WhatsApp</label>
+              <input className="cfg-input" placeholder="Olá! Gostaria de agendar uma consulta." value={pag.pagMensagemWhatsapp} onChange={e => setPag(p => ({ ...p, pagMensagemWhatsapp: e.target.value }))} />
+            </div>
+            <div className="cfg-campo-grupo">
+              <label className="cfg-label">Texto do botão WhatsApp</label>
+              <input className="cfg-input" placeholder="Falar Comigo no WhatsApp" value={pag.pagBtnTexto} onChange={e => setPag(p => ({ ...p, pagBtnTexto: e.target.value }))} />
+            </div>
+          </div>
+
+          {/* Mídia */}
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Foto e Vídeo</h3>
+            <div className="cfg-campo-grupo">
+              <label className="cfg-label">URL da sua foto (hero — aparece no topo)</label>
+              <input className="cfg-input" placeholder="https://..." value={pag.pagFoto} onChange={e => setPag(p => ({ ...p, pagFoto: e.target.value }))} />
+            </div>
+            <div className="cfg-campo-grupo">
+              <label className="cfg-label">URL da sua foto (na bio)</label>
+              <input className="cfg-input" placeholder="https://... (pode ser a mesma)" value={pag.pagFotoBio} onChange={e => setPag(p => ({ ...p, pagFotoBio: e.target.value }))} />
+            </div>
+            <div className="cfg-campo-grupo">
+              <label className="cfg-label">Vídeo de apresentação (YouTube ou Vimeo)</label>
+              <input className="cfg-input" placeholder="https://www.youtube.com/watch?v=..." value={pag.pagVideo} onChange={e => setPag(p => ({ ...p, pagVideo: e.target.value }))} />
+            </div>
+          </div>
+
+          {/* Bio */}
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Biografia</h3>
+            <div className="cfg-campo-grupo">
+              <label className="cfg-label">Formação</label>
+              <input className="cfg-input" placeholder="Ex: Psicanalista Clínica" value={pag.pagFormacao} onChange={e => setPag(p => ({ ...p, pagFormacao: e.target.value }))} />
+            </div>
+            <div className="cfg-campo-grupo">
+              <label className="cfg-label">Abordagem</label>
+              <input className="cfg-input" placeholder="Ex: Psicanálise" value={pag.pagAbordagem} onChange={e => setPag(p => ({ ...p, pagAbordagem: e.target.value }))} />
+            </div>
+            <div className="cfg-campo-grupo">
+              <label className="cfg-label">Texto da bio</label>
+              <textarea className="cfg-input" rows={6} placeholder="Apresente sua história, missão e forma de trabalhar..." value={pag.pagBio} onChange={e => setPag(p => ({ ...p, pagBio: e.target.value }))} />
+            </div>
+          </div>
+
+          {/* Especialidades */}
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Especialidades / Áreas de Atuação</h3>
+            {(pag.pagEspecialidades || []).map((e, i) => (
+              <div key={i} className="cfg-item-linha" style={{ marginBottom: 12 }}>
+                <input className="cfg-input" style={{ flex: "0 0 60px" }} placeholder="🌿" value={e.icone || ""} onChange={ev => updateItemPag("pagEspecialidades", i, { icone: ev.target.value })} />
+                <input className="cfg-input" placeholder="Nome (ex: Ansiedade)" value={e.titulo || ""} onChange={ev => updateItemPag("pagEspecialidades", i, { titulo: ev.target.value })} />
+                <input className="cfg-input" placeholder="Descrição curta" value={e.descricao || ""} onChange={ev => updateItemPag("pagEspecialidades", i, { descricao: ev.target.value })} />
+                <button className="cfg-btn-remove" onClick={() => removeItemPag("pagEspecialidades", i)}>✕</button>
+              </div>
+            ))}
+            <button className="cfg-btn-add" onClick={() => addItemPag("pagEspecialidades")}>+ Adicionar especialidade</button>
+          </div>
+
+          {/* Depoimentos */}
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Depoimentos</h3>
+            {(pag.pagDepoimentos || []).map((d, i) => (
+              <div key={i} style={{ marginBottom: 16, borderBottom: "1px solid #f1f3f4", paddingBottom: 16 }}>
+                <textarea className="cfg-input" rows={3} placeholder="Depoimento do cliente..." value={d.texto || ""} onChange={e => updateItemPag("pagDepoimentos", i, { texto: e.target.value })} style={{ marginBottom: 6 }} />
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input className="cfg-input" placeholder="Nome do cliente" value={d.autor || ""} onChange={e => updateItemPag("pagDepoimentos", i, { autor: e.target.value })} />
+                  <button className="cfg-btn-remove" onClick={() => removeItemPag("pagDepoimentos", i)}>✕</button>
+                </div>
+              </div>
+            ))}
+            <button className="cfg-btn-add" onClick={() => addItemPag("pagDepoimentos")}>+ Adicionar depoimento</button>
+          </div>
+
+          {/* Processo */}
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Processo Terapêutico (passos)</h3>
+            {(pag.pagProcesso || []).map((p2, i) => (
+              <div key={i} className="cfg-item-linha" style={{ marginBottom: 10 }}>
+                <input className="cfg-input" placeholder="Título do passo" value={p2.titulo || ""} onChange={e => updateItemPag("pagProcesso", i, { titulo: e.target.value })} />
+                <input className="cfg-input" placeholder="Descrição" value={p2.descricao || ""} onChange={e => updateItemPag("pagProcesso", i, { descricao: e.target.value })} />
+                <button className="cfg-btn-remove" onClick={() => removeItemPag("pagProcesso", i)}>✕</button>
+              </div>
+            ))}
+            <button className="cfg-btn-add" onClick={() => addItemPag("pagProcesso")}>+ Adicionar passo</button>
+          </div>
+
+          {/* FAQ */}
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Perguntas Frequentes (FAQ)</h3>
+            {(pag.pagFaq || []).map((f, i) => (
+              <div key={i} style={{ marginBottom: 16, borderBottom: "1px solid #f1f3f4", paddingBottom: 16 }}>
+                <input className="cfg-input" placeholder="Pergunta" value={f.pergunta || ""} onChange={e => updateItemPag("pagFaq", i, { pergunta: e.target.value })} style={{ marginBottom: 6 }} />
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <textarea className="cfg-input" rows={2} placeholder="Resposta" value={f.resposta || ""} onChange={e => updateItemPag("pagFaq", i, { resposta: e.target.value })} />
+                  <button className="cfg-btn-remove" onClick={() => removeItemPag("pagFaq", i)}>✕</button>
+                </div>
+              </div>
+            ))}
+            <button className="cfg-btn-add" onClick={() => addItemPag("pagFaq")}>+ Adicionar pergunta</button>
+          </div>
+
+          {/* Visual */}
+          <div className="cfg-card">
+            <h3 className="cfg-card-titulo">Visual da Página</h3>
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+              <div className="cfg-campo-grupo" style={{ flex: 1, minWidth: 200 }}>
+                <label className="cfg-label">Cor principal (botões e destaques)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input type="color" value={pag.pagCorPrimaria || "#7c5c3e"} onChange={e => setPag(p => ({ ...p, pagCorPrimaria: e.target.value }))} style={{ width: 48, height: 36, border: "none", cursor: "pointer", borderRadius: 6 }} />
+                  <input className="cfg-input" value={pag.pagCorPrimaria || "#7c5c3e"} onChange={e => setPag(p => ({ ...p, pagCorPrimaria: e.target.value }))} style={{ flex: 1 }} />
+                </div>
+              </div>
+              <div className="cfg-campo-grupo" style={{ flex: 1, minWidth: 200 }}>
+                <label className="cfg-label">Cor de fundo</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input type="color" value={pag.pagCorFundo || "#fdf8f3"} onChange={e => setPag(p => ({ ...p, pagCorFundo: e.target.value }))} style={{ width: 48, height: 36, border: "none", cursor: "pointer", borderRadius: 6 }} />
+                  <input className="cfg-input" value={pag.pagCorFundo || "#fdf8f3"} onChange={e => setPag(p => ({ ...p, pagCorFundo: e.target.value }))} style={{ flex: 1 }} />
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 12 }}>
+              <div className="cfg-campo-grupo" style={{ flex: 1 }}>
+                <label className="cfg-label">Título do CTA final</label>
+                <input className="cfg-input" placeholder="Dê o Primeiro Passo" value={pag.pagCtaTitulo} onChange={e => setPag(p => ({ ...p, pagCtaTitulo: e.target.value }))} />
+              </div>
+              <div className="cfg-campo-grupo" style={{ flex: 1 }}>
+                <label className="cfg-label">Subtítulo do CTA final</label>
+                <input className="cfg-input" placeholder="Você merece uma vida com mais equilíbrio..." value={pag.pagCtaSub} onChange={e => setPag(p => ({ ...p, pagCtaSub: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+
+          {pagSalva && <div className="cfg-success">✅ Página salva com sucesso!</div>}
+          <button className="cfg-btn-primary" onClick={handleSalvarPagina} disabled={salvandoPag} style={{ alignSelf: "flex-start" }}>
+            {salvandoPag ? "Salvando…" : "💾 Salvar página pública"}
           </button>
         </div>
       )}

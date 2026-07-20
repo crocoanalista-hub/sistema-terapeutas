@@ -4,6 +4,7 @@ import { buscarWorkspacePorSlug } from "../services/slugService";
 import { buscarConfiguracoes } from "../services/configuracoesService";
 import { login } from "../services/authService";
 import { useAuth } from "../hooks/useAuth";
+import PaginaProfissional from "./PaginaProfissional/PaginaProfissional";
 import "../styles/auth.css";
 import "../styles/workspace-entrada.css";
 
@@ -21,6 +22,7 @@ const WorkspaceEntrada = () => {
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [fazendoLogin, setFazendoLogin] = useState(false);
+  const [mostrarLogin, setMostrarLogin] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -77,6 +79,17 @@ const WorkspaceEntrada = () => {
 
   const corPrimaria = config.corPrimaria || "#1a73e8";
   const corSidebar = config.corSidebar || "#1a2535";
+
+  // Página pública ativa e usuário não clicou em "Entrar no sistema"
+  if (config.paginaProfissional && !mostrarLogin) {
+    return (
+      <PaginaProfissional
+        config={config}
+        workspace={workspace}
+        onEntrar={() => setMostrarLogin(true)}
+      />
+    );
+  }
 
   return (
     <div className="we-container">

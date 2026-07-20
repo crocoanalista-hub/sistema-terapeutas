@@ -1,0 +1,433 @@
+:root {
+  --pp-cor: #7c5c3e;
+  --pp-bg: #fdf8f3;
+}
+
+.pp-page {
+  font-family: "Georgia", serif;
+  background: var(--pp-bg);
+  color: #2d2010;
+  min-height: 100vh;
+}
+
+.pp-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── HERO ── */
+.pp-hero {
+  background: linear-gradient(135deg, #2d1a0e 0%, #4a2c1a 100%);
+  color: #fff;
+  padding: 80px 24px 72px;
+  position: relative;
+  overflow: hidden;
+}
+.pp-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+}
+
+.pp-hero-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 60px;
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+}
+
+.pp-hero-texto { flex: 1; min-width: 280px; }
+
+.pp-hero-cidade {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  margin-bottom: 16px;
+  font-family: sans-serif;
+  letter-spacing: .5px;
+}
+
+.pp-hero-titulo {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 20px;
+  color: #fff;
+}
+
+.pp-hero-sub {
+  font-size: 17px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.82);
+  margin: 0 0 32px;
+  font-family: sans-serif;
+}
+
+.pp-hero-foto-wrap {
+  flex-shrink: 0;
+}
+
+.pp-hero-foto {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 5px solid rgba(255,255,255,0.25);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+}
+
+/* ── BOTÃO WHATSAPP ── */
+.pp-btn-wpp {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--pp-cor);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: 50px;
+  text-decoration: none;
+  font-family: sans-serif;
+  transition: filter 0.15s, transform 0.15s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+.pp-btn-wpp:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+.pp-btn-hero { }
+
+.pp-btn-cta-final {
+  background: #fff !important;
+  color: var(--pp-cor) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+/* ── SECTIONS ── */
+.pp-section {
+  padding: 72px 0;
+}
+
+.pp-section-label {
+  font-family: sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--pp-cor);
+  margin-bottom: 12px;
+}
+
+.pp-section-titulo {
+  font-size: 30px;
+  font-weight: 700;
+  color: #2d1a0e;
+  margin: 0 0 40px;
+  line-height: 1.3;
+}
+
+.pp-section-cta {
+  text-align: center;
+  margin-top: 48px;
+}
+
+/* ── VIDEO ── */
+.pp-video-section {
+  background: #2d1a0e;
+  padding: 56px 0;
+}
+
+.pp-video-wrap {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+}
+.pp-video-wrap iframe {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  border: none;
+}
+
+/* ── ESPECIALIDADES ── */
+.pp-especialidades-section {
+  background: var(--pp-bg);
+}
+
+.pp-esp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.pp-esp-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px 20px;
+  border: 1px solid #e8ddd0;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.pp-esp-card:hover { box-shadow: 0 8px 24px rgba(124,92,62,0.12); transform: translateY(-2px); }
+
+.pp-esp-icone { font-size: 28px; margin-bottom: 10px; }
+.pp-esp-nome { font-size: 15px; font-weight: 700; color: #2d1a0e; margin-bottom: 6px; }
+.pp-esp-desc { font-size: 13px; color: #7a6050; line-height: 1.5; font-family: sans-serif; }
+
+/* ── BIO ── */
+.pp-bio-section {
+  background: #fff;
+}
+
+.pp-bio-inner {
+  display: flex;
+  gap: 60px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.pp-bio-foto-wrap {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.pp-bio-foto {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--pp-cor);
+}
+
+.pp-bio-badge {
+  background: #fdf0e6;
+  color: var(--pp-cor);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-family: sans-serif;
+  text-align: center;
+}
+
+.pp-bio-texto { flex: 1; min-width: 260px; }
+
+.pp-bio-desc {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #4a3020;
+  margin: 0 0 32px;
+  white-space: pre-line;
+}
+
+/* ── DEPOIMENTOS ── */
+.pp-depoimentos-section {
+  background: #f5ede3;
+}
+
+.pp-dep-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.pp-dep-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 24px;
+  border-left: 4px solid var(--pp-cor);
+  box-shadow: 0 2px 12px rgba(124,92,62,0.08);
+}
+
+.pp-dep-aspas {
+  font-size: 48px;
+  line-height: 1;
+  color: var(--pp-cor);
+  opacity: 0.4;
+  font-family: Georgia, serif;
+  margin-bottom: -8px;
+}
+
+.pp-dep-texto {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #4a3020;
+  margin: 0 0 16px;
+}
+
+.pp-dep-autor {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pp-cor);
+  font-family: sans-serif;
+}
+
+/* ── PROCESSO ── */
+.pp-processo-section {
+  background: #fff;
+}
+
+.pp-processo-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 680px;
+}
+
+.pp-processo-item {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.pp-processo-num {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+  font-family: sans-serif;
+}
+
+.pp-processo-nome {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2d1a0e;
+  margin-bottom: 6px;
+}
+
+.pp-processo-desc {
+  font-size: 14px;
+  color: #7a6050;
+  line-height: 1.6;
+  font-family: sans-serif;
+}
+
+/* ── FAQ ── */
+.pp-faq-section {
+  background: var(--pp-bg);
+}
+
+.pp-faq-lista {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.pp-faq-item {
+  border-bottom: 1px solid #e8ddd0;
+}
+
+.pp-faq-pergunta {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 20px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d1a0e;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  text-align: left;
+  font-family: Georgia, serif;
+}
+
+.pp-faq-icon {
+  font-size: 22px;
+  color: var(--pp-cor);
+  flex-shrink: 0;
+  font-family: sans-serif;
+}
+
+.pp-faq-resposta {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #7a6050;
+  padding-bottom: 20px;
+  font-family: sans-serif;
+}
+
+/* ── CTA FINAL ── */
+.pp-cta-final {
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.pp-cta-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.pp-cta-titulo {
+  font-size: 34px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.pp-cta-sub {
+  font-size: 16px;
+  color: rgba(255,255,255,0.85);
+  max-width: 500px;
+  line-height: 1.6;
+  margin: 0 0 8px;
+  font-family: sans-serif;
+}
+
+/* ── RODAPÉ ── */
+.pp-footer {
+  background: #1a0e06;
+  color: rgba(255,255,255,0.5);
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: sans-serif;
+  font-size: 13px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pp-footer-entrar {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.pp-footer-entrar:hover { color: #fff; border-color: rgba(255,255,255,0.5); }
+
+/* ── RESPONSIVO ── */
+@media (max-width: 640px) {
+  .pp-hero { padding: 56px 20px 48px; }
+  .pp-hero-titulo { font-size: 28px; }
+  .pp-hero-foto { width: 160px; height: 160px; }
+  .pp-section { padding: 52px 0; }
+  .pp-section-titulo { font-size: 24px; }
+  .pp-bio-foto { width: 140px; height: 140px; }
+  .pp-cta-titulo { font-size: 26px; }
+  .pp-hero-inner { gap: 32px; }
+}

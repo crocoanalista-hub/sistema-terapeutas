@@ -741,3 +741,47 @@
     word-break: break-word;
   }
 }
+
+/* ── Página Pública ─────────────────────────────────────── */
+.cfg-campo-grupo {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+}
+
+.cfg-item-linha {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.cfg-btn-add {
+  background: none;
+  border: 1.5px dashed #1a73e8;
+  color: #1a73e8;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: background 0.12s;
+}
+.cfg-btn-add:hover { background: #e8f0fe; }
+
+.cfg-btn-remove {
+  background: none;
+  border: 1px solid #ea4335;
+  color: #ea4335;
+  font-size: 13px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+}
+.cfg-btn-remove:hover { background: #fce8e6; }

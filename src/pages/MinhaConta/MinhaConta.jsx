@@ -4,6 +4,7 @@ import { usePlano } from "../../hooks/usePlano";
 import { listarCobrancas } from "../../services/planoService";
 import { listarPlanos } from "../../services/planosService";
 import { criarCobrancaAsaas } from "../../services/asaasService";
+import { buscarConfiguracoes } from "../../services/configuracoesService";
 import "../../styles/minha-conta.css";
 
 const moeda = (v) =>
@@ -30,6 +31,7 @@ export default function MinhaConta() {
   const [cobrancas, setCobrancas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [planos, setPlanos] = useState([]);
+  const [temPaginaProfissional, setTemPaginaProfissional] = useState(false);
   const [historicoAberto, setHistoricoAberto] = useState(false);
 
   // Checkout
@@ -46,6 +48,7 @@ export default function MinhaConta() {
     if (!workspaceId) return;
     listarCobrancas(workspaceId).then(setCobrancas).catch(() => {}).finally(() => setCarregando(false));
     listarPlanos().then(lista => setPlanos(lista.filter(p => p.ativo))).catch(() => {});
+    buscarConfiguracoes(workspaceId).then(cfg => setTemPaginaProfissional(!!cfg.paginaProfissional)).catch(() => {});
   }, [workspaceId]);
 
   const pendentes = cobrancas.filter(c => c.status === "pendente").sort((a, b) => a.vencimento > b.vencimento ? 1 : -1);
@@ -151,6 +154,23 @@ export default function MinhaConta() {
               <a href={proxima.linkPagamento} target="_blank" rel="noreferrer" className="mc-btn-pagar">💳 Pagar agora</a>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── Upsell Página Profissional ── */}
+      {!temPaginaProfissional && (
+        <div className="mc-proxima-card" style={{ borderColor: "#7c5c3e", background: "#fdf8f3" }}>
+          <div className="mc-proxima-icone">🌐</div>
+          <div className="mc-proxima-info">
+            <div className="mc-proxima-titulo" style={{ color: "#4a2c1a" }}>Sua Página Profissional</div>
+            <div className="mc-proxima-data">
+              Tenha uma landing page completa com bio, especialidades, depoimentos e botão WhatsApp — igual a sites de R$ 2.000+.
+              Ative agora em <strong>Configurações → Página Pública</strong>.
+            </div>
+          </div>
+          <a href="/configuracoes" className="mc-btn-pagar" style={{ background: "#7c5c3e", whiteSpace: "nowrap" }}>
+            ✨ Ativar grátis
+          </a>
         </div>
       )}
 
