@@ -1,0 +1,220 @@
+rules_version = '2';
+
+// ============================================================
+// Regras de segurança do Firestore — sistema-terapeutas (Novu)
+//
+// Modelo: multi-tenant. Cada "workspace" é uma conta terapeuta
+// (doc em /terapeutas/{uid}, uid = Firebase Auth do dono). Um
+// profissional convidado tem seu próprio uid, com um doc em
+// /profissionais/{uid} apontando pro workspaceId (uid do dono).
+//
+// A maioria das coleções guarda o dono do registro em um campo
+// "terapeutaId" OU "workspaceId" (nomes inconsistentes ao longo
+// do código, mas o mesmo significado: uid do dono do workspace).
+// ============================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function logado() {
+      return request.auth != null;
+    }
+
+    // Mantenha esta lista igual à ADMIN_EMAILS em src/pages/Admin/Admin.jsx
+    function ehAdmin() {
+      return logado() && request.auth.token.email in ['igorcroco@gmail.com'];
+    }
+
+    // true se o usuário logado é o dono do workspace OU um profissional
+    // ativo daquele workspace
+    function pertenceAoWorkspace(workspaceId) {
+      return logado() && (
+        request.auth.uid == workspaceId ||
+        (exists(/databases/$(database)/documents/profissionais/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/profissionais/$(request.auth.uid)).data.workspaceId == workspaceId)
+      );
+    }
+
+    // ── Terapeutas (contas donas de workspace) ──────────────
+    // get/list público: necessário pro fluxo público (achar o
+    // workspace pelo slug em WorkspaceEntrada, AgendamentoPublico,
+    // AssinarDocumento, AnamnesePublica, PortalCliente). Não expõe
+    // dados de pacientes, só metadados do próprio negócio (nome,
+    // slug, cor, plano).
+    match /terapeutas/{uid} {
+      allow get, list: if true;
+      allow create: if logado() && request.auth.uid == uid;
+      allow update: if logado() && (request.auth.uid == uid || ehAdmin());
+      allow delete: if ehAdmin();
+    }
+
+    // ── Profissionais convidados ─────────────────────────────
+    match /profissionais/{id} {
+      allow get, list: if true; // usado no Portal do Cliente e agendamento público
+      allow create: if logado() && request.auth.uid == id;
+      allow update, delete: if pertenceAoWorkspace(resource.data.workspaceId)
+                              || (logado() && request.auth.uid == id);
+    }
+
+    // ── Convites de profissional ─────────────────────────────
+    match /convites/{token} {
+      allow get: if true; // preview do convite antes do cadastro (Registro.jsx, sem login ainda)
+      allow list: if logado() && pertenceAoWorkspace(resource.data.workspaceId);
+      allow create: if pertenceAoWorkspace(request.resource.data.workspaceId);
+      allow delete: if logado();
+    }
+
+    // ── Salas ────────────────────────────────────────────────
+    match /salas/{id} {
+      allow read: if pertenceAoWorkspace(resource.data.workspaceId);
+      allow create: if pertenceAoWorkspace(request.resource.data.workspaceId);
+      allow update, delete: if pertenceAoWorkspace(resource.data.workspaceId);
+    }
+
+    // ── Pacientes ────────────────────────────────────────────
+    // list público: necessário pro Portal do Cliente (login por
+    // e-mail + código, sem Firebase Auth). Ver observação de
+    // segurança enviada junto com esta regra.
+    match /pacientes/{id} {
+      allow get: if pertenceAoWorkspace(resource.data.terapeutaId);
+      allow list: if pertenceAoWorkspace(resource.data.terapeutaId) || true;
+      allow create: if pertenceAoWorkspace(request.resource.data.terapeutaId);
+      allow update, delete: if pertenceAoWorkspace(resource.data.terapeutaId);
+    }
+
+    // ── Agendamentos ─────────────────────────────────────────
+    // list público: necessário pra tela pública de agendamento
+    // (checar horários ocupados) e pro Portal do Cliente.
+    match /agendamentos/{id} {
+      allow get: if pertenceAoWorkspace(resource.data.terapeutaId);
+      allow list: if true;
+      allow create: if pertenceAoWorkspace(request.resource.data.terapeutaId) || true; // solicitação pública futura, se vier a existir
+      allow update: if pertenceAoWorkspace(resource.data.terapeutaId);
+      allow delete: if pertenceAoWorkspace(resource.data.terapeutaId);
+    }
+
+    // ── Evoluções clínicas (dados sensíveis — nunca público) ──
+    match /evolucoes/{id} {
+      allow read: if pertenceAoWorkspace(resource.data.terapeutaId);
+      allow create: if pertenceAoWorkspace(request.resource.data.terapeutaId);
+      allow update, delete: if pertenceAoWorkspace(resource.data.terapeutaId);
+    }
+
+    // ── Lista de espera ──────────────────────────────────────
+    match /lista_espera/{id} {
+      allow read: if pertenceAoWorkspace(resource.data.terapeutaId);
+      allow create: if pertenceAoWorkspace(request.resource.data.terapeutaId);
+      allow update, delete: if pertenceAoWorkspace(resource.data.terapeutaId);
+    }
+
+    // ── Solicitações de agendamento (formulário público) ─────
+    match /solicitacoes/{id} {
+      allow get, list: if pertenceAoWorkspace(resource.data.workspaceId);
+      allow create: if true; // qualquer visitante pode solicitar um horário
+      allow update: if pertenceAoWorkspace(resource.data.workspaceId);
+      allow delete: if pertenceAoWorkspace(resource.data.workspaceId);
+    }
+
+    // ── Documentos para assinatura (link público) ────────────
+    match /documentosParaAssinar/{id} {
+      allow get: if true; // link de assinatura, sem login
+      allow list: if logado() && pertenceAoWorkspace(resource.data.workspaceId);
+      allow create: if pertenceAoWorkspace(request.resource.data.workspaceId);
+      // assinatura pelo link público: só pode mudar de pendente pra assinado
+      allow update: if pertenceAoWorkspace(resource.data.workspaceId)
+                     || (resource.data.status == "pendente"
+                         && request.resource.data.status == "assinado");
+    }
+
+    // ── Documentos compartilhados com paciente (Portal) ──────
+    match /documentos/{id} {
+      allow get, list: if pertenceAoWorkspace(resource.data.terapeutaId) || true;
+      allow create: if pertenceAoWorkspace(request.resource.data.terapeutaId);
+      allow update, delete: if pertenceAoWorkspace(resource.data.terapeutaId);
+    }
+
+    // ── Templates de documento / anamnese (doc id = terapeutaId) ─
+    match /documentosTemplates/{terapeutaId} {
+      allow read: if pertenceAoWorkspace(terapeutaId);
+      allow write: if pertenceAoWorkspace(terapeutaId);
+    }
+    match /anamneseTemplates/{terapeutaId} {
+      allow read: if pertenceAoWorkspace(terapeutaId);
+      allow write: if pertenceAoWorkspace(terapeutaId);
+    }
+
+    // ── Respostas de anamnese (doc id = pacienteId) ──────────
+    match /anamneses/{pacienteId} {
+      allow get: if pertenceAoWorkspace(resource.data.terapeutaId) || true; // preenchimento via link público
+      allow list: if logado() && pertenceAoWorkspace(resource.data.terapeutaId);
+      allow write: if pertenceAoWorkspace(request.resource.data.terapeutaId) || true;
+    }
+
+    // ── Links públicos de anamnese ────────────────────────────
+    match /anamneseLinks/{token} {
+      allow get: if true;
+      allow list: if logado() && pertenceAoWorkspace(resource.data.workspaceId);
+      allow create: if pertenceAoWorkspace(request.resource.data.workspaceId);
+      allow update: if true; // marcar como preenchido, via link público
+    }
+
+    // ── Configurações financeiras por paciente (doc id = pacienteId) ─
+    match /configFinanceiraPaciente/{pacienteId} {
+      allow read, write: if exists(/databases/$(database)/documents/pacientes/$(pacienteId))
+        && pertenceAoWorkspace(get(/databases/$(database)/documents/pacientes/$(pacienteId)).data.terapeutaId);
+    }
+
+    // ── Cobranças (financeiro) ───────────────────────────────
+    match /cobrancas/{id} {
+      allow get, list: if pertenceAoWorkspace(resource.data.terapeutaId) || ehAdmin();
+      allow create: if pertenceAoWorkspace(request.resource.data.terapeutaId) || ehAdmin();
+      allow update: if pertenceAoWorkspace(resource.data.terapeutaId) || ehAdmin();
+      allow delete: if ehAdmin();
+    }
+
+    // ── Comissões de profissionais ───────────────────────────
+    match /comissoes/{id} {
+      allow read: if pertenceAoWorkspace(resource.data.workspaceId);
+      allow create: if pertenceAoWorkspace(request.resource.data.workspaceId);
+      allow update, delete: if pertenceAoWorkspace(resource.data.workspaceId);
+    }
+
+    // ── Estoque ───────────────────────────────────────────────
+    match /estoqueItens/{id} {
+      allow read: if pertenceAoWorkspace(resource.data.workspaceId);
+      allow create: if pertenceAoWorkspace(request.resource.data.workspaceId);
+      allow update, delete: if pertenceAoWorkspace(resource.data.workspaceId);
+    }
+    match /estoqueMovimentacoes/{id} {
+      allow read: if pertenceAoWorkspace(resource.data.workspaceId);
+      allow create: if pertenceAoWorkspace(request.resource.data.workspaceId);
+    }
+
+    // ── Configurações de aparência (doc id = workspaceId) ────
+    match /configuracoes/{workspaceId} {
+      allow get: if true; // logo/cor usados nas páginas públicas
+      allow write: if pertenceAoWorkspace(workspaceId);
+    }
+
+    // ── Portal do cliente: código de acesso temporário ───────
+    match /portalCodigos/{id} {
+      allow create: if true;                 // gerar código (fluxo público)
+      allow get, list: if true;               // validar código (fluxo público)
+      allow update: if true;                  // marcar como usado
+    }
+
+    // ── Planos (página pública de preços) ────────────────────
+    match /planos/{id} {
+      allow get, list: if true;
+      allow write: if ehAdmin();
+    }
+
+    // ── Configuração global da plataforma ────────────────────
+    match /config/trial {
+      allow get: if logado(); // lido durante o cadastro (limites do trial)
+      allow write: if ehAdmin();
+    }
+    match /config/asaas {
+      allow get, write: if ehAdmin(); // contém a chave de API do Asaas — nunca público
+    }
+  }
+}
