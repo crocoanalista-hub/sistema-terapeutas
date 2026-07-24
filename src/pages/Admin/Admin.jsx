@@ -98,7 +98,7 @@ export default function Admin() {
   const [cobrancas, setCobrancas] = useState([]);
   const [carregandoFin, setCarregandoFin] = useState(false);
   const [modalCobranca, setModalCobranca] = useState(null); // { terapeutaId, nome, email }
-  const [novaCobranca, setNovaCobranca] = useState({ valor: "", vencimento: "", plano: "essencial", descricao: "", recorrente: false, diaVencimento: "10", cpfCnpj: "", mobilePhone: "" });
+  const [novaCobranca, setNovaCobranca] = useState({ valor: "", vencimento: "", plano: "essencial", descricao: "", recorrente: false, diaVencimento: "10", cpfCnpj: "", mobilePhone: "", jaRecebido: false, formaPagamento: "pix", dataPagamento: new Date().toISOString().slice(0, 10) });
   const [linkCobrancaCriada, setLinkCobrancaCriada] = useState(null);
   const [salvandoCob, setSalvandoCob] = useState(false);
 
@@ -256,8 +256,7 @@ export default function Admin() {
   const atualizarLimites = (t, limites) => handleAtualizarPlano(t.id, { limites });
 
   const handleCriarCobranca = async () => {
-    const { valor, plano, descricao, recorrente, diaVencimento } = novaCobranca;
-    // Se recorrente, vencimento é calculado pelo dia escolhido; senão, usa o campo date
+    const { valor, plano, descricao, recorrente, diaVencimento, jaRecebido, formaPagamento, dataPagamento } = novaCobranca;
     let vencimento = novaCobranca.vencimento;
     if (recorrente) {
       const hoje = new Date();
@@ -266,26 +265,30 @@ export default function Admin() {
       if (v <= hoje) v = new Date(hoje.getFullYear(), hoje.getMonth() + 1, dia);
       vencimento = v.toISOString().slice(0, 10);
     }
-    if (!valor || !vencimento) { alert("Preencha valor e vencimento."); return; }
+    if (!valor) { alert("Preencha o valor."); return; }
+    if (!jaRecebido && !vencimento) { alert("Preencha o vencimento."); return; }
+
     setSalvandoCob(true);
     try {
-      const descFinal = descricao || `Plano ${plano} — ${new Date(vencimento + "T12:00").toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}`;
+      const vencFinal = vencimento || dataPagamento;
+      const descFinal = descricao || `Plano ${plano} — ${new Date(vencFinal + "T12:00").toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}`;
 
-      // Cria cobrança no Asaas
       let asaasDados = {};
-      try {
-        asaasDados = await criarCobrancaAsaas({
-          nome: modalCobranca.nome,
-          email: modalCobranca.email,
-          cpfCnpj: novaCobranca.cpfCnpj || "",
-          mobilePhone: novaCobranca.mobilePhone || "",
-          valor: parseFloat(valor),
-          vencimento,
-          descricao: descFinal,
-          externalReference: modalCobranca.terapeutaId,
-        });
-      } catch (asaasErr) {
-        console.warn("[Admin] Asaas erro:", asaasErr.message);
+      if (!jaRecebido) {
+        try {
+          asaasDados = await criarCobrancaAsaas({
+            nome: modalCobranca.nome,
+            email: modalCobranca.email,
+            cpfCnpj: novaCobranca.cpfCnpj || "",
+            mobilePhone: novaCobranca.mobilePhone || "",
+            valor: parseFloat(valor),
+            vencimento: vencFinal,
+            descricao: descFinal,
+            externalReference: modalCobranca.terapeutaId,
+          });
+        } catch (asaasErr) {
+          console.warn("[Admin] Asaas erro:", asaasErr.message);
+        }
       }
 
       await criarCobranca({
@@ -293,7 +296,7 @@ export default function Admin() {
         terapeutaNome: modalCobranca.nome,
         terapeutaEmail: modalCobranca.email,
         valor: parseFloat(valor),
-        vencimento,
+        vencimento: vencFinal,
         plano,
         descricao: descFinal,
         recorrente: !!recorrente,
@@ -301,9 +304,14 @@ export default function Admin() {
         asaasId: asaasDados.asaasId || null,
         linkPagamento: asaasDados.linkPagamento || null,
         pixCopiaECola: asaasDados.pixCopiaECola || null,
+        ...(jaRecebido ? {
+          status: "pago",
+          pagoEm: new Date(dataPagamento + "T12:00:00"),
+          formaPagamento,
+        } : {}),
       });
 
-      if (recorrente) {
+      if (recorrente && !jaRecebido) {
         await salvarAssinaturaTerapeuta(modalCobranca.terapeutaId, {
           ativa: true,
           valor: parseFloat(valor),
@@ -316,7 +324,7 @@ export default function Admin() {
       }
 
       setModalCobranca(null);
-      setNovaCobranca({ valor: "", vencimento: "", plano: "essencial", descricao: "", recorrente: false, diaVencimento: "10", cpfCnpj: "", mobilePhone: "" });
+      setNovaCobranca({ valor: "", vencimento: "", plano: "essencial", descricao: "", recorrente: false, diaVencimento: "10", cpfCnpj: "", mobilePhone: "", jaRecebido: false, formaPagamento: "pix", dataPagamento: new Date().toISOString().slice(0, 10) });
       if (asaasDados.linkPagamento) setLinkCobrancaCriada(asaasDados.linkPagamento);
       carregarFinanceiro();
     } catch (e) { alert("Erro: " + e.message); }
@@ -764,7 +772,7 @@ export default function Admin() {
                   if (terapeutas.length === 0) { alert("Carregue a aba Contas primeiro."); return; }
                   const t = terapeutas[0];
                   setModalCobranca({ terapeutaId: t.id, nome: t.nome, email: t.email });
-                  setNovaCobranca({ valor: "79", vencimento: "", plano: "essencial", descricao: "", recorrente: false, diaVencimento: "10" });
+                  setNovaCobranca({ valor: "79", vencimento: "", plano: "essencial", descricao: "", recorrente: false, diaVencimento: "10", cpfCnpj: "", mobilePhone: "", jaRecebido: false, formaPagamento: "pix", dataPagamento: new Date().toISOString().slice(0, 10) });
                 }}
               >+ Nova cobrança</button>
             </div>
@@ -815,7 +823,10 @@ export default function Admin() {
                             {c.status === "pago" ? "✅ Pago" : c.status === "cancelado" ? "❌ Cancelado" : atrasado ? "⚠️ Atrasado" : "🕐 Pendente"}
                           </span>
                         </td>
-                        <td>{c.pagoEm ? new Date(c.pagoEm?.toDate?.() || c.pagoEm).toLocaleDateString("pt-BR") : "—"}</td>
+                        <td>
+                          {c.pagoEm ? new Date(c.pagoEm?.toDate?.() || c.pagoEm).toLocaleDateString("pt-BR") : "—"}
+                          {c.formaPagamento && <span style={{ display: "block", fontSize: 11, color: "#888" }}>{c.formaPagamento}</span>}
+                        </td>
                         <td>
                           <div className="admin-fin-acoes">
                             {c.status === "pendente" && (
@@ -867,6 +878,8 @@ export default function Admin() {
                       descricao: as?.descricao || "",
                       recorrente: false,
                       diaVencimento: as?.diaVencimento ? String(as.diaVencimento) : "10",
+                      cpfCnpj: "", mobilePhone: "",
+                      jaRecebido: false, formaPagamento: "pix", dataPagamento: new Date().toISOString().slice(0, 10),
                     });
                   }}
                 >
@@ -915,12 +928,22 @@ export default function Admin() {
             </div>
             <p className="admin-modal-sub">Cliente: <strong>{modalCobranca.nome}</strong></p>
             <div className="admin-modal-form">
-              {/* Toggle recorrente */}
-              <label className="admin-modal-toggle">
-                <input type="checkbox" checked={novaCobranca.recorrente}
-                  onChange={e => setNovaCobranca(n => ({ ...n, recorrente: e.target.checked }))} />
-                <span>🔁 Assinatura mensal recorrente</span>
+              {/* Toggle: já recebi */}
+              <label className="admin-modal-toggle" style={{ background: novaCobranca.jaRecebido ? "#e8f5e9" : "#fff8e1", borderRadius: 8, padding: "10px 12px", border: `1.5px solid ${novaCobranca.jaRecebido ? "#34a853" : "#f9ab00"}` }}>
+                <input type="checkbox" checked={novaCobranca.jaRecebido}
+                  onChange={e => setNovaCobranca(n => ({ ...n, jaRecebido: e.target.checked, recorrente: e.target.checked ? false : n.recorrente }))} />
+                <span>{novaCobranca.jaRecebido ? "✅ Registrar pagamento já recebido" : "💳 Gerar cobrança via Asaas"}</span>
               </label>
+
+              {/* Toggle recorrente — só quando não é jaRecebido */}
+              {!novaCobranca.jaRecebido && (
+                <label className="admin-modal-toggle">
+                  <input type="checkbox" checked={novaCobranca.recorrente}
+                    onChange={e => setNovaCobranca(n => ({ ...n, recorrente: e.target.checked }))} />
+                  <span>🔁 Assinatura mensal recorrente</span>
+                </label>
+              )}
+
               <label>Plano
                 <select value={novaCobranca.plano} onChange={e => {
                   const p = e.target.value;
@@ -934,7 +957,23 @@ export default function Admin() {
               <label>Valor (R$)
                 <input type="number" value={novaCobranca.valor} onChange={e => setNovaCobranca(n => ({ ...n, valor: e.target.value }))} min="0" step="1" />
               </label>
-              {novaCobranca.recorrente ? (
+
+              {novaCobranca.jaRecebido ? (
+                <>
+                  <label>Forma de recebimento
+                    <select value={novaCobranca.formaPagamento} onChange={e => setNovaCobranca(n => ({ ...n, formaPagamento: e.target.value }))}>
+                      <option value="pix">Pix</option>
+                      <option value="dinheiro">Dinheiro</option>
+                      <option value="transferencia">Transferência bancária</option>
+                      <option value="cartao">Cartão</option>
+                      <option value="outro">Outro</option>
+                    </select>
+                  </label>
+                  <label>Data do recebimento
+                    <input type="date" value={novaCobranca.dataPagamento} onChange={e => setNovaCobranca(n => ({ ...n, dataPagamento: e.target.value }))} />
+                  </label>
+                </>
+              ) : novaCobranca.recorrente ? (
                 <label>Todo dia do mês
                   <input type="number" min={1} max={28} value={novaCobranca.diaVencimento}
                     onChange={e => setNovaCobranca(n => ({ ...n, diaVencimento: e.target.value }))}
@@ -945,19 +984,25 @@ export default function Admin() {
                   <input type="date" value={novaCobranca.vencimento} onChange={e => setNovaCobranca(n => ({ ...n, vencimento: e.target.value }))} />
                 </label>
               )}
+
               <label>Descrição (opcional)
                 <input type="text" value={novaCobranca.descricao} onChange={e => setNovaCobranca(n => ({ ...n, descricao: e.target.value }))} placeholder="Ex: Mensalidade julho 2026" />
               </label>
-              <label>CPF / CNPJ <span style={{ fontSize: 11, color: "#aaa" }}>(necessário para boleto)</span>
-                <input type="text" value={novaCobranca.cpfCnpj} onChange={e => setNovaCobranca(n => ({ ...n, cpfCnpj: e.target.value }))} placeholder="000.000.000-00" />
-              </label>
-              <label>WhatsApp <span style={{ fontSize: 11, color: "#aaa" }}>(opcional)</span>
-                <input type="text" value={novaCobranca.mobilePhone} onChange={e => setNovaCobranca(n => ({ ...n, mobilePhone: e.target.value }))} placeholder="(11) 99999-9999" />
-              </label>
+
+              {!novaCobranca.jaRecebido && (
+                <>
+                  <label>CPF / CNPJ <span style={{ fontSize: 11, color: "#aaa" }}>(necessário para boleto)</span>
+                    <input type="text" value={novaCobranca.cpfCnpj} onChange={e => setNovaCobranca(n => ({ ...n, cpfCnpj: e.target.value }))} placeholder="000.000.000-00" />
+                  </label>
+                  <label>WhatsApp <span style={{ fontSize: 11, color: "#aaa" }}>(opcional)</span>
+                    <input type="text" value={novaCobranca.mobilePhone} onChange={e => setNovaCobranca(n => ({ ...n, mobilePhone: e.target.value }))} placeholder="(11) 99999-9999" />
+                  </label>
+                </>
+              )}
             </div>
             <div className="admin-modal-acoes">
               <button className="admin-btn admin-btn--ativar" onClick={handleCriarCobranca} disabled={salvandoCob}>
-                {salvandoCob ? "Salvando…" : novaCobranca.recorrente ? "Criar assinatura" : "Criar cobrança"}
+                {salvandoCob ? "Salvando…" : novaCobranca.jaRecebido ? "✅ Registrar pagamento" : novaCobranca.recorrente ? "Criar assinatura" : "Criar cobrança"}
               </button>
               <button className="admin-btn" onClick={() => setModalCobranca(null)}>Cancelar</button>
             </div>
