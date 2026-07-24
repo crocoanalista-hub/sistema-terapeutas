@@ -31,6 +31,7 @@ import Configuracoes from "./pages/Configuracoes/Configuracoes";
 import Estoque from "./pages/Estoque/Estoque";
 import PortalCliente from "./pages/PortalCliente/PortalCliente";
 import MinhaConta from "./pages/MinhaConta/MinhaConta";
+import PreviewPagina from "./pages/PreviewPagina";
 
 import "./App.css";
 
@@ -84,6 +85,9 @@ function App() {
 
         {/* Admin — sem Layout (página própria) */}
         <Route path="/admin" element={<Admin />} />
+
+        {/* Preview da página pública (logado) */}
+        <Route path="/preview/:slug" element={<PreviewPagina />} />
 
         {/* Agendamento público do paciente */}
         <Route path="/:slug/agendar" element={<AgendamentoPublico />} />

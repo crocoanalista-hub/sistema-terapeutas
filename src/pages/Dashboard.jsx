@@ -241,9 +241,46 @@ const Dashboard = () => {
                 display: "inline-flex", alignItems: "center",
               }}
             >
-              Abrir portal ↗
+              Abrir Portal ↗
             </a>
           </div>
+        </div>
+      )}
+
+      {/* Preview da página pública */}
+      {slug && (
+        <div style={{
+          marginTop: 12,
+          background: "linear-gradient(135deg, #6d3b8e 0%, #4a2070 100%)",
+          borderRadius: 14,
+          padding: "16px 24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+        }}>
+          <div>
+            <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 3 }}>
+              🌿 Minha Página Pública
+            </div>
+            <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>
+              Veja como sua página aparece para novos clientes
+            </div>
+          </div>
+          <a
+            href={`/preview/${slug}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              background: "#fff", color: "#6d3b8e",
+              borderRadius: 8, padding: "9px 18px",
+              fontSize: 13, fontWeight: 700, textDecoration: "none",
+              display: "inline-flex", alignItems: "center", flexShrink: 0,
+            }}
+          >
+            👁 Ver preview ↗
+          </a>
         </div>
       )}
     </div>
