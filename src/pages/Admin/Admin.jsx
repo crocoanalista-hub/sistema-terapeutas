@@ -928,12 +928,19 @@ export default function Admin() {
             </div>
             <p className="admin-modal-sub">Cliente: <strong>{modalCobranca.nome}</strong></p>
             <div className="admin-modal-form">
-              {/* Toggle: já recebi */}
-              <label className="admin-modal-toggle" style={{ background: novaCobranca.jaRecebido ? "#e8f5e9" : "#fff8e1", borderRadius: 8, padding: "10px 12px", border: `1.5px solid ${novaCobranca.jaRecebido ? "#34a853" : "#f9ab00"}` }}>
-                <input type="checkbox" checked={novaCobranca.jaRecebido}
-                  onChange={e => setNovaCobranca(n => ({ ...n, jaRecebido: e.target.checked, recorrente: e.target.checked ? false : n.recorrente }))} />
-                <span>{novaCobranca.jaRecebido ? "✅ Registrar pagamento já recebido" : "💳 Gerar cobrança via Asaas"}</span>
-              </label>
+              {/* Seletor de modo */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+                <button type="button"
+                  onClick={() => setNovaCobranca(n => ({ ...n, jaRecebido: false }))}
+                  style={{ flex: 1, padding: "10px 8px", borderRadius: 8, border: `2px solid ${!novaCobranca.jaRecebido ? "#1a73e8" : "#dadce0"}`, background: !novaCobranca.jaRecebido ? "#e8f0fe" : "#fff", color: !novaCobranca.jaRecebido ? "#1a73e8" : "#5f6368", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                  💳 Gerar cobrança
+                </button>
+                <button type="button"
+                  onClick={() => setNovaCobranca(n => ({ ...n, jaRecebido: true, recorrente: false }))}
+                  style={{ flex: 1, padding: "10px 8px", borderRadius: 8, border: `2px solid ${novaCobranca.jaRecebido ? "#34a853" : "#dadce0"}`, background: novaCobranca.jaRecebido ? "#e8f5e9" : "#fff", color: novaCobranca.jaRecebido ? "#34a853" : "#5f6368", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                  ✅ Já recebi
+                </button>
+              </div>
 
               {/* Toggle recorrente — só quando não é jaRecebido */}
               {!novaCobranca.jaRecebido && (
@@ -951,6 +958,7 @@ export default function Admin() {
                 }}>
                   <option value="essencial">Essencial — R$ 79</option>
                   <option value="profissional">Profissional — R$ 149</option>
+                  <option value="pioneiro">Pioneiro — R$ 49</option>
                   <option value="outro">Outro</option>
                 </select>
               </label>

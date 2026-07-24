@@ -6,6 +6,7 @@ import {
 export const VALORES_PLANO = {
   essencial:     79,
   profissional: 149,
+  pioneiro:      49,
   trial:          0,
   bloqueado:      0,
 };
