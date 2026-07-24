@@ -5,12 +5,13 @@ import {
 } from "firebase/firestore";
 import { db } from "../../services/firebaseConfig";
 import { criarCobrancaAsaas } from "../../services/asaasService";
-import { buscarConfigAsaas } from "../../services/planoService";
-import { VALORES_PLANO } from "../../services/planoService";
+import { buscarConfigAsaas, VALORES_PLANO } from "../../services/planoService";
 
 // ─────────────────────────────────────────────────────────────
 //  Constantes
 // ─────────────────────────────────────────────────────────────
+
+const ACCENT = "#1a73e8";
 
 const FORMAS_PAGAMENTO = [
   { val: "pix",           label: "Pix" },
@@ -29,7 +30,7 @@ const COR_SIT = {
 };
 
 const S = {
-  input:  {
+  input: {
     background: "#fff", border: "1px solid #dadce0", borderRadius: 8,
     padding: "9px 12px", color: "#3c4043", fontSize: 13,
     width: "100%", outline: "none", boxSizing: "border-box", fontFamily: "inherit",
@@ -55,8 +56,37 @@ function Campo({ label, children, obrigatorio }) {
   );
 }
 
+function AcaoBotao({ label, onClick, danger = false, disabled = false }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        padding: "8px 12px",
+        background: hover && !disabled ? (danger ? "rgba(234,67,53,0.08)" : "#f1f3f4") : "transparent",
+        border: `1px solid ${danger ? "#ea4335" : "#dadce0"}`,
+        borderRadius: 8,
+        cursor: disabled ? "not-allowed" : "pointer",
+        fontSize: 12,
+        fontWeight: 600,
+        color: danger ? "#ea4335" : "#3c4043",
+        textAlign: "left",
+        width: "100%",
+        transition: "background 0.15s",
+        fontFamily: "inherit",
+        opacity: disabled ? 0.5 : 1,
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────
-//  Modal — Incluir cobrança
+//  Modal — Incluir
 // ─────────────────────────────────────────────────────────────
 
 function ModalIncluir({ cliente, onClose, onSalvo, toast_ }) {
@@ -81,7 +111,6 @@ function ModalIncluir({ cliente, onClose, onSalvo, toast_ }) {
   async function salvar() {
     if (!valor || parseFloat(valor) <= 0) { toast_("⚠️ Informe o valor."); return; }
     if (!jaRecebido && !vencimento)        { toast_("⚠️ Informe a data de vencimento."); return; }
-
     setSalvando(true);
     try {
       const vencFinal = vencimento || dataPagamento;
@@ -132,23 +161,19 @@ function ModalIncluir({ cliente, onClose, onSalvo, toast_ }) {
   return (
     <div style={overlay} onClick={onClose}>
       <div style={{ ...modalBox, maxWidth: 480 }} onClick={e => e.stopPropagation()}>
-
         <div style={mHeader}>
           <span style={{ fontSize: 15, fontWeight: 700, color: "#1a2535" }}>Incluir cobrança</span>
           <button onClick={onClose} style={btnX}>×</button>
         </div>
 
         <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
-
-          {/* Sacado */}
           <div style={{ fontSize: 13, fontWeight: 600, color: "#3c4043" }}>
             👤 {cliente.nome || cliente.email}
           </div>
 
-          {/* Modo */}
           <div style={{ display: "flex", gap: 8 }}>
             <button type="button" onClick={() => setJaRecebido(false)}
-              style={{ flex: 1, padding: "10px 8px", borderRadius: 8, border: `2px solid ${!jaRecebido ? "#1a73e8" : "#dadce0"}`, background: !jaRecebido ? "#e8f0fe" : "#fff", color: !jaRecebido ? "#1a73e8" : "#5f6368", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+              style={{ flex: 1, padding: "10px 8px", borderRadius: 8, border: `2px solid ${!jaRecebido ? ACCENT : "#dadce0"}`, background: !jaRecebido ? "#e8f0fe" : "#fff", color: !jaRecebido ? ACCENT : "#5f6368", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
               💳 Gerar cobrança
             </button>
             <button type="button" onClick={() => setJaRecebido(true)}
@@ -157,7 +182,6 @@ function ModalIncluir({ cliente, onClose, onSalvo, toast_ }) {
             </button>
           </div>
 
-          {/* Plano */}
           <Campo label="Plano">
             <select style={S.select} value={plano} onChange={e => handlePlano(e.target.value)}>
               <option value="essencial">Essencial — R$ 79</option>
@@ -167,7 +191,6 @@ function ModalIncluir({ cliente, onClose, onSalvo, toast_ }) {
             </select>
           </Campo>
 
-          {/* Valor */}
           <Campo label="Valor (R$)" obrigatorio>
             <input style={S.input} type="number" min="0" step="0.01"
               value={valor} onChange={e => setValor(e.target.value)} />
@@ -229,7 +252,6 @@ function ModalQuitar({ totalValor, qtd, onClose, onConfirm, salvando }) {
   return (
     <div style={overlay} onClick={onClose}>
       <div style={{ ...modalBox, maxWidth: 400 }} onClick={e => e.stopPropagation()}>
-
         <div style={mHeader}>
           <span style={{ fontSize: 15, fontWeight: 700, color: "#1a2535" }}>
             Quitar {qtd > 1 ? `${qtd} cobranças` : "cobrança"}
@@ -238,7 +260,6 @@ function ModalQuitar({ totalValor, qtd, onClose, onConfirm, salvando }) {
         </div>
 
         <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
-
           <div style={{ fontSize: 13, color: "#5f6368" }}>
             Valor original: <strong>R$ {Number(totalValor || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
           </div>
@@ -287,7 +308,7 @@ function ModalQuitar({ totalValor, qtd, onClose, onConfirm, salvando }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Modal — Editar cobrança
+//  Modal — Editar
 // ─────────────────────────────────────────────────────────────
 
 function ModalEditar({ cobranca, onClose, onSalvo, toast_ }) {
@@ -314,7 +335,6 @@ function ModalEditar({ cobranca, onClose, onSalvo, toast_ }) {
   return (
     <div style={overlay} onClick={onClose}>
       <div style={{ ...modalBox, maxWidth: 420 }} onClick={e => e.stopPropagation()}>
-
         <div style={mHeader}>
           <span style={{ fontSize: 15, fontWeight: 700, color: "#1a2535" }}>Editar cobrança</span>
           <button onClick={onClose} style={btnX}>×</button>
@@ -354,16 +374,33 @@ function ModalEditar({ cobranca, onClose, onSalvo, toast_ }) {
 //  Componente principal — ContasCliente
 // ─────────────────────────────────────────────────────────────
 
+const FILTROS = [
+  { val: "pendente",  label: "Pendentes"  },
+  { val: "pago",      label: "Quitadas"   },
+  { val: "cancelado", label: "Canceladas" },
+  { val: "vencida",   label: "Vencidas"   },
+  { val: "todas",     label: "Todas"      },
+];
+
+const planoInfo = {
+  trial:        { label: "Trial",        cor: "#f9ab00" },
+  ativo:        { label: "Ativo",        cor: "#34a853" },
+  bloqueado:    { label: "Bloqueado",    cor: "#ea4335" },
+  pioneiro:     { label: "Pioneiro",     cor: "#f59e0b" },
+  profissional: { label: "Profissional", cor: "#1a73e8" },
+  essencial:    { label: "Essencial",    cor: "#5f6368" },
+};
+
 export default function ContasCliente({ cliente, onClose }) {
-  const [cobrancas,   setCobrancas]   = useState([]);
+  const [cobrancas,    setCobrancas]    = useState([]);
   const [selecionadas, setSelecionadas] = useState([]);
-  const [filtroSit,   setFiltroSit]   = useState("pendente");
-  const [loading,     setLoading]     = useState(true);
-  const [salvando,    setSalvando]    = useState(false);
-  const [toast,       setToast]       = useState("");
-  const [mdIncluir,   setMdIncluir]   = useState(false);
-  const [mdQuitar,    setMdQuitar]    = useState(false);
-  const [mdEditar,    setMdEditar]    = useState(null);
+  const [filtroSit,    setFiltroSit]    = useState("pendente");
+  const [loading,      setLoading]      = useState(true);
+  const [salvando,     setSalvando]     = useState(false);
+  const [toast,        setToast]        = useState("");
+  const [mdIncluir,    setMdIncluir]    = useState(false);
+  const [mdQuitar,     setMdQuitar]     = useState(false);
+  const [mdEditar,     setMdEditar]     = useState(null);
 
   const toast_ = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
 
@@ -376,7 +413,7 @@ export default function ContasCliente({ cliente, onClose }) {
       setCobrancas(lista);
     } catch { toast_("❌ Erro ao carregar."); }
     finally   { setLoading(false); }
-  }, [cliente.id]);
+  }, [cliente.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { carregar(); }, [carregar]);
 
@@ -437,195 +474,190 @@ export default function ContasCliente({ cliente, onClose }) {
     return c.status === filtroSit;
   });
 
-  const totalAberto  = cobrancas.filter(c => c.status === "pendente").reduce((s, c) => s + (Number(c.valor) || 0), 0);
-  const totalPago    = cobrancas.filter(c => c.status === "pago").reduce((s, c) => s + (Number(c.valorPago || c.valor) || 0), 0);
-  const totalSel     = selecionadas.reduce((s, c) => s + (Number(c.valor) || 0), 0);
-  const nSel         = selecionadas.length;
+  const totalFiltrado   = cobrancasFiltradas.reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const totalSelecionado = selecionadas.reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const nSel            = selecionadas.length;
+  const aviso           = () => toast_("⚠️ Selecione ao menos uma cobrança.");
 
-  const planoInfo = {
-    trial:       { label: "Trial",       cor: "#f9ab00" },
-    ativo:       { label: "Ativo",       cor: "#34a853" },
-    bloqueado:   { label: "Bloqueado",   cor: "#ea4335" },
-    pioneiro:    { label: "Pioneiro",    cor: "#f59e0b" },
-    profissional:{ label: "Profissional",cor: "#1a73e8" },
-    essencial:   { label: "Essencial",   cor: "#5f6368" },
-  };
+  const acoes = [
+    { label: "Incluir",  onClick: () => setMdIncluir(true) },
+    { label: "Editar",   onClick: () => { if (nSel !== 1) { toast_("⚠️ Selecione exatamente uma cobrança."); return; } setMdEditar(selecionadas[0]); } },
+    { label: "Quitar",   onClick: () => { if (!nSel) { aviso(); return; } setMdQuitar(true); } },
+    { label: "Cancelar", onClick: cancelar, disabled: salvando },
+    { label: "Excluir",  onClick: excluir,  danger: true, disabled: salvando },
+    { label: "↻ Atualizar", onClick: carregar },
+  ];
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 5000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 16px", overflowY: "auto" }}>
-      <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 900, minHeight: 500, display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,0.4)", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 5000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+      onClick={onClose}>
+      <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 1000, height: "min(88vh, 100%)", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,0.4)", fontFamily: "'Segoe UI', system-ui, sans-serif", overflow: "hidden" }}
+        onClick={e => e.stopPropagation()}>
 
-        {/* Header */}
-        <div style={{ padding: "18px 24px", borderBottom: "1px solid #e8eaed", display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#1a2535" }}>
-              💰 Financeiro — {cliente.nome || cliente.email}
-            </div>
-            <div style={{ fontSize: 12, color: "#9aa0a6", marginTop: 2 }}>{cliente.email}</div>
+        {/* Toast */}
+        {toast && (
+          <div style={{ position: "absolute", top: 16, left: "50%", transform: "translateX(-50%)", background: "#1a2535", color: "#fff", padding: "10px 22px", borderRadius: 8, fontSize: 13, zIndex: 9999, whiteSpace: "nowrap", boxShadow: "0 4px 16px rgba(0,0,0,0.3)", pointerEvents: "none" }}>
+            {toast}
           </div>
-          {cliente.plano && (
-            <span style={{
-              fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 20,
-              background: (planoInfo[cliente.plano]?.cor || "#888") + "20",
-              color: planoInfo[cliente.plano]?.cor || "#888",
-            }}>
-              {planoInfo[cliente.plano]?.label || cliente.plano}
-            </span>
-          )}
-          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, color: "#9aa0a6", cursor: "pointer", lineHeight: 1 }}>×</button>
-        </div>
+        )}
 
-        {/* KPIs */}
-        <div style={{ padding: "16px 24px", display: "flex", gap: 12, borderBottom: "1px solid #e8eaed", background: "#f8f9fa" }}>
-          {[
-            { label: "Em aberto", valor: `R$ ${totalAberto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, cor: "#f9ab00" },
-            { label: "Total pago", valor: `R$ ${totalPago.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, cor: "#34a853" },
-            { label: "Total registros", valor: cobrancas.length, cor: "#1a73e8" },
-          ].map(k => (
-            <div key={k.label} style={{ flex: 1, background: "#fff", border: "1px solid #e8eaed", borderRadius: 10, padding: "12px 16px", borderTop: `3px solid ${k.cor}` }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: k.cor }}>{k.valor}</div>
-              <div style={{ fontSize: 11, color: "#9aa0a6", marginTop: 2 }}>{k.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Toolbar */}
-        <div style={{ padding: "12px 24px", borderBottom: "1px solid #e8eaed", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", background: "#fff" }}>
-          <button onClick={() => setMdIncluir(true)} style={btnAcao("#1a73e8")}>+ Incluir</button>
-          <button onClick={() => { if (!nSel) { toast_("⚠️ Selecione ao menos uma cobrança."); return; } setMdQuitar(true); }} style={btnAcao("#34a853")}>✓ Quitar</button>
-          <button onClick={cancelar} disabled={salvando} style={btnAcao("#f9ab00", "#fff")}>Cancelar</button>
-          <button onClick={excluir} disabled={salvando} style={btnAcaoDanger}>🗑 Excluir</button>
-          {nSel > 0 && (
-            <span style={{ fontSize: 12, color: "#5f6368", marginLeft: 4 }}>
-              {nSel} selecionada(s) · R$ {totalSel.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </span>
-          )}
+        {/* Aba header */}
+        <div style={{ display: "flex", alignItems: "center", borderBottom: "1px solid #e8eaed", background: "#f8f9fa", padding: "0 16px" }}>
+          <button style={{ padding: "14px 20px", fontWeight: 700, fontSize: 13, border: "none", cursor: "default", background: `${ACCENT}18`, color: ACCENT, borderBottom: `2px solid ${ACCENT}`, fontFamily: "inherit" }}>
+            Contas a Receber
+          </button>
           <div style={{ flex: 1 }} />
-          <button onClick={carregar} style={{ ...btnSecundario, fontSize: 12, padding: "6px 12px" }}>↻ Atualizar</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginRight: 8 }}>
+            <span style={{ fontSize: 12, color: "#9aa0a6" }}>{cliente.nome || cliente.email}</span>
+            {cliente.plano && (
+              <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: (planoInfo[cliente.plano]?.cor || "#888") + "20", color: planoInfo[cliente.plano]?.cor || "#888" }}>
+                {planoInfo[cliente.plano]?.label || cliente.plano}
+              </span>
+            )}
+          </div>
+          <button onClick={onClose} style={{ padding: "8px", border: "none", background: "transparent", cursor: "pointer", color: "#9aa0a6", fontSize: 20, lineHeight: 1 }}>×</button>
         </div>
 
-        {/* Filtros de situação */}
-        <div style={{ padding: "10px 24px", borderBottom: "1px solid #e8eaed", display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {[
-            { id: "todas",    label: "Todas",    n: cobrancas.length },
-            { id: "pendente", label: "Pendentes",n: cobrancas.filter(c => c.status === "pendente").length },
-            { id: "pago",     label: "Quitadas", n: cobrancas.filter(c => c.status === "pago").length },
-            { id: "vencida",  label: "Vencidas", n: cobrancas.filter(c => c.status === "pendente" && c.vencimento < hoje).length },
-            { id: "cancelado",label: "Canceladas",n: cobrancas.filter(c => c.status === "cancelado").length },
-          ].map(f => (
-            <button key={f.id} onClick={() => setFiltroSit(f.id)}
-              style={{
-                padding: "5px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-                background: filtroSit === f.id ? "#1a73e8" : "#f1f3f4",
-                color:      filtroSit === f.id ? "#fff"    : "#5f6368",
-                border:     filtroSit === f.id ? "1px solid #1a73e8" : "1px solid transparent",
-              }}>
-              {f.label} <span style={{ opacity: 0.75 }}>({f.n})</span>
-            </button>
-          ))}
-        </div>
+        {/* Corpo: tabela + sidebar */}
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
 
-        {/* Tabela */}
-        <div style={{ flex: 1, overflowX: "auto" }}>
-          {loading ? (
-            <div style={{ padding: 40, textAlign: "center", color: "#9aa0a6" }}>Carregando...</div>
-          ) : cobrancasFiltradas.length === 0 ? (
-            <div style={{ padding: 40, textAlign: "center", color: "#9aa0a6" }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>💸</div>
-              <div>Nenhuma cobrança nesta situação.</div>
-              <div style={{ fontSize: 12, marginTop: 6 }}>Clique em "+ Incluir" para criar a primeira.</div>
-            </div>
-          ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: "#f8f9fa", borderBottom: "1px solid #e8eaed" }}>
-                  <th style={thStyle}><input type="checkbox" onChange={e => setSelecionadas(e.target.checked ? cobrancasFiltradas : [])} checked={nSel === cobrancasFiltradas.length && nSel > 0} /></th>
-                  <th style={thStyle}>Descrição</th>
-                  <th style={thStyle}>Plano</th>
-                  <th style={thStyle}>Valor</th>
-                  <th style={thStyle}>Vencimento</th>
-                  <th style={thStyle}>Situação</th>
-                  <th style={thStyle}>Pago em</th>
-                  <th style={thStyle}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {cobrancasFiltradas.map((c, i) => {
-                  const vencida = c.status === "pendente" && c.vencimento && c.vencimento < hoje;
-                  const sitKey  = vencida ? "vencida" : (c.status || "pendente");
-                  const sit     = COR_SIT[sitKey] || COR_SIT.pendente;
-                  const sel     = !!selecionadas.find(x => x.id === c.id);
-
-                  return (
-                    <tr key={c.id} style={{ background: sel ? "#e8f0fe" : i % 2 === 0 ? "#fff" : "#fafafa", borderBottom: "1px solid #e8eaed" }}>
-                      <td style={tdStyle}>
-                        <input type="checkbox" checked={sel} onChange={() => toggleSel(c)} />
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={{ fontWeight: 600, color: "#1a2535" }}>{c.descricao || "—"}</span>
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={{ fontSize: 11, fontWeight: 700, background: "#f1f3f4", color: "#5f6368", padding: "2px 8px", borderRadius: 12 }}>
-                          {c.plano || "—"}
-                        </span>
-                      </td>
-                      <td style={{ ...tdStyle, fontWeight: 700, color: "#1a2535", whiteSpace: "nowrap" }}>
-                        R$ {Number(c.valor || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </td>
-                      <td style={{ ...tdStyle, color: vencida ? "#ea4335" : "#5f6368", whiteSpace: "nowrap" }}>
-                        {c.vencimento ? new Date(c.vencimento + "T12:00").toLocaleDateString("pt-BR") : "—"}
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: sit.bg, color: sit.text }}>
-                          {sit.label}
-                        </span>
-                      </td>
-                      <td style={{ ...tdStyle, color: "#5f6368", fontSize: 12, whiteSpace: "nowrap" }}>
-                        {c.pagoEm
-                          ? new Date(c.pagoEm?.toDate?.() || c.pagoEm).toLocaleDateString("pt-BR")
-                          : "—"}
-                        {c.formaPagamento && (
-                          <div style={{ fontSize: 11, color: "#9aa0a6" }}>
-                            {FORMAS_PAGAMENTO.find(f => f.val === c.formaPagamento)?.label || c.formaPagamento}
-                          </div>
-                        )}
-                      </td>
-                      <td style={tdStyle}>
-                        <button onClick={() => setMdEditar(c)}
-                          style={{ background: "none", border: "1px solid #dadce0", borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer", color: "#5f6368", fontFamily: "inherit" }}>
-                          Editar
-                        </button>
-                      </td>
+          {/* Tabela */}
+          <div style={{ flex: 1, overflow: "auto" }}>
+            {loading ? (
+              <div style={{ padding: 40, textAlign: "center", color: "#9aa0a6" }}>Carregando...</div>
+            ) : cobrancasFiltradas.length === 0 ? (
+              <div style={{ padding: 40, textAlign: "center", color: "#9aa0a6" }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>💸</div>
+                <div>Nenhum registro encontrado para este filtro.</div>
+                <div style={{ fontSize: 12, marginTop: 6 }}>Clique em "Incluir" para criar a primeira cobrança.</div>
+              </div>
+            ) : (
+              <>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: "#f8f9fa", borderBottom: "1px solid #e8eaed", position: "sticky", top: 0 }}>
+                      <th style={thStyle}>
+                        <input type="checkbox"
+                          onChange={e => setSelecionadas(e.target.checked ? cobrancasFiltradas : [])}
+                          checked={nSel === cobrancasFiltradas.length && nSel > 0}
+                          style={{ accentColor: ACCENT }} />
+                      </th>
+                      <th style={thStyle}>Descrição</th>
+                      <th style={thStyle}>Plano</th>
+                      <th style={thStyle}>Vencimento</th>
+                      <th style={thStyle}>Pagamento</th>
+                      <th style={thStyle}>Valor</th>
+                      <th style={thStyle}>Situação</th>
+                      <th style={thStyle}>Forma</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
+                  </thead>
+                  <tbody>
+                    {cobrancasFiltradas.map((c, i) => {
+                      const vencida = c.status === "pendente" && c.vencimento && c.vencimento < hoje;
+                      const sitKey  = vencida ? "vencida" : (c.status || "pendente");
+                      const sit     = COR_SIT[sitKey] || COR_SIT.pendente;
+                      const sel     = !!selecionadas.find(x => x.id === c.id);
+                      return (
+                        <tr key={c.id}
+                          onClick={() => toggleSel(c)}
+                          onDoubleClick={() => { setSelecionadas([c]); setMdEditar(c); }}
+                          style={{ background: sel ? `${ACCENT}10` : i % 2 === 0 ? "#fff" : "#fafafa", cursor: "pointer", borderBottom: "1px solid #e8eaed" }}>
+                          <td style={tdStyle} onClick={e => e.stopPropagation()}>
+                            <input type="checkbox" checked={sel} onChange={() => toggleSel(c)} style={{ accentColor: ACCENT }} />
+                          </td>
+                          <td style={{ ...tdStyle, fontWeight: 600, color: "#1a2535" }}>{c.descricao || "—"}</td>
+                          <td style={tdStyle}>
+                            <span style={{ fontSize: 11, fontWeight: 700, background: "#f1f3f4", color: "#5f6368", padding: "2px 8px", borderRadius: 12 }}>
+                              {c.plano || "—"}
+                            </span>
+                          </td>
+                          <td style={{ ...tdStyle, color: vencida ? "#ea4335" : "#5f6368", whiteSpace: "nowrap" }}>
+                            {c.vencimento ? new Date(c.vencimento + "T12:00").toLocaleDateString("pt-BR") : "—"}
+                          </td>
+                          <td style={{ ...tdStyle, color: "#5f6368", fontSize: 12, whiteSpace: "nowrap" }}>
+                            {c.pagoEm
+                              ? new Date(c.pagoEm?.toDate?.() || c.pagoEm).toLocaleDateString("pt-BR")
+                              : "—"}
+                          </td>
+                          <td style={{ ...tdStyle, fontWeight: 700, color: "#1a2535", whiteSpace: "nowrap" }}>
+                            R$ {Number(c.status === "pago" && c.valorPago ? c.valorPago : c.valor || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </td>
+                          <td style={tdStyle}>
+                            <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: sit.bg, color: sit.text }}>
+                              {sit.label}
+                            </span>
+                          </td>
+                          <td style={{ ...tdStyle, color: "#9aa0a6", fontSize: 12 }}>
+                            {c.formaPagamento
+                              ? FORMAS_PAGAMENTO.find(f => f.val === c.formaPagamento)?.label || c.formaPagamento
+                              : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <div style={{ padding: "10px 16px", borderTop: "1px solid #e8eaed", display: "flex", justifyContent: "flex-end", gap: 8, fontSize: 13, background: "#f8f9fa" }}>
+                  <span style={{ color: "#9aa0a6" }}>{cobrancasFiltradas.length} registro{cobrancasFiltradas.length !== 1 ? "s" : ""} · Total:</span>
+                  <span style={{ fontWeight: 700, color: "#1a2535" }}>R$ {totalFiltrado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                </div>
+              </>
+            )}
+          </div>
 
-        {/* Footer */}
-        <div style={{ padding: "12px 24px", borderTop: "1px solid #e8eaed", display: "flex", justifyContent: "flex-end", background: "#f8f9fa" }}>
-          <button onClick={onClose} style={btnSecundario}>Fechar</button>
+          {/* Sidebar direita */}
+          <div style={{ width: 190, borderLeft: "1px solid #e8eaed", display: "flex", flexDirection: "column", flexShrink: 0, background: "#f8f9fa", overflowY: "auto" }}>
+
+            {/* Ações */}
+            <div style={{ padding: "10px 14px", fontSize: 11, fontWeight: 700, color: "#9aa0a6", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: "1px solid #e8eaed" }}>
+              Ações
+            </div>
+            <div style={{ padding: "10px", display: "flex", flexDirection: "column", gap: 6, borderBottom: "1px solid #e8eaed" }}>
+              {acoes.map(a => (
+                <AcaoBotao key={a.label} label={a.label} onClick={a.onClick} danger={a.danger} disabled={a.disabled} />
+              ))}
+            </div>
+
+            {/* Filtros */}
+            <div style={{ padding: "10px 14px", fontSize: 11, fontWeight: 700, color: "#9aa0a6", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: "1px solid #e8eaed" }}>
+              Filtros Rápidos
+            </div>
+            <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 2, borderBottom: "1px solid #e8eaed" }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#5f6368", marginBottom: 8, border: "1px solid #e8eaed", borderRadius: 6, padding: "5px 10px", background: "#fff" }}>
+                Situação
+              </div>
+              {FILTROS.map(fi => (
+                <label key={fi.val} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, cursor: "pointer", color: filtroSit === fi.val ? ACCENT : "#5f6368", fontWeight: filtroSit === fi.val ? 700 : 400, padding: "4px 2px", fontFamily: "inherit" }}>
+                  <input type="radio" name="filtroSit" value={fi.val} checked={filtroSit === fi.val} onChange={() => setFiltroSit(fi.val)} style={{ accentColor: ACCENT }} />
+                  {fi.label}
+                </label>
+              ))}
+            </div>
+
+            {/* Info de seleção */}
+            {nSel > 0 && (
+              <div style={{ margin: "10px", padding: "10px 12px", background: `${ACCENT}0D`, border: `1px solid ${ACCENT}30`, borderRadius: 8, fontSize: 11, color: ACCENT }}>
+                <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 12 }}>{nSel} selecionada{nSel > 1 ? "s" : ""}</div>
+                {nSel === 1 && <div style={{ color: "#5f6368", marginBottom: 4, fontSize: 11 }}>{selecionadas[0].descricao}</div>}
+                <div style={{ fontWeight: 700, color: "#1a2535" }}>
+                  R$ {totalSelecionado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </div>
+                {nSel === 1 && <div style={{ marginTop: 5, fontSize: 10, color: "#9aa0a6" }}>Duplo clique para editar</div>}
+                <button onClick={() => setSelecionadas([])} style={{ marginTop: 8, width: "100%", padding: "4px", background: "none", border: "1px solid #dadce0", borderRadius: 6, color: "#9aa0a6", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
+                  Limpar seleção
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Toast */}
-      {toast && (
-        <div style={{ position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)", background: "#1a2535", color: "#fff", padding: "10px 20px", borderRadius: 10, fontSize: 13, fontWeight: 600, zIndex: 6000, pointerEvents: "none" }}>
-          {toast}
-        </div>
-      )}
 
       {/* Modais */}
       {mdIncluir && (
         <ModalIncluir cliente={cliente} onClose={() => setMdIncluir(false)} onSalvo={carregar} toast_={toast_} />
       )}
       {mdQuitar && (
-        <ModalQuitar
-          totalValor={totalSel} qtd={nSel}
-          onClose={() => setMdQuitar(false)} onConfirm={quitar} salvando={salvando}
-        />
+        <ModalQuitar totalValor={totalSelecionado} qtd={nSel} onClose={() => setMdQuitar(false)} onConfirm={quitar} salvando={salvando} />
       )}
       {mdEditar && (
         <ModalEditar cobranca={mdEditar} onClose={() => setMdEditar(null)} onSalvo={carregar} toast_={toast_} />
@@ -642,12 +674,7 @@ const overlay   = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", 
 const modalBox  = { background: "#fff", borderRadius: 16, width: "100%", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,0.4)", fontFamily: "'Segoe UI', system-ui, sans-serif", maxHeight: "92vh", overflowY: "auto" };
 const mHeader   = { padding: "18px 24px", borderBottom: "1px solid #e8eaed", display: "flex", alignItems: "center", justifyContent: "space-between" };
 const btnX      = { background: "none", border: "none", fontSize: 22, color: "#9aa0a6", cursor: "pointer", lineHeight: 1 };
-const btnPrimario    = { padding: "9px 20px", background: "#1a73e8", border: "none", borderRadius: 8, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };
-const btnSecundario  = { padding: "9px 16px", background: "none", border: "1px solid #dadce0", borderRadius: 8, color: "#5f6368", fontSize: 13, cursor: "pointer", fontFamily: "inherit" };
+const btnPrimario   = { padding: "9px 20px", background: ACCENT, border: "none", borderRadius: 8, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };
+const btnSecundario = { padding: "9px 16px", background: "none", border: "1px solid #dadce0", borderRadius: 8, color: "#5f6368", fontSize: 13, cursor: "pointer", fontFamily: "inherit" };
 const thStyle   = { padding: "10px 14px", textAlign: "left", fontWeight: 700, fontSize: 11, color: "#9aa0a6", textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap" };
 const tdStyle   = { padding: "10px 14px" };
-
-function btnAcao(bg, color = "#fff") {
-  return { padding: "7px 14px", background: bg, border: "none", borderRadius: 8, color, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };
-}
-const btnAcaoDanger = { padding: "7px 14px", background: "none", border: "1px solid #ea4335", borderRadius: 8, color: "#ea4335", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };

@@ -1073,8 +1073,18 @@ export default function Configuracoes() {
               </a>
             </div>
           ) : (
-            <div className="cfg-card" style={{ background: "#e6f4ea", borderColor: "#34a853" }}>
+            <div className="cfg-card" style={{ background: "#e6f4ea", borderColor: "#34a853", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
               <p style={{ margin: 0, fontWeight: 600, color: "#137333" }}>✅ Página Profissional ativa! Preencha os campos abaixo para personalizar.</p>
+              {slug && (
+                <a
+                  href={`/preview/${slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#137333", color: "#fff", padding: "8px 16px", borderRadius: 8, fontWeight: 600, fontSize: 13, textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}
+                >
+                  👁 Ver preview
+                </a>
+              )}
             </div>
           )}
 
