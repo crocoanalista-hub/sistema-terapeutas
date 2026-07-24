@@ -54,6 +54,30 @@ const calcularNivelInatividade = (ultimoAcesso) => {
   return { ...NIVEIS_INATIVIDADE[4], diasInativo };
 };
 
+const thFin = { padding: "8px 12px", textAlign: "left", fontWeight: 600, fontSize: 12, color: "#5f6368", userSelect: "none", whiteSpace: "nowrap" };
+const tdFin = { padding: "8px 12px", verticalAlign: "middle" };
+
+const COR_SIT_FIN = {
+  pendente:  { bg: "#fef9e7", text: "#f9ab00", label: "Pendente" },
+  pago:      { bg: "#e6f4ea", text: "#34a853", label: "Pago" },
+  cancelado: { bg: "#f1f3f4", text: "#9aa0a6", label: "Cancelado" },
+  vencida:   { bg: "#fce8e6", text: "#ea4335", label: "Vencida" },
+};
+
+function FinAcaoBotao({ label, onClick, danger }) {
+  return (
+    <button onClick={onClick} style={{
+      width: "100%", padding: "7px 10px", background: "#fff", border: "1px solid #dadce0",
+      borderRadius: 6, fontSize: 12, color: danger ? "#ea4335" : "#3c4043", fontWeight: 500,
+      cursor: "pointer", textAlign: "left", transition: "background 0.15s",
+    }}
+      onMouseEnter={e => e.currentTarget.style.background = danger ? "#fce8e6" : "#f1f3f4"}
+      onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+      {label}
+    </button>
+  );
+}
+
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -105,6 +129,8 @@ export default function Admin() {
   const [novaCobranca, setNovaCobranca] = useState({ valor: "", vencimento: "", plano: "essencial", descricao: "", recorrente: false, diaVencimento: "10", cpfCnpj: "", mobilePhone: "", jaRecebido: false, formaPagamento: "pix", dataPagamento: new Date().toISOString().slice(0, 10) });
   const [linkCobrancaCriada, setLinkCobrancaCriada] = useState(null);
   const [salvandoCob, setSalvandoCob] = useState(false);
+  const [finFiltro, setFinFiltro] = useState("pendente");
+  const [finSelecionadas, setFinSelecionadas] = useState([]);
 
   // Acesso restrito
   useEffect(() => {
@@ -758,156 +784,220 @@ export default function Admin() {
       )}
 
       {/* ─── ABA FINANCEIRO ─── */}
-      {abaAtiva === "financeiro" && (
-        <div className="admin-financeiro">
+      {abaAtiva === "financeiro" && (() => {
+        const hoje = new Date().toISOString().slice(0, 10);
+        const cobrancasFiltradas = cobrancas.filter(c => {
+          if (finFiltro === "todas")    return true;
+          if (finFiltro === "vencida")  return c.status === "pendente" && c.vencimento && c.vencimento < hoje;
+          if (finFiltro === "pago")     return c.status === "pago";
+          if (finFiltro === "cancelado")return c.status === "cancelado";
+          return c.status === "pendente";
+        });
+        const totalFiltrado   = cobrancasFiltradas.reduce((s, c) => s + (Number(c.valor) || 0), 0);
+        const totalSelecionado = finSelecionadas.reduce((s, c) => s + (Number(c.valor) || 0), 0);
+        const nSel = finSelecionadas.length;
+        const selUnica = nSel === 1 ? finSelecionadas[0] : null;
 
-          {/* KPIs */}
-          <div className="admin-fin-kpis">
-            {[
-              { label: "Receita total",       valor: `R$ ${mrr.toFixed(2).replace(".", ",")}`,   cor: "#34a853" },
-              { label: "Cobranças pagas",     valor: cobPagas.length,                            cor: "#1a73e8" },
-              { label: "Cobranças pendentes", valor: cobPendentes.length,                        cor: "#f9ab00" },
-              { label: "Inadimplentes",       valor: inadimplentes.length,                       cor: "#ea4335" },
-            ].map(k => (
-              <div key={k.label} className="admin-stat-card" style={{ borderTopColor: k.cor }}>
-                <span className="admin-stat-valor" style={{ color: k.cor }}>{k.valor}</span>
-                <span className="admin-stat-label">{k.label}</span>
-              </div>
-            ))}
-          </div>
+        const abrirNovaCobranca = () => {
+          if (terapeutas.length === 0) { alert("Carregue a aba Contas primeiro."); return; }
+          const t = selUnica ? terapeutas.find(x => x.id === selUnica.terapeutaId) || terapeutas[0] : terapeutas[0];
+          setModalCobranca({ terapeutaId: t.id, nome: t.nome, email: t.email });
+          setNovaCobranca({ valor: "79", vencimento: "", plano: "essencial", descricao: "", recorrente: false, diaVencimento: "10", cpfCnpj: "", mobilePhone: "", jaRecebido: false, formaPagamento: "pix", dataPagamento: new Date().toISOString().slice(0, 10) });
+        };
 
-          {/* Barra de ações */}
-          <div className="admin-fin-toolbar">
-            <span className="admin-fin-titulo">Cobranças</span>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button className="admin-btn-refresh" onClick={carregarFinanceiro}>↻ Atualizar</button>
-              <button
-                className="admin-btn admin-btn--ativar"
-                onClick={() => {
-                  if (terapeutas.length === 0) { alert("Carregue a aba Contas primeiro."); return; }
-                  const t = terapeutas[0];
-                  setModalCobranca({ terapeutaId: t.id, nome: t.nome, email: t.email });
-                  setNovaCobranca({ valor: "79", vencimento: "", plano: "essencial", descricao: "", recorrente: false, diaVencimento: "10", cpfCnpj: "", mobilePhone: "", jaRecebido: false, formaPagamento: "pix", dataPagamento: new Date().toISOString().slice(0, 10) });
-                }}
-              >+ Nova cobrança</button>
-            </div>
-          </div>
+        const quitarSelecionadas = async () => {
+          if (!nSel) return;
+          for (const c of finSelecionadas) {
+            if (c.status !== "pago") await handleMarcarPago(c);
+          }
+          setFinSelecionadas([]);
+        };
 
-          {/* Tabela de cobranças */}
-          {carregandoFin ? (
-            <p className="admin-vazio">Carregando…</p>
-          ) : cobrancas.length === 0 ? (
-            <div className="admin-fin-vazio">
-              <p>Nenhuma cobrança registrada ainda.</p>
-              <p style={{ fontSize: 13, color: "#9aa0a6" }}>Clique em "+ Nova cobrança" para registrar a primeira.</p>
-            </div>
-          ) : (
-            <div className="admin-fin-tabela-wrap">
-              <table className="admin-fin-tabela">
-                <thead>
-                  <tr>
-                    <th>Cliente</th>
-                    <th>Plano</th>
-                    <th>Descrição</th>
-                    <th>Valor</th>
-                    <th>Vencimento</th>
-                    <th>Status</th>
-                    <th>Pago em</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cobrancas.map(c => {
-                    const venc = c.vencimento ? new Date(c.vencimento + "T23:59") : null;
-                    const atrasado = c.status === "pendente" && venc && venc < new Date();
-                    return (
-                      <tr key={c.id} className={atrasado ? "admin-fin-row-atrasado" : ""}>
-                        <td>
-                          <span className="admin-fin-nome">{c.terapeutaNome || "—"}</span>
-                          <span className="admin-fin-email">{c.terapeutaEmail}</span>
-                        </td>
-                        <td>
-                          <span className="admin-fin-plano-badge">{c.plano || "—"}</span>
-                          {c.recorrente && <span className="admin-recorrente-badge">🔁</span>}
-                        </td>
-                        <td className="admin-fin-desc">{c.descricao || "—"}</td>
-                        <td className="admin-fin-valor">R$ {Number(c.valor || 0).toFixed(2).replace(".", ",")}</td>
-                        <td>{c.vencimento ? new Date(c.vencimento + "T12:00").toLocaleDateString("pt-BR") : "—"}</td>
-                        <td>
-                          <span className={`admin-fin-status admin-fin-status--${c.status}`}>
-                            {c.status === "pago" ? "✅ Pago" : c.status === "cancelado" ? "❌ Cancelado" : atrasado ? "⚠️ Atrasado" : "🕐 Pendente"}
-                          </span>
-                        </td>
-                        <td>
-                          {c.pagoEm ? new Date(c.pagoEm?.toDate?.() || c.pagoEm).toLocaleDateString("pt-BR") : "—"}
-                          {c.formaPagamento && <span style={{ display: "block", fontSize: 11, color: "#888" }}>{c.formaPagamento}</span>}
-                        </td>
-                        <td>
-                          <div className="admin-fin-acoes">
-                            {c.status === "pendente" && (
-                              <>
-                                <button className="admin-fin-btn admin-fin-btn--pago" onClick={() => handleMarcarPago(c)}>✅ Marcar pago</button>
-                                <button className="admin-fin-btn admin-fin-btn--cancel" onClick={() => handleCancelarCobranca(c)}>Cancelar</button>
-                              </>
-                            )}
-                            {c.status === "pago" && (
-                              <button className="admin-fin-btn admin-fin-btn--cancel" onClick={() => handleDesmarcarPago(c)}>↩ Desmarcar</button>
-                            )}
-                            {c.status === "cancelado" && (
-                              <button className="admin-fin-btn admin-fin-btn--gerar" onClick={() => handleReabrirCobranca(c)}>↩ Reabrir</button>
-                            )}
-                            <button className="admin-fin-btn admin-fin-btn--del" onClick={() => handleExcluirCobranca(c)}>🗑</button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+        const cancelarSelecionadas = async () => {
+          if (!nSel) { alert("Selecione ao menos uma cobrança."); return; }
+          if (!window.confirm(`Cancelar ${nSel} cobrança(s)?`)) return;
+          for (const c of finSelecionadas) await atualizarCobranca(c.id, { status: "cancelado" });
+          setFinSelecionadas([]);
+          carregarFinanceiro();
+        };
 
-          {/* Atalhos: gerar cobrança por cliente */}
-          <div className="admin-fin-clientes-titulo">Gerar cobrança por cliente</div>
-          <div className="admin-fin-clientes">
-            {terapeutas.filter(t => t.plano === "ativo").map(t => (
-              <div key={t.id} className="admin-fin-cliente-card">
-                <div className="admin-fin-cliente-info">
-                  <span className="admin-fin-nome">
-                    {t.nome}
-                    {t.assinaturaSaas?.ativa && (
-                      <span className="admin-assin-badge">🔁 Assinatura • todo dia {t.assinaturaSaas.diaVencimento}</span>
-                    )}
-                  </span>
-                  <span className="admin-fin-email">{t.email}</span>
+        const excluirSelecionadas = async () => {
+          if (!nSel) { alert("Selecione ao menos uma cobrança."); return; }
+          if (!window.confirm(`Excluir ${nSel} cobrança(s)?`)) return;
+          const { deleteDoc, doc: fbDoc } = await import("firebase/firestore");
+          const { db } = await import("../../services/firebaseConfig");
+          for (const c of finSelecionadas) await deleteDoc(fbDoc(db, "cobrancas", c.id));
+          setFinSelecionadas([]);
+          carregarFinanceiro();
+        };
+
+        const toggleSel = (c) => setFinSelecionadas(prev =>
+          prev.find(x => x.id === c.id) ? prev.filter(x => x.id !== c.id) : [...prev, c]
+        );
+
+        const FIN_FILTROS = [
+          { val: "pendente",  label: "Pendentes",  n: cobrancas.filter(c => c.status === "pendente").length },
+          { val: "pago",      label: "Quitadas",   n: cobrancas.filter(c => c.status === "pago").length },
+          { val: "cancelado", label: "Canceladas", n: cobrancas.filter(c => c.status === "cancelado").length },
+          { val: "vencida",   label: "Vencidas",   n: cobrancas.filter(c => c.status === "pendente" && c.vencimento && c.vencimento < hoje).length },
+          { val: "todas",     label: "Todas",      n: cobrancas.length },
+        ];
+
+        const acoes = [
+          { label: "+ Incluir",  onClick: abrirNovaCobranca },
+          { label: "✓ Quitar",   onClick: quitarSelecionadas },
+          { label: "Cancelar",   onClick: cancelarSelecionadas },
+          { label: "Excluir",    onClick: excluirSelecionadas, danger: true },
+          { label: "↻ Atualizar",onClick: carregarFinanceiro },
+        ];
+
+        return (
+          <div style={{ display: "flex", flex: 1, overflow: "hidden", height: "calc(100vh - 220px)", minHeight: 400 }}>
+
+            {/* Tabela */}
+            <div style={{ flex: 1, overflowY: "auto", borderRight: "1px solid #e8eaed" }}>
+              {carregandoFin ? (
+                <p style={{ padding: 32, color: "#9aa0a6", fontSize: 13 }}>Carregando…</p>
+              ) : cobrancasFiltradas.length === 0 ? (
+                <div style={{ padding: 40, textAlign: "center", color: "#9aa0a6" }}>
+                  <div style={{ fontSize: 28, marginBottom: 10 }}>💸</div>
+                  <div>Nenhuma cobrança neste filtro.</div>
+                  <div style={{ fontSize: 12, marginTop: 6 }}>Clique em "+ Incluir" para criar a primeira.</div>
                 </div>
-                <button
-                  className="admin-fin-btn admin-fin-btn--gerar"
-                  onClick={() => {
-                    const as = t.assinaturaSaas;
-                    setModalCobranca({ terapeutaId: t.id, nome: t.nome, email: t.email });
-                    setNovaCobranca({
-                      valor: as?.valor ? String(as.valor) : "79",
-                      vencimento: "",
-                      plano: as?.plano || "essencial",
-                      descricao: as?.descricao || "",
-                      recorrente: false,
-                      diaVencimento: as?.diaVencimento ? String(as.diaVencimento) : "10",
-                      cpfCnpj: "", mobilePhone: "",
-                      jaRecebido: false, formaPagamento: "pix", dataPagamento: new Date().toISOString().slice(0, 10),
-                    });
-                  }}
-                >
-                  + Cobrança
-                </button>
+              ) : (
+                <>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: "#f8f9fa", borderBottom: "1px solid #e8eaed", position: "sticky", top: 0 }}>
+                        <th style={thFin}>
+                          <input type="checkbox" style={{ accentColor: "#1a73e8" }}
+                            checked={nSel === cobrancasFiltradas.length && nSel > 0}
+                            onChange={e => setFinSelecionadas(e.target.checked ? cobrancasFiltradas : [])} />
+                        </th>
+                        <th style={thFin}>Cliente</th>
+                        <th style={thFin}>Plano</th>
+                        <th style={thFin}>Descrição</th>
+                        <th style={thFin}>Vencimento</th>
+                        <th style={thFin}>Pagamento</th>
+                        <th style={thFin}>Valor</th>
+                        <th style={thFin}>Situação</th>
+                        <th style={thFin}>Forma</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cobrancasFiltradas.map((c, i) => {
+                        const vencida = c.status === "pendente" && c.vencimento && c.vencimento < hoje;
+                        const sitKey  = vencida ? "vencida" : c.status;
+                        const sit     = COR_SIT_FIN[sitKey] || COR_SIT_FIN.pendente;
+                        const sel     = !!finSelecionadas.find(x => x.id === c.id);
+                        return (
+                          <tr key={c.id} onClick={() => toggleSel(c)}
+                            style={{ background: sel ? "#e8f0fe" : i % 2 === 0 ? "#fff" : "#fafafa", cursor: "pointer", borderBottom: "1px solid #e8eaed" }}>
+                            <td style={tdFin} onClick={e => e.stopPropagation()}>
+                              <input type="checkbox" checked={sel} onChange={() => toggleSel(c)} style={{ accentColor: "#1a73e8" }} />
+                            </td>
+                            <td style={tdFin}>
+                              <div style={{ fontWeight: 600, color: "#1a2535", fontSize: 13 }}>{c.terapeutaNome || "—"}</div>
+                              <div style={{ fontSize: 11, color: "#9aa0a6" }}>{c.terapeutaEmail}</div>
+                            </td>
+                            <td style={tdFin}>
+                              <span style={{ fontSize: 11, fontWeight: 700, background: "#f1f3f4", color: "#5f6368", padding: "2px 8px", borderRadius: 12 }}>
+                                {c.plano || "—"}
+                              </span>
+                              {c.recorrente && <span style={{ marginLeft: 4, fontSize: 11 }}>🔁</span>}
+                            </td>
+                            <td style={{ ...tdFin, color: "#5f6368", maxWidth: 180 }}>{c.descricao || "—"}</td>
+                            <td style={{ ...tdFin, color: vencida ? "#ea4335" : "#5f6368", whiteSpace: "nowrap" }}>
+                              {c.vencimento ? new Date(c.vencimento + "T12:00").toLocaleDateString("pt-BR") : "—"}
+                            </td>
+                            <td style={{ ...tdFin, color: "#5f6368", fontSize: 12, whiteSpace: "nowrap" }}>
+                              {c.pagoEm ? new Date(c.pagoEm?.toDate?.() || c.pagoEm).toLocaleDateString("pt-BR") : "—"}
+                            </td>
+                            <td style={{ ...tdFin, fontWeight: 700, color: "#1a2535", whiteSpace: "nowrap" }}>
+                              R$ {Number(c.valor || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            </td>
+                            <td style={tdFin}>
+                              <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: sit.bg, color: sit.text }}>
+                                {sit.label}
+                              </span>
+                            </td>
+                            <td style={{ ...tdFin, color: "#9aa0a6", fontSize: 12 }}>
+                              {c.formaPagamento || "—"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <div style={{ padding: "10px 16px", borderTop: "1px solid #e8eaed", display: "flex", justifyContent: "flex-end", gap: 8, fontSize: 13, background: "#f8f9fa" }}>
+                    <span style={{ color: "#9aa0a6" }}>{cobrancasFiltradas.length} registro{cobrancasFiltradas.length !== 1 ? "s" : ""} · Total:</span>
+                    <span style={{ fontWeight: 700, color: "#1a2535" }}>R$ {totalFiltrado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Sidebar */}
+            <div style={{ width: 190, display: "flex", flexDirection: "column", flexShrink: 0, background: "#f8f9fa", overflowY: "auto" }}>
+
+              {/* KPIs compactos */}
+              <div style={{ padding: "12px 14px", borderBottom: "1px solid #e8eaed", display: "flex", flexDirection: "column", gap: 6 }}>
+                {[
+                  { label: "Receita total",   valor: `R$ ${mrr.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, cor: "#34a853" },
+                  { label: "Pagas",           valor: cobPagas.length,    cor: "#1a73e8" },
+                  { label: "Pendentes",       valor: cobPendentes.length, cor: "#f9ab00" },
+                  { label: "Inadimplentes",   valor: inadimplentes.length, cor: "#ea4335" },
+                ].map(k => (
+                  <div key={k.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
+                    <span style={{ color: "#5f6368" }}>{k.label}</span>
+                    <span style={{ fontWeight: 700, color: k.cor }}>{k.valor}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-            {terapeutas.filter(t => t.plano === "ativo").length === 0 && (
-              <p className="admin-vazio">Nenhum cliente com plano ativo. Vá à aba Contas para ativar.</p>
-            )}
+
+              {/* Ações */}
+              <div style={{ padding: "10px 14px", fontSize: 11, fontWeight: 700, color: "#9aa0a6", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: "1px solid #e8eaed" }}>
+                Ações
+              </div>
+              <div style={{ padding: "10px", display: "flex", flexDirection: "column", gap: 6, borderBottom: "1px solid #e8eaed" }}>
+                {acoes.map(a => (
+                  <FinAcaoBotao key={a.label} label={a.label} onClick={a.onClick} danger={a.danger} />
+                ))}
+              </div>
+
+              {/* Filtros */}
+              <div style={{ padding: "10px 14px", fontSize: 11, fontWeight: 700, color: "#9aa0a6", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: "1px solid #e8eaed" }}>
+                Filtros Rápidos
+              </div>
+              <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 2, borderBottom: "1px solid #e8eaed" }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#5f6368", marginBottom: 8, border: "1px solid #e8eaed", borderRadius: 6, padding: "5px 10px", background: "#fff" }}>
+                  Situação
+                </div>
+                {FIN_FILTROS.map(fi => (
+                  <label key={fi.val} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, cursor: "pointer", color: finFiltro === fi.val ? "#1a73e8" : "#5f6368", fontWeight: finFiltro === fi.val ? 700 : 400, padding: "4px 2px" }}>
+                    <input type="radio" name="finFiltro" value={fi.val} checked={finFiltro === fi.val} onChange={() => setFinFiltro(fi.val)} style={{ accentColor: "#1a73e8" }} />
+                    {fi.label} <span style={{ color: "#9aa0a6", fontSize: 11 }}>({fi.n})</span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Info seleção */}
+              {nSel > 0 && (
+                <div style={{ margin: "10px", padding: "10px 12px", background: "#e8f0fe", border: "1px solid #c5d8fb", borderRadius: 8, fontSize: 11, color: "#1a73e8" }}>
+                  <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 12 }}>{nSel} selecionada{nSel > 1 ? "s" : ""}</div>
+                  {selUnica && <div style={{ color: "#5f6368", marginBottom: 4, fontSize: 11 }}>{selUnica.terapeutaNome}</div>}
+                  <div style={{ fontWeight: 700, color: "#1a2535" }}>
+                    R$ {totalSelecionado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </div>
+                  <button onClick={() => setFinSelecionadas([])} style={{ marginTop: 8, width: "100%", padding: "4px", background: "none", border: "1px solid #dadce0", borderRadius: 6, color: "#9aa0a6", fontSize: 11, cursor: "pointer" }}>
+                    Limpar seleção
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Modal financeiro por cliente */}
       {clienteFinanceiro && (
