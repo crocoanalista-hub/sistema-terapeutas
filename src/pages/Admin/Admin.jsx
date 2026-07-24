@@ -10,6 +10,7 @@ import { seedDadosDemo } from "../../services/seedService";
 import { criarCobrancaAsaas } from "../../services/asaasService";
 import { listarPlanos, salvarPlano, excluirPlano, setMembroPioneiro } from "../../services/planosService";
 import { salvarConfiguracoes } from "../../services/configuracoesService";
+import ContasCliente from "./ContasCliente";
 import "../../styles/admin.css";
 
 const ADMIN_EMAILS = [
@@ -94,7 +95,10 @@ export default function Admin() {
   const PLANO_VAZIO = { nome: "", preco: "", precoPioneiro: "", descricao: "", recursos: "", destaque: false, ativo: true, ordem: 99 };
   const [salvandoPlano, setSalvandoPlano] = useState(false);
 
-  // Financeiro
+  // Financeiro por cliente
+  const [clienteFinanceiro, setClienteFinanceiro] = useState(null); // terapeuta selecionado
+
+  // Financeiro global
   const [cobrancas, setCobrancas] = useState([]);
   const [carregandoFin, setCarregandoFin] = useState(false);
   const [modalCobranca, setModalCobranca] = useState(null); // { terapeutaId, nome, email }
@@ -625,6 +629,17 @@ export default function Admin() {
                     )}
                   </div>
 
+                  {/* Financeiro */}
+                  <div style={{ marginBottom: 12 }}>
+                    <button
+                      className="admin-btn admin-btn--ativar"
+                      style={{ background: "#1a73e8" }}
+                      onClick={() => setClienteFinanceiro(t)}
+                    >
+                      💰 Ver financeiro
+                    </button>
+                  </div>
+
                   {/* Ações */}
                   <div className="admin-acoes">
                     {plano !== "ativo" && (
@@ -892,6 +907,14 @@ export default function Admin() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Modal financeiro por cliente */}
+      {clienteFinanceiro && (
+        <ContasCliente
+          cliente={clienteFinanceiro}
+          onClose={() => setClienteFinanceiro(null)}
+        />
       )}
 
       {/* Modal nova cobrança */}
