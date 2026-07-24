@@ -382,30 +382,6 @@ export default function Admin() {
     carregarFinanceiro();
   };
 
-  const handleCancelarCobranca = async (cob) => {
-    if (!window.confirm("Cancelar esta cobrança?")) return;
-    await atualizarCobranca(cob.id, { status: "cancelado" });
-    carregarFinanceiro();
-  };
-
-  const handleDesmarcarPago = async (cob) => {
-    await atualizarCobranca(cob.id, { status: "pendente", pagoEm: null });
-    carregarFinanceiro();
-  };
-
-  const handleReabrirCobranca = async (cob) => {
-    await atualizarCobranca(cob.id, { status: "pendente" });
-    carregarFinanceiro();
-  };
-
-  const handleExcluirCobranca = async (cob) => {
-    if (!window.confirm(`Excluir cobrança de ${cob.terapeutaNome}? Esta ação não pode ser desfeita.`)) return;
-    const { deleteDoc, doc: fbDoc } = await import("firebase/firestore");
-    const { db } = await import("../../services/firebaseConfig");
-    await deleteDoc(fbDoc(db, "cobrancas", cob.id));
-    carregarFinanceiro();
-  };
-
   // Filtros
   const lista = terapeutas.filter((t) => {
     const matchBusca = !busca || t.nome?.toLowerCase().includes(busca.toLowerCase()) || t.email?.toLowerCase().includes(busca.toLowerCase());
