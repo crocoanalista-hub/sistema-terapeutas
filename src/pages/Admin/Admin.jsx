@@ -54,6 +54,17 @@ const calcularNivelInatividade = (ultimoAcesso) => {
   return { ...NIVEIS_INATIVIDADE[4], diasInativo };
 };
 
+function IcAdmin({ type }) {
+  const s = { width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 1.8, viewBox: "0 0 24 24" };
+  if (type === "users")    return <svg {...s}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+  if (type === "dollar")   return <svg {...s}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
+  if (type === "activity") return <svg {...s}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
+  if (type === "settings") return <svg {...s}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
+  if (type === "star")     return <svg {...s}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+  if (type === "plug")     return <svg {...s}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
+  return null;
+}
+
 const thFin = { padding: "8px 12px", textAlign: "left", fontWeight: 600, fontSize: 12, color: "#5f6368", userSelect: "none", whiteSpace: "nowrap" };
 const tdFin = { padding: "8px 12px", verticalAlign: "middle" };
 
@@ -421,73 +432,70 @@ export default function Admin() {
   const mrr           = cobPagas.reduce((s, c) => s + (c.valor || 0), 0);
   const inadimplentes = cobPendentes.filter(c => c.vencimento && new Date(c.vencimento + "T23:59") < new Date());
 
+  const SECOES_ADMIN = [
+    { id: "contas",      label: "Cadastros",     icon: <IcAdmin type="users" /> },
+    { id: "financeiro",  label: "Financeiro",    icon: <IcAdmin type="dollar" /> },
+    { id: "atividade",   label: "Atividade",     icon: <IcAdmin type="activity" /> },
+    { id: "config",      label: "Configurações", icon: <IcAdmin type="settings" /> },
+    { id: "planos",      label: "Planos",        icon: <IcAdmin type="star" /> },
+    { id: "integracoes", label: "Integrações",   icon: <IcAdmin type="plug" /> },
+  ];
+
   return (
-    <div className="admin-page">
-      <div className="admin-header">
-        <div>
-          <h1 className="admin-titulo">Painel Administrativo</h1>
-          <p className="admin-sub">Gestão de contas e planos</p>
+    <div style={{ minHeight: "100vh", background: "#f8f9fa", fontFamily: "'Inter', 'DM Sans', sans-serif", display: "flex", flexDirection: "column" }}>
+
+      {/* Topbar */}
+      <header style={{ position: "sticky", top: 0, zIndex: 100, height: 52, background: "#fff", borderBottom: "1px solid #e8eaed", display: "flex", alignItems: "center", gap: 12, padding: "0 20px", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 20 }}>🧠</span>
+          <span style={{ fontWeight: 700, fontSize: 15, color: "#1a2535" }}>Painel Admin</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#1a73e8", border: "1px solid #1a73e840", padding: "2px 7px", borderRadius: 4, background: "#1a73e810" }}>ADMIN</span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="admin-btn-refresh" onClick={carregar}>↻ Atualizar</button>
-          <button
-            className="admin-btn-seed"
-            onClick={async () => {
-              if (!window.confirm("Isso vai APAGAR todos os pacientes, sessões e evoluções atuais e criar dados de demonstração. Continuar?")) return;
-              setSeedando(true);
-              setSeedResultado(null);
-              try {
-                const resultado = await seedDadosDemo(user.uid, setSeedProgresso);
-                setSeedResultado(resultado);
-              } catch (e) {
-                alert("Erro ao criar dados: " + e.message);
-              } finally {
-                setSeedando(false);
-                setSeedProgresso("");
-              }
-            }}
-            disabled={seedando}
-          >
-            {seedando ? `⏳ ${seedProgresso || "Carregando…"}` : "🎭 Carregar dados demo"}
-          </button>
+          <button style={{ background: "none", border: "1px solid #dadce0", borderRadius: 8, padding: "5px 12px", fontSize: 12, color: "#5f6368", cursor: "pointer" }} onClick={carregar}>↻ Atualizar</button>
+          <button style={{ background: "none", border: "none", fontSize: 12, color: "#ea4335", cursor: "pointer" }} onClick={() => navigate("/dashboard")}>← Sair</button>
         </div>
-      </div>
+      </header>
+
+      {/* Corpo: sidebar + main */}
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", height: "calc(100vh - 52px)" }}>
+
+        {/* Sidebar */}
+        <aside style={{ width: 210, background: "#fff", borderRight: "1px solid #e8eaed", display: "flex", flexDirection: "column", flexShrink: 0, overflowY: "auto" }}>
+          <nav style={{ padding: "12px 0", flex: 1 }}>
+            {SECOES_ADMIN.map(s => (
+              <button key={s.id} onClick={() => setAbaAtiva(s.id)} style={{
+                display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "11px 20px",
+                background: "none", border: "none", cursor: "pointer", position: "relative", textAlign: "left",
+                background: abaAtiva === s.id ? "#f1f3f4" : "none",
+              }}>
+                {abaAtiva === s.id && <div style={{ position: "absolute", left: 0, top: 8, bottom: 8, width: 3, background: "#1a73e8", borderRadius: "0 2px 2px 0" }} />}
+                <span style={{ color: abaAtiva === s.id ? "#1a73e8" : "#9aa0a6", display: "flex" }}>{s.icon}</span>
+                <span style={{ fontSize: 13, fontWeight: abaAtiva === s.id ? 600 : 400, color: abaAtiva === s.id ? "#1a2535" : "#5f6368" }}>{s.label}</span>
+              </button>
+            ))}
+          </nav>
+          <div style={{ padding: "12px 16px", borderTop: "1px solid #e8eaed" }}>
+            <div style={{ fontSize: 11, color: "#9aa0a6", marginBottom: 4 }}>{user?.email}</div>
+          </div>
+        </aside>
+
+        {/* Main scrollável */}
+        <main style={{ flex: 1, overflowY: "auto", padding: 28 }}>
 
       {erroCarregar && (
-        <div className="admin-seed-resultado" style={{ background: "#fce8e6", color: "#7a1c14", border: "1px solid #f5b7b1" }}>
+        <div style={{ background: "#fce8e6", color: "#7a1c14", border: "1px solid #f5b7b1", borderRadius: 8, padding: "10px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between" }}>
           ⚠️ Erro ao carregar as contas: <strong>{erroCarregar}</strong>
-          <button onClick={() => setErroCarregar(null)}>✕</button>
+          <button onClick={() => setErroCarregar(null)} style={{ background: "none", border: "none", cursor: "pointer" }}>✕</button>
         </div>
       )}
 
       {seedResultado && (
-        <div className="admin-seed-resultado">
-          ✅ Dados criados: <strong>{seedResultado.pacientes} clientes</strong> · <strong>{seedResultado.profissionais} profissionais</strong> · <strong>{seedResultado.sessoes} sessões</strong> · <strong>{seedResultado.solicitacoes} solicitações pendentes</strong>
-          <button onClick={() => setSeedResultado(null)}>✕</button>
+        <div style={{ background: "#e6f4ea", color: "#137333", border: "1px solid #b7dfca", borderRadius: 8, padding: "10px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between" }}>
+          ✅ Dados criados: <strong>{seedResultado.pacientes} clientes</strong> · <strong>{seedResultado.profissionais} profissionais</strong> · <strong>{seedResultado.sessoes} sessões</strong>
+          <button onClick={() => setSeedResultado(null)} style={{ background: "none", border: "none", cursor: "pointer" }}>✕</button>
         </div>
       )}
-
-      {/* Abas principais */}
-      <div className="admin-abas">
-        <button className={`admin-aba${abaAtiva === "contas" ? " ativa" : ""}`} onClick={() => setAbaAtiva("contas")}>
-          👥 Contas
-        </button>
-        <button className={`admin-aba${abaAtiva === "financeiro" ? " ativa" : ""}`} onClick={() => setAbaAtiva("financeiro")}>
-          💳 Financeiro
-        </button>
-        <button className={`admin-aba${abaAtiva === "atividade" ? " ativa" : ""}`} onClick={() => setAbaAtiva("atividade")}>
-          📊 Atividade
-        </button>
-        <button className={`admin-aba${abaAtiva === "config" ? " ativa" : ""}`} onClick={() => setAbaAtiva("config")}>
-          ⚙️ Configurações
-        </button>
-        <button className={`admin-aba${abaAtiva === "planos" ? " ativa" : ""}`} onClick={() => setAbaAtiva("planos")}>
-          💎 Planos
-        </button>
-        <button className={`admin-aba${abaAtiva === "integracoes" ? " ativa" : ""}`} onClick={() => setAbaAtiva("integracoes")}>
-          🔌 Integrações
-        </button>
-      </div>
 
       {/* ─── ABA CONTAS ─── */}
       {abaAtiva === "contas" && <>
@@ -1340,6 +1348,8 @@ export default function Admin() {
         </div>
       )}
 
+        </main>
+      </div>
     </div>
   );
 }
