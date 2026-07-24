@@ -926,7 +926,22 @@ export default function Admin() {
               <h3>Nova cobrança</h3>
               <button onClick={() => setModalCobranca(null)}>✕</button>
             </div>
-            <p className="admin-modal-sub">Cliente: <strong>{modalCobranca.nome}</strong></p>
+            <div className="admin-modal-form" style={{ paddingBottom: 0, marginBottom: 0 }}>
+              <label style={{ fontWeight: 600 }}>Cliente
+                <select
+                  value={modalCobranca.terapeutaId}
+                  onChange={e => {
+                    const t = terapeutas.find(x => x.id === e.target.value);
+                    if (t) setModalCobranca({ terapeutaId: t.id, nome: t.nome, email: t.email });
+                  }}
+                  style={{ marginTop: 4 }}
+                >
+                  {terapeutas.map(t => (
+                    <option key={t.id} value={t.id}>{t.nome || t.email}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <div className="admin-modal-form">
               {/* Seletor de modo */}
               <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
